@@ -108,7 +108,7 @@ const json = (route: Route, body: unknown, status = 200) =>
   route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
 /** The API with one PR and a ZASTAVA review the test drives. */
-async function mockApi(page: Page, initial: ZastavaReview | null) {
+async function mockApi(page: Page, initial: ZastavaReview | null, detail = DETAIL) {
   const state = { review: initial, posts: [] as PostFindings[], starts: 0 }
   await page.route(
     (url) => url.pathname.startsWith('/api/'),
@@ -153,7 +153,7 @@ async function mockApi(page: Page, initial: ZastavaReview | null) {
                 ],
         })
       }
-      if (path === `${pulls}/21`) return json(route, DETAIL)
+      if (path === `${pulls}/21`) return json(route, detail)
       if (path === `${pulls}/21/diff`) {
         return json(route, { patch: PATCH, truncated: false, base: 'b', head: 'a' })
       }
@@ -258,4 +258,50 @@ test('the card shows the review', async ({ page }) => {
   await page.goto(`/projects/${PROJECT}/pulls/assigned`)
   await expect(page.locator('[data-pr-card="21"]')).toBeVisible()
   await expect(page.getByTitle('ZASTAVA: 2 findings')).toBeVisible()
+})
+
+test('the review dialog fits long pending comments', async ({ page }) => {
+  const longPath =
+    'knowledge/dev-setup/a-very-long-folder-name/and-another-one/storybook-guide.md'
+  await mockApi(
+    page,
+    reviewOf(),
+    prDetail({
+      ...DETAIL,
+      pendingReview: { id: 'PRR_1', comments: 1 },
+      reviewThreads: [
+        {
+          id: 'T9',
+          isResolved: false,
+          isOutdated: false,
+          path: longPath,
+          line: 283,
+          startLine: null,
+          side: 'RIGHT',
+          diffHunk: '@@ -1 +1 @@',
+          viewerCanResolve: true,
+          viewerCanReply: true,
+          comments: [
+            {
+              id: 'C9',
+              author: prActor('me'),
+              bodyHtml: `<p>${'Doc claims --fg-subtle clears 4.5:1 on all five steps; it does not. '.repeat(3)}</p>`,
+              createdAt: ago(1),
+              isPending: true,
+            },
+          ],
+        },
+      ],
+    }),
+  )
+  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
+  await page.getByRole('button', { name: 'Submit review' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Review #21' })
+  await expect(dialog.getByText(`${longPath}:283`)).toBeVisible()
+  const box = await dialog.boundingBox()
+  const form = await dialog.locator('form').boundingBox()
+  expect(box).not.toBeNull()
+  expect(form).not.toBeNull()
+  if (box && form) expect(form.x + form.width).toBeLessThanOrEqual(box.x + box.width)
+  await page.screenshot({ path: test.info().outputPath('review-dialog.png') })
 })

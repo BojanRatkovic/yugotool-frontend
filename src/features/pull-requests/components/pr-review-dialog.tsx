@@ -81,11 +81,12 @@ export function PrReviewDialog({
           <DialogDescription>
             {pending.length === 0
               ? 'No line comments yet: the summary is the review.'
-              : `${pending.length} pending comment${pending.length === 1 ? '' : 's'} go out with it.`}
+              : `${pending.length} pending comment${pending.length === 1 ? ' goes' : 's go'} out with it.`}
           </DialogDescription>
         </DialogHeader>
         <form
-          className="flex flex-col gap-4"
+          // A grid item: without min-w-0 a long pending-comment row widens it past the dialog.
+          className="flex min-w-0 flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault()
             send()
@@ -142,8 +143,15 @@ export function PrReviewDialog({
             <ul className="flex max-h-40 flex-col gap-1 overflow-y-auto rounded-md border bg-muted/30 p-2">
               {pending.map((c) => (
                 <li key={c.id} className="flex min-w-0 gap-2 text-xs">
-                  <span className="shrink-0 font-mono text-muted-foreground">{c.where}</span>
-                  <span className="truncate">{c.text}</span>
+                  <span
+                    className="max-w-[50%] shrink-0 truncate font-mono text-muted-foreground"
+                    title={c.where}
+                  >
+                    {c.where}
+                  </span>
+                  <span className="min-w-0 truncate" title={c.text}>
+                    {c.text}
+                  </span>
                 </li>
               ))}
             </ul>
