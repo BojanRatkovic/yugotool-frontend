@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { REPO_HOOKS_STATION, stationStates } from '@/features/runs/utils/station-states'
+import {
+  CI_STATION,
+  REPO_HOOKS_STATION,
+  stationStates,
+} from '@/features/runs/utils/station-states'
 import type { Run, Station, StationRun } from '@/lib/contracts'
 
 const stations: Station[] = [
@@ -97,5 +101,34 @@ describe('repo hooks step', () => {
       run('succeeded', [stationRun({ stationKey: 'build' })]),
     )
     expect(states.map((state) => state.station.key)).toEqual(['build', 'gate'])
+  })
+})
+
+describe('CI step', () => {
+  it('comes last, after repo hooks and the gate, when the run watched CI', () => {
+    const states = stationStates(
+      stations,
+      run('succeeded', [
+        stationRun({ stationKey: 'build' }),
+        stationRun({ stationKey: 'repo_hooks' }),
+        stationRun({ stationKey: 'gate' }),
+        stationRun({ stationKey: 'ci', status: 'failed', output: '1 failed · 3 passed' }),
+      ]),
+    )
+    expect(states.map((state) => state.station.key)).toEqual([
+      'build',
+      'repo_hooks',
+      'gate',
+      'ci',
+    ])
+    expect(states[3]).toMatchObject({ station: CI_STATION, status: 'failed' })
+  })
+
+  it('shows "no CI" and timeouts as skipped, not cancelled', () => {
+    const states = stationStates(
+      stations,
+      run('succeeded', [stationRun({ stationKey: 'ci', status: 'cancelled' })]),
+    )
+    expect(states.at(-1)?.status).toBe('skipped')
   })
 })

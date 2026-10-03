@@ -50,7 +50,7 @@ import {
 } from '@/features/runs/utils/activity'
 import { parseDiffStat } from '@/features/runs/utils/diff-stat'
 import { qaFileUrl } from '@/features/runs/utils/qa'
-import { REPO_HOOKS_STATION } from '@/features/runs/utils/station-states'
+import { CI_STATION, REPO_HOOKS_STATION } from '@/features/runs/utils/station-states'
 import { detectLanguage, splitFences } from '@/lib/code-language'
 import type { ImageEvent, Run, RunEvent, Station } from '@/lib/contracts'
 import {
@@ -568,7 +568,7 @@ export function ActivityFeed({
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set())
   // The repo-hooks preflight isn't a line station but logs under its own station run.
   const stationByKey = new Map(
-    [...stations, REPO_HOOKS_STATION].map((station) => [station.key, station]),
+    [...stations, REPO_HOOKS_STATION, CI_STATION].map((station) => [station.key, station]),
   )
   const live = run.status === 'running'
   const count = events?.length ?? 0

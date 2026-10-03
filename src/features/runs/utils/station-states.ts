@@ -1,5 +1,6 @@
 import type { AnyStatus } from '@/components/status/status'
 import {
+  CI_STATION_KEY,
   REPO_HOOKS_STATION_KEY,
   type Run,
   type Station,
@@ -25,15 +26,35 @@ export const REPO_HOOKS_STATION: Extract<Station, { kind: 'checks' }> = {
   command: 'pre-commit',
 }
 
-/** The line's stations plus "Repo hooks" before the last gate, when `run` ran the preflight. */
+/** The PR's CI after delivery, drawn as the last step. Synthesized like repo hooks. */
+export const CI_STATION: Extract<Station, { kind: 'checks' }> = {
+  key: CI_STATION_KEY,
+  kind: 'checks',
+  name: 'CI',
+  command: 'gh pr checks',
+}
+
+const ran = (run: Run | undefined, key: string): boolean =>
+  run?.stations.some((sr) => sr.stationKey === key) ?? false
+
+/**
+ * The line's stations plus the steps the worker adds: "Repo hooks" before the
+ * last gate when `run` ran the preflight, "CI" at the end when it watched CI.
+ */
 export function runSteps(stations: Station[], run: Run | undefined): Station[] {
-  const ranHooks = run?.stations.some((sr) => sr.stationKey === REPO_HOOKS_STATION_KEY) ?? false
-  if (!ranHooks || stations.some((station) => station.key === REPO_HOOKS_STATION_KEY)) {
-    return stations
+  let steps = stations
+  if (
+    ran(run, REPO_HOOKS_STATION_KEY) &&
+    !steps.some((s) => s.key === REPO_HOOKS_STATION_KEY)
+  ) {
+    const gate = steps.findLastIndex((station) => station.kind === 'gate')
+    const at = gate < 0 ? steps.length : gate
+    steps = [...steps.slice(0, at), REPO_HOOKS_STATION, ...steps.slice(at)]
   }
-  const gate = stations.findLastIndex((station) => station.kind === 'gate')
-  const at = gate < 0 ? stations.length : gate
-  return [...stations.slice(0, at), REPO_HOOKS_STATION, ...stations.slice(at)]
+  if (ran(run, CI_STATION_KEY) && !steps.some((s) => s.key === CI_STATION_KEY)) {
+    steps = [...steps, CI_STATION]
+  }
+  return steps
 }
 
 /**
@@ -48,8 +69,11 @@ export function stationStates(stations: Station[], run: Run | undefined): Statio
       .filter((sr) => sr.stationKey === station.key)
       .toSorted((a, b) => a.attempt - b.attempt || a.startedAt.localeCompare(b.startedAt))
     const stationRun = attempts.at(-1)
-    const status: AnyStatus =
-      stationRun?.status ?? (run === undefined ? 'queued' : finished ? 'skipped' : 'queued')
+    // CI that reported nothing (no CI, timed out) is recorded as cancelled; it is not a stop.
+    const ciSkipped = station.key === CI_STATION_KEY && stationRun?.status === 'cancelled'
+    const status: AnyStatus = ciSkipped
+      ? 'skipped'
+      : (stationRun?.status ?? (run === undefined ? 'queued' : finished ? 'skipped' : 'queued'))
     return { station, stationRun, attempts: attempts.length, status }
   })
 }

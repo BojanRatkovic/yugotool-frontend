@@ -7,6 +7,7 @@ import { qaSummaryLine } from '@/features/runs/utils/qa'
 import { shiftSummary } from '@/features/runs/utils/shifts'
 import type { StationState } from '@/features/runs/utils/station-states'
 import {
+  CI_STATION_KEY,
   REPO_HOOKS_STATION_KEY,
   type Effort,
   type Station,
@@ -39,6 +40,7 @@ export function detailLine(
       .findLast((line) => line !== '')
     return last ?? 'pre-commit'
   }
+  if (station.key === CI_STATION_KEY) return stationRun?.output ?? 'Waiting for CI to report'
   if (station.kind === 'gate') return 'Human review'
   if (station.kind === 'checks') return station.command
   if (station.kind === 'qa') {
@@ -139,7 +141,8 @@ export function PipelineStepper({
               <span
                 className={cn(
                   'block h-4 truncate font-mono text-[0.6875rem] leading-4 tabular-nums',
-                  status === 'failed' && station.key === REPO_HOOKS_STATION_KEY
+                  status === 'failed' &&
+                    (station.key === REPO_HOOKS_STATION_KEY || station.key === CI_STATION_KEY)
                     ? 'text-status-failed'
                     : (station.kind === 'shift' || station.kind === 'qa') && reached
                       ? 'text-foreground/80'

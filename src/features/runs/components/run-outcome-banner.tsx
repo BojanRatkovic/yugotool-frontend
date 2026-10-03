@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { runQueries } from '@/features/runs/api/run-queries'
 import { DeliveryBanner } from '@/features/runs/components/delivery-banner'
 import { runFailure, type RunFailure } from '@/features/runs/utils/failure'
-import type { Run } from '@/lib/contracts'
+import type { CiStatus, Run } from '@/lib/contracts'
 import { cn } from '@/lib/utils'
 
 /** DOM id of an Activity row, so a banner can point at it. */
@@ -153,6 +153,8 @@ export function RunOutcomeBanner({
   onShowActivity,
   failureAction,
   deliveredAction,
+  ci,
+  ciAction,
 }: {
   run: Run
   prUrl: string | null
@@ -163,6 +165,10 @@ export function RunOutcomeBanner({
   failureAction?: ReactNode
   /** Trailing action on a delivered run without a PR (e.g. Open pull request). */
   deliveredAction?: ReactNode
+  /** The PR's CI on a delivered run. */
+  ci?: CiStatus | null
+  /** Next to the CI badge (e.g. Re-check). */
+  ciAction?: ReactNode
 }) {
   const events = useQuery(runQueries.events(run.id))
   const failure = runFailure(run, events.data ?? [])
@@ -171,6 +177,15 @@ export function RunOutcomeBanner({
       <FailureBanner failure={failure} onShowActivity={onShowActivity} action={failureAction} />
     )
   if (run.status === 'succeeded')
-    return <DeliveryBanner run={run} prUrl={prUrl} branch={branch} action={deliveredAction} />
+    return (
+      <DeliveryBanner
+        run={run}
+        prUrl={prUrl}
+        branch={branch}
+        action={deliveredAction}
+        ci={ci}
+        ciAction={ciAction}
+      />
+    )
   return null
 }

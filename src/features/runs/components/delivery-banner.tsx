@@ -3,9 +3,10 @@ import { CircleCheck, ExternalLink, GitPullRequest } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
+import { CiBadge } from '@/components/ci-badge'
 import { Button } from '@/components/ui/button'
 import { runQueries } from '@/features/runs/api/run-queries'
-import type { Run } from '@/lib/contracts'
+import type { CiStatus, Run } from '@/lib/contracts'
 import { parseDelivery, parsePullRequest, pullRequestLabel, type Delivery } from '@/lib/links'
 
 /** The run's delivery: the PR from the work order, else the worker's summary event. */
@@ -29,12 +30,18 @@ export function DeliveryBanner({
   prUrl,
   branch,
   action,
+  ci = null,
+  ciAction,
 }: {
   run: Run
   prUrl: string | null
   branch: string | null
   /** Shown while there's no PR, e.g. "Open pull request" for work committed locally. */
   action?: ReactNode
+  /** The PR's CI, shown next to "Open PR". */
+  ci?: CiStatus | null
+  /** Next to the CI badge when there's a PR, e.g. "Re-check". */
+  ciAction?: ReactNode
 }) {
   const delivery = useDelivery(run, prUrl)
   const pr = delivery?.kind === 'pull_request' ? delivery.pr : null
@@ -67,6 +74,8 @@ export function DeliveryBanner({
           <span className="truncate font-mono text-xs text-muted-foreground">{pr.repo}</span>
         )}
       </p>
+      {pr !== null && ci !== null ? <CiBadge ci={ci} prUrl={pr.url} variant="full" /> : null}
+      {pr === null ? null : ciAction}
       {pr === null ? (
         action
       ) : (

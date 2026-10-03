@@ -53,6 +53,7 @@ export function NewWorkOrderForm({
         queuedAt: null,
         ...fromOverrideValues(value),
         prUrl: null,
+        ci: null,
         createdAt: now,
         updatedAt: now,
       })

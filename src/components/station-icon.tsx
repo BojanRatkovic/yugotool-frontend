@@ -1,6 +1,7 @@
 import {
   Bot,
   GitCommitHorizontal,
+  GitPullRequestArrow,
   Repeat,
   ScanEye,
   ShieldCheck,
@@ -8,7 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
-import { REPO_HOOKS_STATION_KEY, type Station } from '@/lib/contracts'
+import { CI_STATION_KEY, REPO_HOOKS_STATION_KEY, type Station } from '@/lib/contracts'
 import { cn } from '@/lib/utils'
 
 const ICON: Record<Station['kind'], LucideIcon> = {
@@ -47,10 +48,15 @@ export function StationIcon({
   className,
 }: {
   kind: Station['kind']
-  /** The repo-hooks preflight (a synthesized `checks` step) gets its own icon. */
+  /** The synthesized `checks` steps (repo hooks, CI) get their own icons. */
   stationKey?: string
   className?: string
 }) {
-  const Icon = stationKey === REPO_HOOKS_STATION_KEY ? GitCommitHorizontal : ICON[kind]
+  const Icon =
+    stationKey === REPO_HOOKS_STATION_KEY
+      ? GitCommitHorizontal
+      : stationKey === CI_STATION_KEY
+        ? GitPullRequestArrow
+        : ICON[kind]
   return <Icon aria-hidden="true" className={cn('size-3.5 shrink-0', className)} />
 }

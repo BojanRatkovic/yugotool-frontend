@@ -39,6 +39,7 @@ function wo(patch: Partial<WorkOrder>): WorkOrder {
     effortOverride: null,
     maxBudgetUsd: null,
     prUrl: null,
+    ci: null,
     createdAt: '2026-10-02T00:00:00Z',
     updatedAt: '2026-10-02T00:00:00Z',
     ...patch,

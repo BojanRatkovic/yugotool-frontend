@@ -28,6 +28,7 @@ import { WorkOrderHeader } from '@/features/work-orders/components/work-order-he
 import { remoteQueries } from '@/features/projects/api/remote-queries'
 import { canOpenPullRequest, isDeliveryGate } from '@/features/runs/utils/delivery'
 import { requestChangesCopy } from '@/features/runs/utils/request-changes'
+import { RecheckCiButton } from '@/features/work-orders/components/ci-recheck'
 import { OpenPullRequestAction } from '@/features/work-orders/components/open-pull-request'
 import { RunAgainButton } from '@/features/work-orders/components/queue-actions'
 import type { DeliveryMode, Station } from '@/lib/contracts'
@@ -220,6 +221,10 @@ export function WorkOrderPanel({
               onShowActivity={() => onChange({ tab: 'activity', station: undefined })}
               failureAction={
                 <RunAgainButton workOrder={workOrder} variant="outline" size="xs" />
+              }
+              ci={workOrder.ci}
+              ciAction={
+                workOrder.prUrl === null ? undefined : <RecheckCiButton workOrder={workOrder} />
               }
               deliveredAction={
                 canOpenPullRequest(workOrder) ? (

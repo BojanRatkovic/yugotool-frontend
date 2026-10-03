@@ -103,3 +103,15 @@ export function useOpenPullRequest({
     },
   })
 }
+
+/**
+ * Asks the worker to look at the PR's CI again (a rerun on Semaphore or
+ * Actions, a new push). Returns at once; the result lands on the work order
+ * (`ci`) and SSE refetches it.
+ */
+export function useRefreshCi() {
+  return useMutation({
+    mutationFn: ({ workOrderId }: { workOrderId: string }) =>
+      apiClient.post(`/work-orders/${workOrderId}/ci/refresh`),
+  })
+}

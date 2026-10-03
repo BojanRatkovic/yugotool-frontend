@@ -10,6 +10,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import { CiBadge } from '@/components/ci-badge'
 import { PrLink } from '@/components/pr-link'
 import { QueuedChip, QueueMenuItems } from '@/features/work-orders/components/queue-actions'
 import { stoppedLabel } from '@/features/work-orders/utils/card-outcome'
@@ -98,8 +99,18 @@ function CardBody({
               <span className="truncate">{workOrder.branch.replace(/^zastava\//, '')}</span>
             </span>
           )}
+          {workOrder.prUrl == null || workOrder.ci == null ? null : (
+            <CiBadge
+              ci={workOrder.ci}
+              prUrl={workOrder.prUrl}
+              className="relative z-10 -my-1 ml-auto font-sans"
+            />
+          )}
           {workOrder.prUrl == null ? null : (
-            <PrLink url={workOrder.prUrl} className="relative z-10 -my-1 ml-auto" />
+            <PrLink
+              url={workOrder.prUrl}
+              className={cn('relative z-10 -my-1', workOrder.ci == null && 'ml-auto')}
+            />
           )}
           {committedLocally ? (
             <span className="ml-auto flex shrink-0 items-center gap-1 font-sans">
