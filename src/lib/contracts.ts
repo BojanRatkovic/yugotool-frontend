@@ -39,8 +39,11 @@ export const agentStationSchema = z.object({
   maxBudgetUsd: z.number().positive().optional(),
   allowedTools: z.array(z.string()),
   canEdit: z.boolean(),
-  /** Validator stations return a structured verdict (JSON schema output). */
-  structuredVerdict: z.boolean().optional(),
+  /**
+   * Validator stations return a structured verdict (JSON schema output):
+   * true = pass/fail `verdictSchema`, "review" = PR review findings (spec 0009).
+   */
+  structuredVerdict: z.union([z.boolean(), z.literal('review')]).optional(),
   /**
    * Reads the project's knowledge sources (spec 0007). Planning stations only:
    * a station that edits code never gets it (see updateLineSchema).
@@ -169,6 +172,18 @@ export const updateLineSchema = z.object({
     ),
 })
 export type UpdateLine = z.infer<typeof updateLineSchema>
+
+/** A review line only reads: no station edits code, works in shifts or waits at a gate. */
+export const updateReviewLineSchema = updateLineSchema.refine(
+  ({ stations }) =>
+    stations.every(
+      (s) => s.kind !== 'gate' && s.kind !== 'shift' && (s.kind !== 'agent' || !s.canEdit),
+    ),
+  {
+    message: 'a review line has no gates, shifts or stations that edit code',
+    path: ['stations'],
+  },
+)
 
 export const lineSchema = z.object({
   id: z.uuid(),
@@ -1380,6 +1395,104 @@ export type PrViewedInput = z.infer<typeof prViewedInputSchema>
 
 export const prMergeInputSchema = z.object({ method: prMergeMethodSchema })
 export type PrMergeInput = z.infer<typeof prMergeInputSchema>
+
+// ── PR review (spec 0009) ───────────────────────────────────────────────────
+
+/** `build` runs down the project's line; `review` reviews a pull request. */
+export const workOrderKindSchema = z.enum(['build', 'review'])
+export type WorkOrderKind = z.infer<typeof workOrderKindSchema>
+
+/** A project has one line per kind. */
+export const lineKindSchema = z.enum(['build', 'review'])
+export type LineKind = z.infer<typeof lineKindSchema>
+
+/** The PR a review work order looks at, frozen when the review starts. */
+export const reviewPullRequestSchema = z.object({
+  number: z.number().int().min(1),
+  url: z.string(),
+  headRefName: z.string(),
+  headOid: z.string(),
+  baseRefName: z.string(),
+  baseOid: z.string(),
+  /** Head of the previous ZASTAVA review: a re-review focuses on what came after. */
+  sinceOid: z.string().nullable(),
+  /** Finding ids already added to the pending review on GitHub. */
+  posted: z.array(z.string()).default([]),
+})
+export type ReviewPullRequest = z.infer<typeof reviewPullRequestSchema>
+
+export const reviewFindingSchema = z.object({
+  /** Stable within the verdict, e.g. "f1". */
+  id: z.string(),
+  severity: z.enum(['critical', 'important', 'minor']),
+  category: z.enum(['bug', 'security', 'performance', 'tests', 'design', 'convention']),
+  file: z.string().nullable(),
+  side: z.enum(['RIGHT', 'LEFT']),
+  /** First line of a multi-line range; null for a single line. */
+  startLine: z.number().int().min(1).nullable(),
+  /** Line in the PR diff (new file for RIGHT); null = about the file or the PR as a whole. */
+  line: z.number().int().min(1).nullable(),
+  /** One line; becomes the comment's first line. */
+  title: z.string(),
+  /** Why it is wrong, markdown. */
+  body: z.string(),
+  /** Replacement for startLine..line, posted as a ```suggestion block. */
+  suggestion: z.string().nullable(),
+  confidence: z.enum(['high', 'medium']),
+})
+export type ReviewFinding = z.infer<typeof reviewFindingSchema>
+
+/** What a review station returns (also its JSON schema). */
+export const reviewVerdictSchema = z.object({
+  recommendation: z.enum(['approve', 'comment', 'request_changes']),
+  /** 2–5 sentences: what the PR does and what matters. */
+  summary: z.string(),
+  /** Most severe first. */
+  findings: z.array(reviewFindingSchema).max(30),
+})
+export type ReviewVerdict = z.infer<typeof reviewVerdictSchema>
+
+/** Starts a ZASTAVA review of the PR's current head. */
+export const startReviewSchema = z.object({
+  /** Client-generated work order id makes the start idempotent. */
+  id: z.uuid().optional(),
+})
+export type StartReview = z.infer<typeof startReviewSchema>
+
+/** The latest ZASTAVA review of a PR. */
+export const zastavaReviewSchema = z.object({
+  workOrderId: z.uuid(),
+  runId: z.uuid().nullable(),
+  status: runStatusSchema,
+  costUsd: z.number(),
+  pullRequest: reviewPullRequestSchema,
+  /** The PR head moved since the review ran. */
+  stale: z.boolean(),
+  verdict: reviewVerdictSchema.nullable(),
+  error: z.string().nullable(),
+  startedAt: isoDate,
+  finishedAt: isoDate.nullable(),
+})
+export type ZastavaReview = z.infer<typeof zastavaReviewSchema>
+
+export const zastavaReviewResultSchema = z.object({ review: zastavaReviewSchema.nullable() })
+export type ZastavaReviewResult = z.infer<typeof zastavaReviewResultSchema>
+
+/** Findings the human kept, as edited; they go to the pending review. */
+export const postFindingsSchema = z.object({
+  findings: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string().trim().min(1).max(300),
+        body: z.string().max(20_000),
+        suggestion: z.string().max(20_000).nullable(),
+      }),
+    )
+    .min(1)
+    .max(30),
+})
+export type PostFindings = z.infer<typeof postFindingsSchema>
 
 // ── Queue & dispatcher ──────────────────────────────────────────────────────
 
