@@ -168,7 +168,7 @@ export function PrPanel({
         </div>
       </Tabs>
       <div className="relative min-h-0 flex-1">
-        <PrTabBody tab={state.tab} pr={pr} />
+        <PrTabBody tab={state.tab} projectId={projectId} pr={pr} onChange={onChange} />
       </div>
     </div>
   )

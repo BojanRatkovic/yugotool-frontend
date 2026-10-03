@@ -291,6 +291,120 @@
   .react-flow__edge:focus-visible .react-flow__edge-path {
     stroke: var(--ring);
   }
+
+  /* GitHub-rendered markdown (features/pull-requests/components/github-html.tsx). */
+  .gh-prose {
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+    color: var(--foreground);
+  }
+  .gh-prose > :first-child {
+    margin-top: 0;
+  }
+  .gh-prose > :last-child {
+    margin-bottom: 0;
+  }
+  .gh-prose :is(p, ul, ol, blockquote, pre, table, details, .markdown-alert) {
+    margin: 0 0 0.75em;
+  }
+  .gh-prose :is(h1, h2, h3, h4, h5, h6) {
+    margin: 1.2em 0 0.5em;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .gh-prose h1 {
+    font-size: 1.25rem;
+  }
+  .gh-prose h2 {
+    font-size: 1.0625rem;
+  }
+  .gh-prose :is(h3, h4, h5, h6) {
+    font-size: 0.875rem;
+  }
+  .gh-prose a {
+    color: var(--status-running);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .gh-prose :is(ul, ol) {
+    padding-left: 1.5em;
+  }
+  .gh-prose ul {
+    list-style: disc;
+  }
+  .gh-prose ol {
+    list-style: decimal;
+  }
+  .gh-prose li + li {
+    margin-top: 0.25em;
+  }
+  .gh-prose .contains-task-list {
+    list-style: none;
+    padding-left: 0.25em;
+  }
+  .gh-prose .task-list-item input {
+    margin-right: 0.5em;
+    vertical-align: middle;
+    pointer-events: none;
+  }
+  .gh-prose code {
+    font-family: var(--font-mono);
+    font-size: 0.8125em;
+    background: var(--muted);
+    border-radius: 4px;
+    padding: 0.1em 0.35em;
+  }
+  .gh-prose pre {
+    overflow-x: auto;
+    background: var(--muted);
+    border-radius: var(--radius);
+    padding: 0.75em 1em;
+    line-height: 1.5;
+  }
+  .gh-prose pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.75rem;
+  }
+  .gh-prose blockquote,
+  .gh-prose .markdown-alert {
+    border-left: 3px solid var(--border);
+    padding-left: 0.85em;
+    color: var(--muted-foreground);
+  }
+  .gh-prose table {
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+  }
+  .gh-prose :is(th, td) {
+    border: 1px solid var(--border);
+    padding: 0.3em 0.6em;
+  }
+  .gh-prose th {
+    font-weight: 600;
+    background: var(--muted);
+  }
+  .gh-prose img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+  }
+  .gh-prose hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 1em 0;
+  }
+  .gh-prose details > summary {
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .gh-prose .suggested-change-box,
+  .gh-prose .js-suggested-changes-blob {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
 }
 
 @layer utilities {
