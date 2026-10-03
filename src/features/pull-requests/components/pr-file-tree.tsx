@@ -12,7 +12,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { buildFileTree, type FileTreeNode } from '@/features/pull-requests/utils/file-tree'
 import type { PrFile } from '@/lib/contracts'
-import { isTypingTarget } from '@/lib/shortcuts'
+import { isPanelTypingTarget } from '@/features/pull-requests/utils/keys'
 import { cn } from '@/lib/utils'
 
 const CHANGE_ICON: Record<
@@ -172,7 +172,12 @@ export function PrFileTree({
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key !== '/' || event.metaKey || event.ctrlKey || isTypingTarget(event.target))
+      if (
+        event.key !== '/' ||
+        event.metaKey ||
+        event.ctrlKey ||
+        isPanelTypingTarget(event.target)
+      )
         return
       event.preventDefault()
       filterRef.current?.focus()

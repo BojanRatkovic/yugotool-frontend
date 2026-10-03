@@ -19,7 +19,7 @@ import { visibleFiles, type FileTreeNode } from '@/features/pull-requests/utils/
 import { ApiError, errorMessage } from '@/lib/api-client'
 import type { PullRequestDetail } from '@/lib/contracts'
 import { parsePatch } from '@/lib/diff'
-import { isTypingTarget } from '@/lib/shortcuts'
+import { isPanelTypingTarget } from '@/features/pull-requests/utils/keys'
 
 /** Whether "Since your last review" applies, and whether it's on by default (Re-review). */
 export function sinceReview(pr: PullRequestDetail, viewer: string) {
@@ -144,7 +144,8 @@ export function PrFilesTab({
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return
+      if (event.metaKey || event.ctrlKey || event.altKey || isPanelTypingTarget(event.target))
+        return
       const index = selectedPath === undefined ? -1 : order.indexOf(selectedPath)
       switch (event.key) {
         case 'j':

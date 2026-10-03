@@ -10,7 +10,7 @@ import {
   type ThreadFilter,
 } from '@/features/pull-requests/utils/threads'
 import type { PullRequestDetail } from '@/lib/contracts'
-import { isTypingTarget } from '@/lib/shortcuts'
+import { isPanelTypingTarget } from '@/features/pull-requests/utils/keys'
 import { cn } from '@/lib/utils'
 
 const FILTERS: { key: ThreadFilter; label: string }[] = [
@@ -60,7 +60,8 @@ export function PrThreadsTab({
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return
+      if (event.metaKey || event.ctrlKey || event.altKey || isPanelTypingTarget(event.target))
+        return
       const at = threads.findIndex((t) => t.id === state.thread)
       if (event.key === 'j' || event.key === 'k') {
         const next =

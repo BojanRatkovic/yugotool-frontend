@@ -24,7 +24,7 @@ import {
 import { PrTabBody } from '@/features/pull-requests/components/pr-tab-body'
 import { ApiError } from '@/lib/api-client'
 import type { PullRequestDetail } from '@/lib/contracts'
-import { isTypingTarget } from '@/lib/shortcuts'
+import { isPanelTypingTarget } from '@/features/pull-requests/utils/keys'
 
 export const PR_TABS = ['overview', 'files', 'threads', 'checks', 'commits'] as const
 export type PrTab = (typeof PR_TABS)[number]
@@ -107,7 +107,8 @@ export function PrPanel({
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return
+      if (event.metaKey || event.ctrlKey || event.altKey || isPanelTypingTarget(event.target))
+        return
       const tab = PR_TABS[Number(event.key) - 1]
       if (tab !== undefined) {
         event.preventDefault()

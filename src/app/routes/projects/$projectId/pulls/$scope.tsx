@@ -167,6 +167,8 @@ function PullRequestsPage() {
         onOpenChange={(open) => (open ? null : openPr(undefined))}
       >
         <SheetContent
+          // The PR panel's shortcuts work inside its own sheet (see isPanelTypingTarget).
+          data-pr-sheet
           showCloseButton={false}
           onOpenAutoFocus={(event) => {
             event.preventDefault()
