@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   isSettingsDirty,
+  settingsFormKey,
   settingsPatch,
   toSettingsValues,
 } from '@/features/settings/utils/settings-form'
@@ -19,6 +20,8 @@ const saved: Settings = {
   telegramBotToken: 'token',
   telegramChatId: null,
   reposRoot: null,
+  anthropicApiKeyHint: null,
+  anthropicApiKeySource: null,
   updatedAt: '2026-10-02T10:00:00.000Z',
 }
 
@@ -63,5 +66,21 @@ describe('settingsPatch', () => {
     expect(settingsPatch({ ...toSettingsValues(custom), reposRoot: '' }, custom)).toEqual({
       reposRoot: null,
     })
+  })
+})
+
+describe('settingsFormKey', () => {
+  it('ignores API key and updatedAt changes', () => {
+    const withKey: Settings = {
+      ...saved,
+      anthropicApiKeyHint: 'sk-ant-…x7Qd',
+      anthropicApiKeySource: 'settings',
+      updatedAt: '2026-10-03T10:00:00.000Z',
+    }
+    expect(settingsFormKey(withKey)).toBe(settingsFormKey(saved))
+  })
+
+  it('changes when an edited field changes', () => {
+    expect(settingsFormKey({ ...saved, maxConcurrentRuns: 3 })).not.toBe(settingsFormKey(saved))
   })
 })

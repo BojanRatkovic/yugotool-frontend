@@ -46,6 +46,10 @@ export function useUpdateSettings() {
           queryClient.invalidateQueries({ queryKey: queryKeys.system() }),
         )
       }
+      // A saved or removed API key changes what agents bill against (system) and the doctor's claude check.
+      if ('anthropicApiKey' in patch) {
+        refresh.push(queryClient.invalidateQueries({ queryKey: queryKeys.system() }))
+      }
       return Promise.all(refresh)
     },
   })

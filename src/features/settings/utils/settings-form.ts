@@ -33,6 +33,15 @@ export function toSettingsValues(settings: Settings): SettingsValues {
   }
 }
 
+/**
+ * Remount key for the settings form: changes only when a field the form edits
+ * changes on the server. Saving the API key bumps `updatedAt` but not these,
+ * so it leaves an unsaved draft alone.
+ */
+export function settingsFormKey(settings: Settings): string {
+  return JSON.stringify(toSettingsValues(settings))
+}
+
 const KEYS = [
   'maxConcurrentRuns',
   'pauseAtFiveHourPct',

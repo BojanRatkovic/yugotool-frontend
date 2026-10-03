@@ -1,9 +1,10 @@
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
-import { ThemeProvider } from 'next-themes'
-import type { ReactNode } from 'react'
+import { ThemeProvider, useTheme } from 'next-themes'
+import { useEffect, type ReactNode } from 'react'
 
 import { env } from '@/config/env'
+import { syncDesktopTheme } from '@/lib/desktop'
 import { persister } from '@/lib/persister'
 import { CACHE_MAX_AGE, queryClient } from '@/lib/query-client'
 
@@ -31,6 +32,13 @@ function hash(text: string): string {
   return (h >>> 0).toString(36)
 }
 
+/** Keeps the desktop shell's native chrome on the app's theme; renders nothing. */
+function DesktopThemeSync() {
+  const { resolvedTheme } = useTheme()
+  useEffect(() => syncDesktopTheme(resolvedTheme), [resolvedTheme])
+  return null
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider
@@ -42,6 +50,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // type keeps it inert and silences the warning.
       scriptProps={{ type: 'application/json' }}
     >
+      <DesktopThemeSync />
       <PersistQueryClientProvider
         client={queryClient}
         persistOptions={{ persister, maxAge: CACHE_MAX_AGE, buster: CACHE_BUSTER }}

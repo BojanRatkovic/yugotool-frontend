@@ -1,18 +1,18 @@
 import { useForm, useStore } from '@tanstack/react-form'
-import { Eye, EyeOff, FolderOpen, Save, Send, Undo2 } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { FolderOpen, Save, Send, Undo2 } from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from '@/components/ui/input-group'
-import { Label } from '@/components/ui/label'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Switch } from '@/components/ui/switch'
+import {
+  invalidProps,
+  Row,
+  SecretInput,
+  Section,
+} from '@/features/settings/components/settings-section'
 import {
   useTestNotification,
   useUpdateSettings,
@@ -35,121 +35,6 @@ const CHANNEL_LABEL: Record<NotificationChannel, string> = {
   desktop: 'desktop',
   slack: 'Slack',
   telegram: 'Telegram',
-}
-
-function firstError(errors: readonly unknown[]): string | null {
-  const first = errors[0]
-  if (typeof first === 'string') return first
-  if (typeof first === 'object' && first !== null && 'message' in first) {
-    return String(first.message)
-  }
-  return null
-}
-
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string
-  description: string
-  children: ReactNode
-}) {
-  return (
-    <section aria-label={title} className="flex flex-col gap-2.5">
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        <p className="text-[0.8125rem] text-muted-foreground">{description}</p>
-      </div>
-      <div className="divide-y rounded-lg border bg-card">{children}</div>
-    </section>
-  )
-}
-
-/** One setting: label + help on the left, control on the right, error under the control. */
-function Row({
-  id,
-  label,
-  help,
-  errors = [],
-  children,
-  after,
-}: {
-  id: string
-  label: string
-  help?: ReactNode
-  errors?: readonly unknown[]
-  children: ReactNode
-  /** Rendered under the error, e.g. a "Send test" button. */
-  after?: ReactNode
-}) {
-  const error = firstError(errors)
-  return (
-    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,20rem)] items-start gap-6 px-4 py-3">
-      <div className="flex min-w-0 flex-col gap-0.5 pt-1">
-        <Label htmlFor={id} className="text-[0.8125rem]">
-          {label}
-        </Label>
-        {help === undefined ? null : <p className="text-xs text-muted-foreground">{help}</p>}
-      </div>
-      <div className="flex min-w-0 flex-col items-end gap-1">
-        {children}
-        {error === null ? null : (
-          <p id={`${id}-error`} className="text-xs text-destructive">
-            {error}
-          </p>
-        )}
-        {after}
-      </div>
-    </div>
-  )
-}
-
-function invalidProps(id: string, errors: readonly unknown[]) {
-  return firstError(errors) === null
-    ? {}
-    : { 'aria-invalid': true as const, 'aria-describedby': `${id}-error` }
-}
-
-function SecretInput({
-  id,
-  value,
-  onChange,
-  onBlur,
-  placeholder,
-}: {
-  id: string
-  value: string
-  onChange: (value: string) => void
-  onBlur: () => void
-  placeholder?: string
-}) {
-  const [revealed, setRevealed] = useState(false)
-  return (
-    <InputGroup className="h-8">
-      <InputGroupInput
-        id={id}
-        type={revealed ? 'text' : 'password'}
-        autoComplete="off"
-        spellCheck={false}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        onBlur={onBlur}
-        placeholder={placeholder}
-        className="font-mono text-xs"
-      />
-      <InputGroupAddon align="inline-end">
-        <InputGroupButton
-          size="icon-xs"
-          aria-label={revealed ? 'Hide token' : 'Show token'}
-          aria-pressed={revealed}
-          onClick={() => setRevealed((shown) => !shown)}
-        >
-          {revealed ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
-        </InputGroupButton>
-      </InputGroupAddon>
-    </InputGroup>
-  )
 }
 
 /** "Send test" for one channel. Tests what's saved, so unsaved edits disable it. */
@@ -240,8 +125,9 @@ const TEXT_CLASS = 'h-8 w-full'
 
 /**
  * Settings editor. Values are a TanStack Form draft of the saved settings;
- * Save PATCHes only what changed. Mount with `key={settings.updatedAt}` so a
- * save or a refetch from another tab resets the draft.
+ * Save PATCHes only what changed. Mount with `key={settingsFormKey(settings)}` so a
+ * save of these fields (here or in another tab) resets the draft, while an
+ * API key change does not.
  */
 export function SettingsForm({
   settings,
@@ -288,51 +174,6 @@ export function SettingsForm({
         void form.handleSubmit()
       }}
     >
-      <div className="sticky top-0 z-10 -mx-1 flex items-center gap-2 bg-background/95 px-1 py-2 backdrop-blur-sm">
-        <span className="mr-auto text-xs text-muted-foreground" aria-live="polite">
-          {save.isPending
-            ? 'Saving…'
-            : isDirty
-              ? canSubmit
-                ? 'Unsaved changes'
-                : 'Unsaved changes — fix the highlighted fields'
-              : 'Saved'}
-        </span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={!isDirty || save.isPending}
-          onClick={() => {
-            form.reset()
-            save.reset()
-          }}
-        >
-          <Undo2 aria-hidden="true" />
-          Discard
-        </Button>
-        <Button type="submit" size="sm" disabled={!isDirty || !canSubmit || save.isPending}>
-          <Save aria-hidden="true" />
-          Save settings
-        </Button>
-      </div>
-
-      {save.error === null || reposRootError !== null ? null : (
-        <div
-          role="alert"
-          className="-mt-6 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm"
-        >
-          <p className="font-medium text-destructive">{errorMessage(save.error)}</p>
-          {apiIssues.length === 0 ? null : (
-            <ul className="mt-1 list-disc pl-5 text-xs text-muted-foreground">
-              {apiIssues.map((issue) => (
-                <li key={issue}>{issue}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
       <Section title="Repos" description="Where ZASTAVA looks for projects on this machine.">
         <form.Field name="reposRoot">
           {(field) => (
@@ -618,6 +459,54 @@ export function SettingsForm({
           )}
         </form.Field>
       </Section>
+      {/* Sticky to the bottom of the settings scroll column, full content width.
+          It is the form's last child, so at the end of the page it sits below
+          the last section instead of covering it. */}
+      <div className="sticky bottom-0 z-10 -mx-6 mt-auto flex flex-col gap-2 border-t bg-background/95 px-6 py-3 backdrop-blur-sm">
+        {save.error === null || reposRootError !== null ? null : (
+          <div
+            role="alert"
+            className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm"
+          >
+            <p className="font-medium text-destructive">{errorMessage(save.error)}</p>
+            {apiIssues.length === 0 ? null : (
+              <ul className="mt-1 list-disc pl-5 text-xs text-muted-foreground">
+                {apiIssues.map((issue) => (
+                  <li key={issue}>{issue}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <span className="mr-auto text-xs text-muted-foreground" aria-live="polite">
+            {save.isPending
+              ? 'Saving…'
+              : isDirty
+                ? canSubmit
+                  ? 'Unsaved changes'
+                  : 'Unsaved changes — fix the highlighted fields'
+                : 'Saved'}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={!isDirty || save.isPending}
+            onClick={() => {
+              form.reset()
+              save.reset()
+            }}
+          >
+            <Undo2 aria-hidden="true" />
+            Discard
+          </Button>
+          <Button type="submit" size="sm" disabled={!isDirty || !canSubmit || save.isPending}>
+            <Save aria-hidden="true" />
+            Save settings
+          </Button>
+        </div>
+      </div>
     </form>
   )
 }

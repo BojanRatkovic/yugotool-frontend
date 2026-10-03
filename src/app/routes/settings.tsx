@@ -6,9 +6,12 @@ import { LoadError } from '@/components/data-state'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { settingsQueries } from '@/features/settings/api/settings-queries'
+import { ClaudeAccessSection } from '@/features/settings/components/claude-access-section'
 import { REPOS_ROOT_FIELD_ID, SettingsForm } from '@/features/settings/components/settings-form'
 import { systemQueries } from '@/features/system/api/system-queries'
+import { settingsFormKey } from '@/features/settings/utils/settings-form'
 import { DoctorSection } from '@/features/system/components/doctor-section'
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/settings')({
   loader: ({ context: { queryClient } }) => {
@@ -74,7 +77,14 @@ function SettingsPage() {
         data-settings-scroll
         className="relative min-h-0 flex-1 scrollbar-thin overflow-y-auto"
       >
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 pt-6 pb-12">
+        {/* The form ends in a sticky Save bar that must sit flush with the bottom edge,
+            so bottom padding only applies while the form isn't shown. */}
+        <div
+          className={cn(
+            'mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 pt-6',
+            settings.data === undefined && 'pb-12',
+          )}
+        >
           <DoctorSection onFixRepos={focusReposRoot} />
           {settings.isPending ? (
             <SettingsSkeleton />
@@ -88,11 +98,14 @@ function SettingsPage() {
               />
             </div>
           ) : (
-            <SettingsForm
-              key={settings.data.updatedAt}
-              settings={settings.data}
-              reposRootDefault={system.data?.reposRootDefault}
-            />
+            <>
+              <ClaudeAccessSection settings={settings.data} />
+              <SettingsForm
+                key={settingsFormKey(settings.data)}
+                settings={settings.data}
+                reposRootDefault={system.data?.reposRootDefault}
+              />
+            </>
           )}
         </div>
       </div>

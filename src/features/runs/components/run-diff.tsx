@@ -142,7 +142,8 @@ export function RunDiff({ run }: { run: Run }) {
     // Fills the panel's scroll area so the file list and the patch scroll independently.
     <div className="absolute inset-0 grid grid-cols-[15rem_minmax(0,1fr)]">
       <nav aria-label="Changed files" className="flex min-h-0 flex-col border-r">
-        <p className="flex shrink-0 items-center justify-between px-4 pt-3 pb-1 text-xs text-muted-foreground">
+        {/* Same 36px band as the patch's file header, so both columns start on one line. */}
+        <p className="flex h-9 shrink-0 items-center justify-between border-b px-4 text-xs text-muted-foreground">
           <span>
             {files.length} {files.length === 1 ? 'file' : 'files'}
           </span>
@@ -153,7 +154,7 @@ export function RunDiff({ run }: { run: Run }) {
         </p>
         <div
           data-testid="diff-file-list"
-          className="relative min-h-0 flex-1 scrollbar-thin overflow-y-auto px-2 pb-2"
+          className="relative min-h-0 flex-1 scrollbar-thin overflow-y-auto p-2"
         >
           <ul className="flex flex-col">
             {files.map((file) => (
