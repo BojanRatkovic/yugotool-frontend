@@ -16,6 +16,7 @@ const COLLECTION_KEYS: Record<CollectionName, readonly (readonly string[])[]> = 
   shifts: [queryKeys.shifts()],
   qa: [queryKeys.qa()],
   knowledge_sources: [queryKeys.knowledge()],
+  reviews: [queryKeys.zastavaReviews()],
 }
 
 /**

@@ -48,6 +48,10 @@ export const queryKeys = {
    * persisted (bodies may be private); writes invalidate the project's root.
    */
   pullRequests: (projectId: string) => ['pull-requests', projectId] as const,
+  /** ZASTAVA reviews of pull requests (spec 0009); the root invalidates every PR's. */
+  zastavaReviews: () => ['zastava-reviews'] as const,
+  zastavaReview: (projectId: string, number: number) =>
+    ['zastava-reviews', projectId, number] as const,
   pullRequestList: (projectId: string, scope: string, teams: boolean) =>
     ['pull-requests', projectId, 'list', scope, teams] as const,
   pullRequest: (projectId: string, number: number) =>
