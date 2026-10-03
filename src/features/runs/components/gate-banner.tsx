@@ -212,7 +212,7 @@ export function GateBanner({
                 size="sm"
                 disabled={decide.isPending}
                 onClick={() => submit('approve')}
-                className={delivery === undefined ? undefined : 'rounded-r-none'}
+                className={delivery === undefined ? undefined : 'rounded-r-none border-r-0'}
               >
                 <Check aria-hidden="true" />
                 {delivery === undefined ? 'Approve' : DELIVERY_OPTIONS[delivery].approveLabel}
@@ -306,7 +306,9 @@ function DeliveryMenu({
           size="sm"
           disabled={disabled}
           aria-label="Approve with a different delivery"
-          className="rounded-l-none border-l border-l-primary-foreground/20 px-1.5"
+          // The base button's transparent border + bg-clip-padding would let the page show
+          // through the seam; drop it and draw the divider over the button's own fill.
+          className="relative rounded-l-none border-l-0 px-1.5 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-primary-foreground/20"
         >
           <ChevronDown aria-hidden="true" />
         </Button>
