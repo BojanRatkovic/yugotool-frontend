@@ -216,7 +216,9 @@ function QaAttempt({
   const status = RUN_STATUS[qaRun.status]
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    // Fills the panel's scroll area (like the diff) so the check list and the
+    // detail scroll independently and the panel itself never scrolls.
+    <div className="absolute inset-0 flex min-h-0 flex-col">
       <div className="flex h-10 shrink-0 items-center gap-2 border-b px-4">
         <div className="flex items-center gap-0.5">
           <Button
@@ -263,7 +265,7 @@ function QaAttempt({
           </div>
         )
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-[16rem_minmax(0,1fr)]">
+        <div className="grid min-h-0 flex-1 grid-cols-[16rem_minmax(0,1fr)] grid-rows-[minmax(0,1fr)]">
           <nav
             aria-label="QA checks"
             className="min-h-0 scrollbar-thin overflow-y-auto border-r bg-card/30 py-1"

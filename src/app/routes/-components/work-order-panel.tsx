@@ -32,6 +32,7 @@ import { RecheckCiButton } from '@/features/work-orders/components/ci-recheck'
 import { OpenPullRequestAction } from '@/features/work-orders/components/open-pull-request'
 import { RunAgainButton } from '@/features/work-orders/components/queue-actions'
 import type { DeliveryMode, Station } from '@/lib/contracts'
+import { cn } from '@/lib/utils'
 
 export type PanelTab = 'activity' | 'diff' | 'findings' | 'shifts' | 'qa'
 
@@ -322,7 +323,16 @@ export function WorkOrderPanel({
               )}
             </div>
           </Tabs>
-          <div className="relative min-h-0 flex-1 scrollbar-thin overflow-y-auto">
+          <div
+            className={cn(
+              'relative min-h-0 flex-1',
+              // Diff and QA are split panes that scroll their own columns; the panel must not
+              // scroll under them (sub-pixel heights otherwise leave a few px of outer scroll).
+              run !== undefined && (tab === 'diff' || tab === 'qa')
+                ? 'overflow-hidden'
+                : 'scrollbar-thin overflow-y-auto',
+            )}
+          >
             {runs.isPending ? (
               <div className="flex flex-col gap-2 p-4" aria-busy="true">
                 {Array.from({ length: 8 }, (_, index) => (
