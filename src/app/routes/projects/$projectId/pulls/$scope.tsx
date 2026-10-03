@@ -1,11 +1,14 @@
+import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { z } from 'zod'
 
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { useProject } from '@/features/projects/components/project-nav'
 import { prQueries } from '@/features/pull-requests/api/pr-queries'
 import { PrBoard } from '@/features/pull-requests/components/pr-board'
 import { PrBoardHeader } from '@/features/pull-requests/components/pr-board-header'
+import { PrPanel, type PrPanelState } from '@/features/pull-requests/components/pr-panel'
 import { prScopeSchema } from '@/lib/contracts'
 import { isTypingTarget } from '@/lib/shortcuts'
 
@@ -63,6 +66,9 @@ function PullRequestsPage() {
   const navigate = Route.useNavigate()
   const project = useProject(projectId)
   const teams = scope === 'assigned' && search.teams === true
+  const list = useQuery(prQueries.list(projectId, scope, teams))
+  const { pr } = search
+  const full = pr !== undefined && search.prFull === true
 
   const openPr = (number: number | undefined) =>
     void navigate({
@@ -80,14 +86,52 @@ function PullRequestsPage() {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return
-      if (search.pr === undefined && (event.key === 'j' || event.key === 'k')) {
+      if (pr === undefined && (event.key === 'j' || event.key === 'k')) {
         event.preventDefault()
         moveCardFocus(event.key === 'j' ? 1 : -1)
+      } else if (event.key === 'Escape' && full) {
+        event.preventDefault()
+        openPr(undefined)
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   })
+
+  const panelState: PrPanelState = {
+    tab: search.prTab ?? 'overview',
+    file: search.file,
+    thread: search.thread,
+    since: search.since === 'review',
+    full,
+  }
+  const panel =
+    pr === undefined || list.data === undefined ? null : (
+      <PrPanel
+        key={pr}
+        projectId={projectId}
+        number={pr}
+        viewer={list.data.viewer}
+        state={panelState}
+        onChange={(next) =>
+          void navigate({
+            search: (prev) => ({
+              ...prev,
+              ...('tab' in next
+                ? { prTab: next.tab === 'overview' ? undefined : next.tab }
+                : {}),
+              ...('file' in next ? { file: next.file } : {}),
+              ...('thread' in next ? { thread: next.thread } : {}),
+              ...('since' in next
+                ? { since: next.since === true ? ('review' as const) : undefined }
+                : {}),
+              ...('full' in next ? { prFull: next.full === true ? true : undefined } : {}),
+            }),
+          })
+        }
+        onClose={() => openPr(undefined)}
+      />
+    )
 
   return (
     <div className="flex h-svh min-w-0 flex-col">
@@ -101,20 +145,45 @@ function PullRequestsPage() {
         }
       />
       <div className="min-h-0 flex-1 pt-3">
-        <PrBoard
-          projectId={projectId}
-          scope={scope}
-          teams={teams}
-          onOpen={openPr}
-          onEditDelivery={() =>
-            void navigate({
-              to: '/projects/$projectId',
-              params: { projectId },
-              search: { settings: 'delivery' },
-            })
-          }
-        />
+        {full ? (
+          panel
+        ) : (
+          <PrBoard
+            projectId={projectId}
+            scope={scope}
+            teams={teams}
+            onOpen={openPr}
+            onEditDelivery={() =>
+              void navigate({
+                to: '/projects/$projectId',
+                params: { projectId },
+                search: { settings: 'delivery' },
+              })
+            }
+          />
+        )}
       </div>
+
+      <Sheet
+        open={pr !== undefined && !full}
+        onOpenChange={(open) => (open ? null : openPr(undefined))}
+      >
+        <SheetContent
+          showCloseButton={false}
+          onOpenAutoFocus={(event) => {
+            event.preventDefault()
+            if (event.currentTarget instanceof HTMLElement) event.currentTarget.focus()
+          }}
+          className="gap-0 p-0 focus-visible:outline-none data-[side=right]:w-[min(1120px,78vw)] data-[side=right]:sm:max-w-none"
+        >
+          <SheetTitle className="sr-only">Pull request</SheetTitle>
+          <SheetDescription className="sr-only">
+            Description, conversation, files, threads, checks and commits of the selected pull
+            request.
+          </SheetDescription>
+          {full ? null : panel}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
