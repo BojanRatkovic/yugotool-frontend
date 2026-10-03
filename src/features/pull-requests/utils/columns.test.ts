@@ -6,50 +6,21 @@ import {
   placePr,
   shortAge,
 } from '@/features/pull-requests/utils/columns'
-import type { PrReviewer, PullRequestSummary } from '@/lib/contracts'
+import type { PullRequestSummary } from '@/lib/contracts'
+import {
+  HEAD_OID,
+  OLD_OID,
+  prActor,
+  prReviewer,
+  prSummary,
+} from '@/testing/pull-request-fixtures'
 
 const NOW = Date.parse('2026-10-03T12:00:00Z')
-const HEAD = 'a'.repeat(40)
-const OLD = 'b'.repeat(40)
-
-const actor = (login: string) => ({ login, avatarUrl: '' })
-const reviewer = (login: string, state: PrReviewer['state']): PrReviewer => ({
-  actor: actor(login),
-  state,
-})
-
-function pr(patch: Partial<PullRequestSummary> = {}): PullRequestSummary {
-  return {
-    number: 1,
-    title: 'Change',
-    url: 'https://github.com/acme/app/pull/1',
-    state: 'open',
-    isDraft: false,
-    author: actor('me'),
-    headRefName: 'feature/1',
-    baseRefName: 'main',
-    headOid: HEAD,
-    additions: 10,
-    deletions: 2,
-    changedFiles: 1,
-    createdAt: '2026-10-03T09:00:00Z',
-    updatedAt: '2026-10-03T11:00:00Z',
-    mergedAt: null,
-    reviewDecision: 'REVIEW_REQUIRED',
-    mergeable: 'MERGEABLE',
-    ci: 'success',
-    failingChecks: [],
-    reviewers: [],
-    myLastReview: null,
-    requestedFromMe: false,
-    requestedFromMyTeam: false,
-    assignedToMe: false,
-    threads: { unresolved: 0, waitingOnMe: 0 },
-    comments: 0,
-    labels: [],
-    ...patch,
-  }
-}
+const HEAD = HEAD_OID
+const OLD = OLD_OID
+const actor = prActor
+const reviewer = prReviewer
+const pr = prSummary
 
 const mine = (patch: Partial<PullRequestSummary>) => placePr(pr(patch), 'mine', NOW)
 const assigned = (patch: Partial<PullRequestSummary>) =>
