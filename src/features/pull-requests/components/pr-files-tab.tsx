@@ -101,6 +101,18 @@ export function PrFilesTab({
     state.file !== undefined && files.some((f) => f.path === state.file) ? state.file : order[0]
   const selected = files.find((f) => f.path === selectedPath)
   const fileThreads = openThreads.filter((t) => t.path === selectedPath)
+  // ZASTAVA findings not posted yet, on this file's lines; only for the head they were made on.
+  const zastava = useQuery(prQueries.zastavaReview(projectId, pr.number, pr.headOid))
+  const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set())
+  const review = zastava.data?.review ?? null
+  const verdict = review !== null && !review.stale ? review.verdict : null
+  const ghosts = (verdict?.findings ?? []).filter(
+    (f) =>
+      f.file === selectedPath &&
+      f.line !== null &&
+      review?.pullRequest.posted.includes(f.id) !== true &&
+      !dismissed.has(f.id),
+  )
 
   const [focusedLine, setFocusedLine] = useState<string | null>(null)
   const [commentTarget, setCommentTarget] = useState<CommentTarget | null>(null)
@@ -281,6 +293,8 @@ export function PrFilesTab({
                 : (parsedByPath.get(selected.path) ?? null)
             }
             threads={fileThreads}
+            ghosts={ghosts}
+            onDismissGhost={(id) => setDismissed(new Set([...dismissed, id]))}
             focusedThread={state.thread}
             focusedLine={focusedLine}
             commentTarget={commentTarget}

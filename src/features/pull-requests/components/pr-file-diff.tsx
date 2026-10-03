@@ -7,12 +7,18 @@ import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
 import { Textarea } from '@/components/ui/textarea'
 import { useAddLineComment, useCommentNow } from '@/features/pull-requests/api/pr-mutations'
+import { PrGhostFinding } from '@/features/pull-requests/components/pr-ghost-finding'
 import { PrThread } from '@/features/pull-requests/components/pr-thread'
 import { PrThreadActions } from '@/features/pull-requests/components/pr-thread-actions'
 import { useHighlightedTokens } from '@/hooks/use-highlighter'
 import { errorMessage } from '@/lib/api-client'
 import { normalizeLang } from '@/lib/code-language'
-import type { PrFile, PrThread as Thread, PullRequestDetail } from '@/lib/contracts'
+import type {
+  PrFile,
+  PrThread as Thread,
+  PullRequestDetail,
+  ReviewFinding,
+} from '@/lib/contracts'
 import type { DiffFile, DiffLine } from '@/lib/diff'
 import { IS_MAC } from '@/lib/shortcuts'
 import { cn } from '@/lib/utils'
@@ -168,6 +174,8 @@ export function PrFileDiff({
   file,
   diff,
   threads,
+  ghosts = [],
+  onDismissGhost,
   focusedThread,
   focusedLine,
   commentTarget,
@@ -182,6 +190,9 @@ export function PrFileDiff({
   diff: DiffFile | null
   /** Threads on this file that aren't outdated. */
   threads: Thread[]
+  /** ZASTAVA findings on this file not posted yet (spec 0009). */
+  ghosts?: ReviewFinding[]
+  onDismissGhost?: (id: string) => void
   focusedThread: string | undefined
   /** `RIGHT12`-style key of the line `c` comments on. */
   focusedLine: string | null
@@ -213,6 +224,15 @@ export function PrFileDiff({
     }
     return map
   }, [threads])
+  const ghostsAt = useMemo(() => {
+    const map = new Map<string, ReviewFinding[]>()
+    for (const ghost of ghosts) {
+      if (ghost.line === null) continue
+      const key = anchorKey({ side: ghost.side, line: ghost.line })
+      map.set(key, [...(map.get(key) ?? []), ghost])
+    }
+    return map
+  }, [ghosts])
   const [rangeStart, setRangeStart] = useState<{ side: Side; line: number } | null>(null)
 
   const tooLarge = diff === null || diff.binary || lines.length > MAX_FILE_LINES
@@ -287,6 +307,7 @@ export function PrFileDiff({
                 const anchor = lineAnchor(line)
                 const key = anchor === null ? null : anchorKey(anchor)
                 const lineThreads = key === null ? [] : (threadsAt.get(key) ?? [])
+                const lineGhosts = key === null ? [] : (ghostsAt.get(key) ?? [])
                 const commenting =
                   commentTarget !== null &&
                   anchor !== null &&
@@ -368,7 +389,9 @@ export function PrFileDiff({
                         )}
                       </td>
                     </tr>
-                    {lineThreads.length === 0 && !commenting ? null : (
+                    {lineThreads.length === 0 &&
+                    lineGhosts.length === 0 &&
+                    !commenting ? null : (
                       <tr>
                         <td colSpan={5} className="border-y bg-background px-3 py-2">
                           <div className="flex max-w-3xl flex-col gap-2">
@@ -384,6 +407,15 @@ export function PrFileDiff({
                                     thread={thread}
                                   />
                                 }
+                              />
+                            ))}
+                            {lineGhosts.map((ghost) => (
+                              <PrGhostFinding
+                                key={ghost.id}
+                                projectId={projectId}
+                                number={pr.number}
+                                finding={ghost}
+                                onDismiss={() => onDismissGhost?.(ghost.id)}
                               />
                             ))}
                             {commenting && commentTarget !== null ? (
