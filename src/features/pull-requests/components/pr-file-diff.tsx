@@ -8,6 +8,7 @@ import { Kbd } from '@/components/ui/kbd'
 import { Textarea } from '@/components/ui/textarea'
 import { useAddLineComment, useCommentNow } from '@/features/pull-requests/api/pr-mutations'
 import { PrThread } from '@/features/pull-requests/components/pr-thread'
+import { PrThreadActions } from '@/features/pull-requests/components/pr-thread-actions'
 import { useHighlightedTokens } from '@/hooks/use-highlighter'
 import { errorMessage } from '@/lib/api-client'
 import { normalizeLang } from '@/lib/code-language'
@@ -173,7 +174,6 @@ export function PrFileDiff({
   onFocusLine,
   onComment,
   onViewed,
-  threadActions,
 }: {
   projectId: string
   pr: PullRequestDetail
@@ -189,7 +189,6 @@ export function PrFileDiff({
   onFocusLine: (key: string) => void
   onComment: (target: CommentTarget | null) => void
   onViewed: (viewed: boolean) => void
-  threadActions?: (thread: Thread) => React.ReactNode
 }) {
   const lines = useMemo(() => diff?.lines ?? [], [diff])
   // Hunk and meta rows aren't code: tokens are indexed over the code rows only.
@@ -378,7 +377,13 @@ export function PrFileDiff({
                                 key={thread.id}
                                 thread={thread}
                                 focused={thread.id === focusedThread}
-                                actions={threadActions?.(thread)}
+                                actions={
+                                  <PrThreadActions
+                                    projectId={projectId}
+                                    number={pr.number}
+                                    thread={thread}
+                                  />
+                                }
                               />
                             ))}
                             {commenting && commentTarget !== null ? (

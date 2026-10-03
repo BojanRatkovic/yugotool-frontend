@@ -17,7 +17,7 @@ import type { PrPanelState } from '@/features/pull-requests/components/pr-panel'
 import { placePr } from '@/features/pull-requests/utils/columns'
 import { visibleFiles, type FileTreeNode } from '@/features/pull-requests/utils/file-tree'
 import { ApiError, errorMessage } from '@/lib/api-client'
-import type { PrThread, PullRequestDetail } from '@/lib/contracts'
+import type { PullRequestDetail } from '@/lib/contracts'
 import { parsePatch } from '@/lib/diff'
 import { isTypingTarget } from '@/lib/shortcuts'
 
@@ -44,14 +44,12 @@ export function PrFilesTab({
   viewer,
   state,
   onChange,
-  threadActions,
 }: {
   projectId: string
   pr: PullRequestDetail
   viewer: string
   state: PrPanelState
   onChange: (next: Partial<PrPanelState>) => void
-  threadActions?: (thread: PrThread) => React.ReactNode
 }) {
   const since = sinceReview(pr, viewer)
   const sinceOn =
@@ -288,7 +286,6 @@ export function PrFilesTab({
             onFocusLine={setFocusedLine}
             onComment={setCommentTarget}
             onViewed={(value) => setViewed(selected.path, value)}
-            threadActions={threadActions}
           />
         )}
       </div>

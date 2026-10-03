@@ -1,5 +1,6 @@
 import type { PrPanelState, PrTab } from '@/features/pull-requests/components/pr-panel'
 import { PrFilesTab } from '@/features/pull-requests/components/pr-files-tab'
+import { PrThreadsTab } from '@/features/pull-requests/components/pr-threads-tab'
 import { PrOverviewTab } from '@/features/pull-requests/components/pr-overview-tab'
 import type { PullRequestDetail } from '@/lib/contracts'
 
@@ -38,8 +39,18 @@ export function PrTabBody({
           onChange={onChange}
         />
       )
+    case 'threads':
+      return (
+        <PrThreadsTab
+          projectId={projectId}
+          pr={pr}
+          viewer={viewer}
+          state={state}
+          onChange={onChange}
+        />
+      )
     default:
-      // Threads, Checks, Commits: spec 0008 T14–T15.
+      // Checks, Commits: spec 0008 T15.
       return (
         <p className="p-4 text-sm text-muted-foreground">
           {tab} · #{pr.number}

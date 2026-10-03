@@ -83,3 +83,52 @@ export function useCommentNow(projectId: string, number: number) {
     onSettled: invalidate,
   })
 }
+
+/** A reply in a review thread (posted right away, not into the pending review). */
+export function useReplyToThread(projectId: string, number: number) {
+  const invalidate = useInvalidatePr(projectId)
+  return useMutation({
+    mutationFn: ({ threadId, body }: { threadId: string; body: string }) =>
+      apiClient.post(`${base(projectId, number)}/threads/${threadId}/replies`, { body }),
+    onSuccess: invalidate,
+  })
+}
+
+/** Resolve / unresolve: the thread flips at once and rolls back on failure. */
+export function useResolveThread(projectId: string, number: number) {
+  const queryClient = useQueryClient()
+  const key = queryKeys.pullRequest(projectId, number)
+  const invalidate = useInvalidatePr(projectId)
+  return useMutation({
+    mutationFn: ({ threadId, resolved }: { threadId: string; resolved: boolean }) =>
+      apiClient.post(
+        `${base(projectId, number)}/threads/${threadId}/${resolved ? 'resolve' : 'unresolve'}`,
+      ),
+    onMutate: async ({ threadId, resolved }) => {
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<PullRequestDetail>(key)
+      if (previous !== undefined) {
+        queryClient.setQueryData<PullRequestDetail>(key, {
+          ...previous,
+          reviewThreads: previous.reviewThreads.map((t) =>
+            t.id === threadId ? { ...t, isResolved: resolved } : t,
+          ),
+        })
+      }
+      return { previous }
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous !== undefined) queryClient.setQueryData(key, context.previous)
+    },
+    onSettled: invalidate,
+  })
+}
+
+/** Throws away my pending review and its comments. */
+export function useDiscardReview(projectId: string, number: number) {
+  const invalidate = useInvalidatePr(projectId)
+  return useMutation({
+    mutationFn: () => apiClient.delete(`${base(projectId, number)}/review`),
+    onSuccess: invalidate,
+  })
+}

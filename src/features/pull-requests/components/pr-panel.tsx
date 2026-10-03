@@ -1,13 +1,25 @@
 import { useQuery } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { ChevronDown } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 import { LoadError } from '@/components/data-state'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { prQueries } from '@/features/pull-requests/api/pr-queries'
 import { PrHeader } from '@/features/pull-requests/components/pr-header'
 import { PrReadiness } from '@/features/pull-requests/components/pr-readiness'
+import { PrReviewBar } from '@/features/pull-requests/components/pr-review-bar'
+import {
+  PrReviewDialog,
+  type ReviewEvent,
+} from '@/features/pull-requests/components/pr-review-dialog'
 import { PrTabBody } from '@/features/pull-requests/components/pr-tab-body'
 import { ApiError } from '@/lib/api-client'
 import type { PullRequestDetail } from '@/lib/contracts'
@@ -89,6 +101,8 @@ export function PrPanel({
   onClose: () => void
 }) {
   const detail = useQuery(prQueries.detail(projectId, number))
+  /** The review dialog, open with this event preselected. */
+  const [review, setReview] = useState<ReviewEvent | null>(null)
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -128,11 +142,32 @@ export function PrPanel({
     return <PanelSkeleton />
   }
 
+  const isAuthor = pr.author.login === viewer
+  const reviewMenu =
+    isAuthor || pr.state !== 'open' ? null : (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="sm" className="mr-1">
+            Review
+            <ChevronDown aria-hidden="true" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onSelect={() => setReview('APPROVE')}>Approve</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setReview('REQUEST_CHANGES')}>
+            Request changes
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setReview('COMMENT')}>Comment</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <PrHeader
         pr={pr}
         full={state.full}
+        actions={reviewMenu}
         onToggleFull={() => onChange({ full: !state.full })}
         onClose={onClose}
       />
@@ -177,6 +212,19 @@ export function PrPanel({
           onChange={onChange}
         />
       </div>
+      {state.tab === 'files' || state.tab === 'threads' ? (
+        <PrReviewBar projectId={projectId} pr={pr} onSubmit={() => setReview('COMMENT')} />
+      ) : null}
+      <PrReviewDialog
+        // Fresh form per opening, with the chosen event preselected.
+        key={review ?? 'closed'}
+        projectId={projectId}
+        pr={pr}
+        isAuthor={isAuthor}
+        initialEvent={review ?? 'COMMENT'}
+        open={review !== null}
+        onOpenChange={(open) => (open ? null : setReview(null))}
+      />
     </div>
   )
 }
