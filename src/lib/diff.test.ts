@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parsePatch } from '@/features/runs/utils/diff'
+import { parsePatch } from '@/lib/diff'
 
 const PATCH = `diff --git a/math.js b/math.js
 index 1..2 100644

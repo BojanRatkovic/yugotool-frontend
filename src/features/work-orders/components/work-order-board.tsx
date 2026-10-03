@@ -15,13 +15,13 @@ import {
 } from '@dnd-kit/sortable'
 import { useLiveQuery } from '@tanstack/react-db'
 import { CircleCheck, CircleDashed, Ellipsis, ListEnd, Moon, Plus } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { BoardColumn as BoardColumnShell } from '@/components/board/board-column'
 import { LoadError } from '@/components/data-state'
 import { modelLabel } from '@/components/model-select'
 import { STATION_KIND_HINT, StationIcon } from '@/components/station-icon'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import {
@@ -47,26 +47,9 @@ import {
 } from '@/features/work-orders/utils/board-columns'
 import { errorMessage } from '@/lib/api-client'
 import type { QueueMode, Station } from '@/lib/contracts'
+import { useShiftWheel } from '@/hooks/use-shift-wheel'
 import { queryKeys } from '@/lib/query-keys'
 import { useQueryError } from '@/lib/use-query-error'
-
-/**
- * Shift + wheel scrolls the board sideways on every platform (macOS converts
- * it natively; a plain mouse wheel on Windows/Linux reports deltaY only).
- */
-function useShiftWheel(ref: React.RefObject<HTMLDivElement | null>) {
-  useEffect(() => {
-    const board = ref.current
-    if (board === null) return undefined
-    function onWheel(event: WheelEvent) {
-      if (!event.shiftKey || event.deltaX !== 0 || event.deltaY === 0 || board === null) return
-      event.preventDefault()
-      board.scrollLeft += event.deltaY
-    }
-    board.addEventListener('wheel', onWheel, { passive: false })
-    return () => board.removeEventListener('wheel', onWheel)
-  })
-}
 
 export function WorkOrderBoard({
   projectId,
@@ -183,50 +166,30 @@ function Column({
   children: React.ReactNode
 }) {
   const station = column.station
+  const showsModel = station?.kind === 'agent' || station?.kind === 'shift'
   return (
-    // Full board height; the header stays put and only the card list scrolls.
-    <section aria-label={column.title} className="flex min-h-0 w-72 shrink-0 flex-col">
-      <header className="flex h-9 shrink-0 items-center gap-2 px-1">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            {/* Focusable so the column's purpose is reachable by keyboard too. */}
-            <span
-              // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- reveals the column's help
-              tabIndex={0}
-              className="flex min-w-0 items-center gap-2 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <ColumnIcon column={column} />
-              <h2 className="truncate text-[0.8125rem] font-semibold">{column.title}</h2>
+    <BoardColumnShell
+      title={column.title}
+      icon={<ColumnIcon column={column} />}
+      hint={columnHint(column)}
+      count={column.items.length}
+      scrollKey={column.key}
+      trailing={
+        <>
+          {showsModel ? (
+            <span className="ml-auto truncate rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[0.6875rem] text-muted-foreground">
+              {modelLabel(station.model)}
+              {station.effort === undefined ? null : ` · ${station.effort}`}
             </span>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-64">{columnHint(column)}</TooltipContent>
-        </Tooltip>
-        <span className="font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
-          {column.items.length}
-        </span>
-        {station?.kind === 'agent' || station?.kind === 'shift' ? (
-          <span className="ml-auto truncate rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[0.6875rem] text-muted-foreground">
-            {modelLabel(station.model)}
-            {station.effort === undefined ? null : ` · ${station.effort}`}
-          </span>
-        ) : null}
-        {action === undefined ? null : (
-          <span
-            className={
-              station?.kind === 'agent' || station?.kind === 'shift' ? undefined : 'ml-auto'
-            }
-          >
-            {action}
-          </span>
-        )}
-      </header>
-      <div
-        data-column-scroll={column.key}
-        className="flex min-h-0 flex-1 scrollbar-thin flex-col gap-2 overflow-y-auto overscroll-y-contain rounded-lg bg-muted/30 p-1.5"
-      >
-        {children}
-      </div>
-    </section>
+          ) : null}
+          {action === undefined ? null : (
+            <span className={showsModel ? undefined : 'ml-auto'}>{action}</span>
+          )}
+        </>
+      }
+    >
+      {children}
+    </BoardColumnShell>
   )
 }
 

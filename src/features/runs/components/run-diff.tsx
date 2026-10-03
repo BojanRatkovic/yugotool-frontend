@@ -5,7 +5,7 @@ import { useMemo } from 'react'
 import { LoadError } from '@/components/data-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { runQueries } from '@/features/runs/api/run-queries'
-import { parsePatch, type DiffFile, type DiffLine } from '@/features/runs/utils/diff'
+import { parsePatch, type DiffFile, type DiffLine } from '@/lib/diff'
 import type { Run } from '@/lib/contracts'
 import { cn } from '@/lib/utils'
 
