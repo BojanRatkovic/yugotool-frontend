@@ -43,4 +43,15 @@ export const queryKeys = {
   knowledge: () => ['knowledge'] as const,
   knowledgeSources: () => ['knowledge', 'sources'] as const,
   projectKnowledge: (projectId: string) => ['knowledge', 'project', projectId] as const,
+  /**
+   * Pull request boards and panels (spec 0008), straight from GitHub. Never
+   * persisted (bodies may be private); writes invalidate the project's root.
+   */
+  pullRequests: (projectId: string) => ['pull-requests', projectId] as const,
+  pullRequestList: (projectId: string, scope: string, teams: boolean) =>
+    ['pull-requests', projectId, 'list', scope, teams] as const,
+  pullRequest: (projectId: string, number: number) =>
+    ['pull-requests', projectId, 'detail', number] as const,
+  pullRequestDiff: (projectId: string, number: number, since: string | null, headOid: string) =>
+    ['pull-requests', projectId, 'diff', number, since, headOid] as const,
 }

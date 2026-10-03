@@ -15,9 +15,12 @@ import { useQueryError } from '@/lib/use-query-error'
 
 export function ProjectNav({
   needsYou,
+  renderSub,
 }: {
   /** Work orders waiting on a person, per project id. */
   needsYou?: ReadonlyMap<string, number>
+  /** Items nested under each project (composed by the app, e.g. pull request boards). */
+  renderSub?: (projectId: string) => React.ReactNode
 } = {}) {
   const { data: projects, isLoading } = useLiveQuery((q) =>
     q.from({ project: projectsCollection }).orderBy(({ project }) => project.name, 'asc'),
@@ -63,6 +66,7 @@ export function ProjectNav({
               </span>
             </Link>
           </SidebarMenuButton>
+          {renderSub?.(project.id)}
         </SidebarMenuItem>
       ))}
     </SidebarMenu>

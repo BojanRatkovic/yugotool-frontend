@@ -1,4 +1,5 @@
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { defaultShouldDehydrateQuery } from '@tanstack/react-query'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { ThemeProvider, useTheme } from 'next-themes'
 import { useEffect, type ReactNode } from 'react'
@@ -53,7 +54,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       <DesktopThemeSync />
       <PersistQueryClientProvider
         client={queryClient}
-        persistOptions={{ persister, maxAge: CACHE_MAX_AGE, buster: CACHE_BUSTER }}
+        persistOptions={{
+          persister,
+          maxAge: CACHE_MAX_AGE,
+          buster: CACHE_BUSTER,
+          // Pull requests come live from GitHub and may hold private bodies: never on disk.
+          dehydrateOptions: {
+            shouldDehydrateQuery: (query) =>
+              query.queryKey[0] !== 'pull-requests' && defaultShouldDehydrateQuery(query),
+          },
+        }}
       >
         {children}
         {env.DEVTOOLS ? (

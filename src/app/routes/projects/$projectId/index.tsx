@@ -56,7 +56,7 @@ const searchSchema = z.object({
   new: z.boolean().optional().catch(undefined),
 })
 
-export const Route = createFileRoute('/projects/$projectId')({
+export const Route = createFileRoute('/projects/$projectId/')({
   validateSearch: searchSchema,
   // Warm the line; failures are rendered in place, not thrown.
   loader: ({ context: { queryClient }, params }) => {

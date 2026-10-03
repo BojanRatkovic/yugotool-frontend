@@ -27,7 +27,7 @@ pnpm format       # oxfmt write
 ## Rules that override defaults
 
 - kebab-case files/folders; absolute `@/` imports; no barrel files; `routeTree.gen.ts` is generated — never edit.
-- Features (`projects`, `work-orders`, `runs`) never import each other — compose them in `src/app/routes`.
+- Features (`projects`, `work-orders`, `runs`, `pull-requests`, …) never import each other — compose them in `src/app/routes`.
 - Server data lives in TanStack DB collections (`features/*/api/*-collection.ts`) or Query (`*-queries.ts`) — never copied into useState.
 - Query keys live in `src/lib/query-keys.ts` so `src/lib/realtime.ts` (SSE) can invalidate without importing features.
 - Creates use a client-generated `crypto.randomUUID()` id (idempotent, offline-safe).

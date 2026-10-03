@@ -20,6 +20,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { env } from '@/config/env'
 import { NewProjectDialog } from '@/app/routes/-components/new-project-dialog'
 import { ProjectNav, useProject } from '@/features/projects/components/project-nav'
+import { ProjectPrNav } from '@/app/routes/-components/project-pr-nav'
 import { AuthChip } from '@/features/system/components/auth-chip'
 import { DispatcherCard } from '@/features/system/components/dispatcher-card'
 import { PlanUsageCard } from '@/features/system/components/plan-usage-card'
@@ -72,7 +73,12 @@ function RootLayout() {
   return (
     <>
       <AppShell
-        projects={<ProjectNav needsYou={countByProject} />}
+        projects={
+          <ProjectNav
+            needsYou={countByProject}
+            renderSub={(id) => <ProjectPrNav projectId={id} />}
+          />
+        }
         projectActions={<NewProjectDialog />}
         footer={
           <>
