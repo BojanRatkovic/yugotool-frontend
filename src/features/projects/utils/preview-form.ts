@@ -14,6 +14,8 @@ export interface PreviewValues {
   env: EnvRow[]
   baseUrlPath: string
   themeInit: string
+  /** Empty = localhost. */
+  host: string
 }
 
 export type PreviewField = keyof PreviewValues
@@ -26,6 +28,7 @@ export const PREVIEW_DEFAULTS: PreviewValues = {
   env: [],
   baseUrlPath: '/',
   themeInit: '',
+  host: '',
 }
 
 export function toPreviewValues(preview: Preview | null): PreviewValues {
@@ -38,6 +41,7 @@ export function toPreviewValues(preview: Preview | null): PreviewValues {
     env: Object.entries(preview.env).map(([key, value]) => ({ key, value })),
     baseUrlPath: preview.baseUrlPath,
     themeInit: preview.themeInit ?? '',
+    host: preview.host ?? '',
   }
 }
 
@@ -74,6 +78,7 @@ export function parsePreviewValues(values: PreviewValues): PreviewParse {
     env,
     baseUrlPath: values.baseUrlPath,
     themeInit: values.themeInit.trim() === '' ? null : values.themeInit,
+    host: values.host.trim() === '' ? null : values.host,
   })
   if (!result.success) {
     for (const issue of result.error.issues) {
@@ -95,12 +100,14 @@ function issueMessage(field: PreviewField, code: string): string {
   if (field === 'readyPath' || field === 'baseUrlPath') return 'Must start with “/”.'
   if (field === 'readyTimeoutSec') return 'A whole number of seconds, 5–900.'
   if (field === 'themeInit') return 'At most 2,000 characters.'
+  if (field === 'host')
+    return 'A host name like app.example.localhost — no scheme, port or path.'
   return code === 'too_small' ? 'Required.' : 'Invalid value.'
 }
 
 /**
  * A detected preview applied over the current form values. Commands, paths and
- * the timeout come from the detection; env rows and the init script are kept
+ * the timeout come from the detection; env rows, the init script and the host are kept
  * (detection never proposes them), with detected env keys replacing same-named rows.
  */
 export function applyDetectedPreview(current: PreviewValues, detected: Preview): PreviewValues {
@@ -111,5 +118,6 @@ export function applyDetectedPreview(current: PreviewValues, detected: Preview):
     ...next,
     env: [...kept, ...next.env],
     themeInit: detected.themeInit === null ? current.themeInit : next.themeInit,
+    host: detected.host === null ? current.host : next.host,
   }
 }

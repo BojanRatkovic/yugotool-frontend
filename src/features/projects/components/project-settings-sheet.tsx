@@ -42,6 +42,7 @@ import {
   useUpdateProject,
 } from '@/features/projects/api/preview-queries'
 import { OfferQaCallout } from '@/features/projects/components/offer-qa-callout'
+import { PreviewSessionSettings } from '@/features/projects/components/preview-session'
 import {
   DELETE_CONSEQUENCES,
   DeleteProjectDialog,
@@ -661,6 +662,29 @@ function PreviewSettings({
             checked route.
           </p>
 
+          <form.Field name="host">
+            {(field) => (
+              <FormField id={id('host')} label="Host" errors={errs('host')}>
+                <Input
+                  id={id('host')}
+                  value={field.state.value}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  placeholder="localhost"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="font-mono"
+                  aria-invalid={errors.host === undefined ? undefined : true}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Optional. Open the preview on this host instead of localhost — for apps whose
+                  cookies, CORS or redirects expect a name. Must point to this Mac (any{' '}
+                  <code className="rounded-sm bg-muted px-1 font-mono">*.localhost</code> does).
+                </p>
+              </FormField>
+            )}
+          </form.Field>
+
           <form.Field name="env" mode="array">
             {(field) => (
               <fieldset className="flex flex-col gap-1.5">
@@ -754,6 +778,8 @@ function PreviewSettings({
             )}
           </form.Field>
         </section>
+
+        <PreviewSessionSettings projectId={project.id} configured={configured} dirty={dirty} />
 
         <PreviewTest
           configured={configured}

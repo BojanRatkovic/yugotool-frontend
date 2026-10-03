@@ -19,6 +19,11 @@ export const queryKeys = {
   runMemory: (runId: string) => ['shifts', 'memory', runId] as const,
   /** Last preview test of a project; PATCHing the project invalidates it with the root. */
   previewStatus: (projectId: string) => ['projects', projectId, 'preview'] as const,
+  /**
+   * Saved sign-in session + the interactive sign-in. Under `projects`: the worker
+   * publishes `invalidate projects` on every sign-in state change.
+   */
+  previewSession: (projectId: string) => ['projects', projectId, 'preview-session'] as const,
   /** Where approved work can go (origin, gh); live check, under the project root. */
   projectRemote: (projectId: string) => ['projects', projectId, 'remote'] as const,
   /** Route map of a project; under `projects` so SSE `projects` (discovery done) refreshes it. */

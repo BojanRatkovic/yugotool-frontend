@@ -16,6 +16,7 @@ const preview: Preview = {
   env: { VITE_MOCKS: '1' },
   baseUrlPath: '/app',
   themeInit: null,
+  host: null,
 }
 
 describe('preview form', () => {
@@ -35,6 +36,7 @@ describe('preview form', () => {
         env: {},
         baseUrlPath: '/',
         themeInit: null,
+        host: null,
       },
     })
   })
@@ -67,6 +69,23 @@ describe('preview form', () => {
       'start',
     ])
   })
+
+  it('saves a host lowercased, empty as localhost, and rejects scheme or port', () => {
+    const base = { ...PREVIEW_DEFAULTS, start: 'x' }
+    const named = parsePreviewValues({ ...base, host: ' App.Example.localhost ' })
+    expect(named.ok && named.preview.host).toBe('app.example.localhost')
+    const empty = parsePreviewValues({ ...base, host: '  ' })
+    expect(empty.ok && empty.preview.host).toBeNull()
+    for (const host of [
+      'http://app.localhost',
+      'app.localhost:3000',
+      'app.localhost/x',
+      '-a',
+    ]) {
+      const bad = parsePreviewValues({ ...base, host })
+      expect(bad.ok ? null : bad.errors.host).toMatch(/host name/)
+    }
+  })
 })
 
 describe('applyDetectedPreview', () => {
@@ -78,6 +97,7 @@ describe('applyDetectedPreview', () => {
     env: {},
     baseUrlPath: '/',
     themeInit: null,
+    host: null,
   }
 
   it('fills an empty form from the detection', () => {
@@ -88,8 +108,8 @@ describe('applyDetectedPreview', () => {
     })
   })
 
-  it('replaces commands but keeps env rows and the init script', () => {
-    const current = toPreviewValues({ ...preview, themeInit: 'seed()' })
+  it('replaces commands but keeps env rows, the init script and the host', () => {
+    const current = toPreviewValues({ ...preview, themeInit: 'seed()', host: 'app.localhost' })
     const next = applyDetectedPreview(current, {
       ...detected,
       install: 'pnpm install --frozen-lockfile',
@@ -100,6 +120,7 @@ describe('applyDetectedPreview', () => {
     expect(next.baseUrlPath).toBe('/')
     expect(next.readyTimeoutSec).toBe('120')
     expect(next.themeInit).toBe('seed()')
+    expect(next.host).toBe('app.localhost')
     expect(next.env).toEqual([
       { key: 'VITE_MOCKS', value: '0' },
       { key: 'HOST', value: '127.0.0.1' },

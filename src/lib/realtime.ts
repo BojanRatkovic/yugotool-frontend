@@ -6,6 +6,7 @@ import { serverEventSchema, type CollectionName } from '@/lib/contracts'
 import { queryKeys } from '@/lib/query-keys'
 
 const COLLECTION_KEYS: Record<CollectionName, readonly (readonly string[])[]> = {
+  // The root covers project-scoped keys too: preview status, routes, the sign-in session.
   projects: [queryKeys.projects()],
   work_orders: [queryKeys.workOrders()],
   // A station run changing (status, context) can mean a shift changed too.
