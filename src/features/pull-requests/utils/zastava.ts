@@ -1,4 +1,9 @@
-import type { ZastavaReview, ZastavaReviewBrief } from '@/lib/contracts'
+import type {
+  PostFindings,
+  ReviewFinding,
+  ZastavaReview,
+  ZastavaReviewBrief,
+} from '@/lib/contracts'
 
 /** What the PR's ZASTAVA review looks like at a glance (header button and card chip). */
 export type ZastavaState =
@@ -58,4 +63,48 @@ export function findingsLabel(state: Extract<ZastavaState, { kind: 'done' }>): s
   if (state.findings === 0) return 'No findings'
   if (state.open === 0) return `${state.findings} posted`
   return `${state.open} finding${state.open === 1 ? '' : 's'}`
+}
+
+export interface FindingEdit {
+  title: string
+  body: string
+  suggestion: string | null
+}
+
+/** Critical and important findings start picked; minor ones and posted ones don't. */
+export function defaultSelection(findings: ReviewFinding[], posted: string[]): Set<string> {
+  return new Set(
+    findings.filter((f) => f.severity !== 'minor' && !posted.includes(f.id)).map((f) => f.id),
+  )
+}
+
+/** The picked, not yet posted findings, with the human's edits, in the review's order. */
+export function postPayload(
+  findings: ReviewFinding[],
+  selected: Set<string>,
+  posted: string[],
+  edits: Record<string, FindingEdit>,
+): PostFindings {
+  return {
+    findings: findings
+      .filter((f) => selected.has(f.id) && !posted.includes(f.id))
+      .map((f) => {
+        const edit = edits[f.id]
+        return {
+          id: f.id,
+          title: (edit?.title ?? f.title).trim() || f.title,
+          body: edit?.body ?? f.body,
+          suggestion: edit === undefined ? f.suggestion : edit.suggestion,
+        }
+      }),
+  }
+}
+
+/** Where a finding points, as the row shows it. */
+export function findingPlace(
+  f: Pick<ReviewFinding, 'file' | 'line' | 'startLine'>,
+): string | null {
+  if (f.file === null) return null
+  if (f.line === null) return f.file
+  return f.startLine === null ? `${f.file}:${f.line}` : `${f.file}:${f.startLine}–${f.line}`
 }

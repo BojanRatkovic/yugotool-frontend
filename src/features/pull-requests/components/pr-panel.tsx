@@ -260,7 +260,7 @@ export function PrPanel({
           onChange={onChange}
         />
       </div>
-      {state.tab === 'files' || state.tab === 'threads' ? (
+      {state.tab === 'files' || state.tab === 'threads' || state.tab === 'zastava' ? (
         <PrReviewBar projectId={projectId} pr={pr} onSubmit={() => setReview('COMMENT')} />
       ) : null}
       <PrReviewDialog
