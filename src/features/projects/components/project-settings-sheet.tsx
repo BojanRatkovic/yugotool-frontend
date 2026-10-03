@@ -14,7 +14,7 @@ import {
   Undo2,
   X,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { FormField } from '@/components/form-field'
@@ -68,13 +68,20 @@ import { DELIVERY_MODES, DELIVERY_OPTIONS, isPrMode } from '@/lib/delivery'
 import { formatDuration, formatRelative } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-export const SETTINGS_SECTIONS = ['preview', 'routes', 'delivery', 'general'] as const
+export const SETTINGS_SECTIONS = [
+  'preview',
+  'routes',
+  'delivery',
+  'knowledge',
+  'general',
+] as const
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number]
 
 const SECTION_LABEL: Record<SettingsSection, string> = {
   preview: 'Preview',
   routes: 'Routes',
   delivery: 'Delivery',
+  knowledge: 'Knowledge',
   general: 'General',
 }
 
@@ -82,7 +89,8 @@ const id = (field: string) => `preview-${field}`
 
 /**
  * Project settings, opened from the project top bar (`?settings=<section>`).
- * Preview (how QA runs the app), Routes (the planner's screen map), Delivery.
+ * Preview (how QA runs the app), Routes (the planner's screen map), Delivery,
+ * Knowledge (what planning stations read).
  */
 export function ProjectSettingsSheet({
   project,
@@ -92,6 +100,7 @@ export function ProjectSettingsSheet({
   autoDetect = false,
   onAutoDetected,
   onDeleted,
+  knowledge,
 }: {
   project: Project | undefined
   /** Open on this section; undefined = closed. */
@@ -104,6 +113,8 @@ export function ProjectSettingsSheet({
   onAutoDetected?: () => void
   /** After a delete: leave the project (navigate away). Caches drop it afterwards. */
   onDeleted: () => Promise<void>
+  /** The Knowledge tab's content (composed by the route: it lives in the knowledge feature). */
+  knowledge?: ReactNode
 }) {
   const open = section !== undefined
   return (
@@ -165,6 +176,9 @@ export function ProjectSettingsSheet({
               </TabsContent>
               <TabsContent value="delivery" className="flex min-h-0 flex-1 flex-col">
                 <DeliverySettings project={project} />
+              </TabsContent>
+              <TabsContent value="knowledge" className="flex min-h-0 flex-1 flex-col">
+                {knowledge}
               </TabsContent>
               <TabsContent value="general" className="flex min-h-0 flex-1 flex-col">
                 <GeneralSettings project={project} onDeleted={onDeleted} />

@@ -294,9 +294,32 @@ function AgentFields({
           <Switch
             id={id('canEdit')}
             checked={station.canEdit}
-            onCheckedChange={(canEdit) => set({ canEdit })}
+            onCheckedChange={(canEdit) => {
+              // Editors never read knowledge (spec 0007); drop the flag with the switch.
+              const { useKnowledge: _drop, ...rest } = station
+              onChange(canEdit ? { ...rest, canEdit } : { ...station, canEdit })
+            }}
           />
         </div>
+        {station.canEdit ? null : (
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor={id('knowledge')} className="flex flex-col items-start gap-0.5">
+              Reads team knowledge
+              <span className="text-xs font-normal text-muted-foreground">
+                The project&rsquo;s knowledge sources (Project settings &rarr; Knowledge), read
+                before planning. Stations that edit files never get it.
+              </span>
+            </Label>
+            <Switch
+              id={id('knowledge')}
+              checked={station.useKnowledge === true}
+              onCheckedChange={(on) => {
+                const { useKnowledge: _drop, ...rest } = station
+                onChange(on ? { ...rest, useKnowledge: true } : rest)
+              }}
+            />
+          </div>
+        )}
         <div className="flex items-center justify-between gap-3">
           <Label htmlFor={id('verdict')} className="flex flex-col items-start gap-0.5">
             Structured verdict

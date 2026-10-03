@@ -34,4 +34,8 @@ export const queryKeys = {
   systemDoctor: () => ['system', 'doctor'] as const,
   settings: () => ['settings'] as const,
   dispatcher: () => ['dispatcher'] as const,
+  /** The library and each project's choice from it; SSE `knowledge_sources` invalidates the root. */
+  knowledge: () => ['knowledge'] as const,
+  knowledgeSources: () => ['knowledge', 'sources'] as const,
+  projectKnowledge: (projectId: string) => ['knowledge', 'project', projectId] as const,
 }

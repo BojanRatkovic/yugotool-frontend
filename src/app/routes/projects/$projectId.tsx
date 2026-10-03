@@ -22,6 +22,7 @@ import {
   SETTINGS_SECTIONS,
   type SettingsSection,
 } from '@/features/projects/components/project-settings-sheet'
+import { ProjectKnowledgeSettings } from '@/features/knowledge/components/project-knowledge-settings'
 import { ProjectStats } from '@/features/projects/components/project-stats'
 import { systemQueries } from '@/features/system/api/system-queries'
 import { NewWorkOrderDialog } from '@/features/work-orders/components/new-work-order-dialog'
@@ -322,6 +323,12 @@ function ProjectPage() {
         onOpenChange={(open) => setSettings(open)}
         autoDetect={search.detect === true}
         onDeleted={() => navigate({ to: '/' })}
+        knowledge={
+          <ProjectKnowledgeSettings
+            projectId={projectId}
+            onManage={() => void navigate({ to: '/settings', hash: 'knowledge-heading' })}
+          />
+        }
         onAutoDetected={() =>
           void navigate({ search: (prev) => ({ ...prev, detect: undefined }), replace: true })
         }

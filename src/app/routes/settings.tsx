@@ -6,6 +6,7 @@ import { LoadError } from '@/components/data-state'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { settingsQueries } from '@/features/settings/api/settings-queries'
+import { KnowledgeLibrary } from '@/features/knowledge/components/knowledge-library'
 import { ClaudeAccessSection } from '@/features/settings/components/claude-access-section'
 import { REPOS_ROOT_FIELD_ID, SettingsForm } from '@/features/settings/components/settings-form'
 import { systemQueries } from '@/features/system/api/system-queries'
@@ -66,6 +67,10 @@ function SettingsPage() {
   // `#settings-repos-root` (from the repo picker): the field exists once settings load.
   useEffect(() => {
     if (loaded && hash === REPOS_ROOT_FIELD_ID) focusReposRoot()
+    // `#knowledge-heading` (from Project settings → Knowledge → Manage sources).
+    if (loaded && hash === 'knowledge-heading') {
+      document.getElementById(hash)?.scrollIntoView({ block: 'start' })
+    }
   }, [loaded, hash])
   return (
     <div className="flex h-svh min-w-0 flex-col">
@@ -100,6 +105,7 @@ function SettingsPage() {
           ) : (
             <>
               <ClaudeAccessSection settings={settings.data} />
+              <KnowledgeLibrary />
               <SettingsForm
                 key={settingsFormKey(settings.data)}
                 settings={settings.data}

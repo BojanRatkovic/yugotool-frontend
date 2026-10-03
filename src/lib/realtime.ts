@@ -14,6 +14,7 @@ const COLLECTION_KEYS: Record<CollectionName, readonly (readonly string[])[]> = 
   dispatcher: [queryKeys.dispatcher()],
   shifts: [queryKeys.shifts()],
   qa: [queryKeys.qa()],
+  knowledge_sources: [queryKeys.knowledge()],
 }
 
 /**
