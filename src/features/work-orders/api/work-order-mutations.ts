@@ -3,7 +3,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 
 import { apiClient } from '@/lib/api-client'
-import type { QueueMode } from '@/lib/contracts'
+import { workOrdersCollection } from '@/features/work-orders/api/work-orders-collection'
+import {
+  openPullRequestResultSchema,
+  type OpenPullRequest,
+  type QueueMode,
+} from '@/lib/contracts'
 import { queryKeys } from '@/lib/query-keys'
 
 /** Board, runs and the dispatcher card all move when an order starts or (de)queues. */
@@ -68,5 +73,33 @@ export function useOpenInEditor() {
   return useMutation({
     mutationFn: ({ workOrderId }: { workOrderId: string }) =>
       apiClient.post(`/work-orders/${workOrderId}/open-editor`),
+  })
+}
+
+/**
+ * Pushes the branch of locally delivered work and opens a pull request (~5–10s).
+ * 409 `pull_request_not_possible` / `pull_request_failed` carry a message to show.
+ * The new `prUrl` is written into the board right away; SSE refetches confirm it.
+ */
+export function useOpenPullRequest({
+  projectId,
+  workOrderId,
+}: {
+  projectId: string
+  workOrderId: string
+}) {
+  const invalidate = useInvalidateLine()
+  return useMutation({
+    mutationFn: async ({ draft }: { draft: boolean }) => {
+      const body: OpenPullRequest = { draft }
+      const data = await apiClient.post(`/work-orders/${workOrderId}/pull-request`, body)
+      return openPullRequestResultSchema.parse(data).prUrl
+    },
+    onSuccess: async (prUrl) => {
+      const collection = workOrdersCollection(projectId)
+      if (collection.has(workOrderId))
+        await collection.utils.writeUpdate({ id: workOrderId, prUrl })
+      return invalidate()
+    },
   })
 }

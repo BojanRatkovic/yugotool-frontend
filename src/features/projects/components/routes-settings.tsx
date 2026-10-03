@@ -387,7 +387,7 @@ function RouteList({
     )
   }
   return (
-    <ul className="min-h-0 scrollbar-thin divide-y overflow-y-auto rounded-md border">
+    <ul className="relative min-h-0 scrollbar-thin divide-y overflow-y-auto rounded-md border">
       {routes.map((route, index) => (
         <li
           key={`${route.path}-${index}`}

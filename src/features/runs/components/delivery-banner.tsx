@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { CircleCheck, ExternalLink, GitPullRequest } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -28,10 +28,13 @@ export function DeliveryBanner({
   run,
   prUrl,
   branch,
+  action,
 }: {
   run: Run
   prUrl: string | null
   branch: string | null
+  /** Shown while there's no PR, e.g. "Open pull request" for work committed locally. */
+  action?: ReactNode
 }) {
   const delivery = useDelivery(run, prUrl)
   const pr = delivery?.kind === 'pull_request' ? delivery.pr : null
@@ -49,7 +52,7 @@ export function DeliveryBanner({
   return (
     <section
       aria-label="Delivered"
-      className="flex items-center gap-3 bg-status-passed-soft px-4 py-2.5"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-status-passed-soft px-4 py-2.5"
     >
       {pr === null ? (
         <CircleCheck aria-hidden="true" className="size-4 shrink-0 text-status-passed" />
@@ -64,7 +67,9 @@ export function DeliveryBanner({
           <span className="truncate font-mono text-xs text-muted-foreground">{pr.repo}</span>
         )}
       </p>
-      {pr === null ? null : (
+      {pr === null ? (
+        action
+      ) : (
         <Button asChild size="sm">
           <a href={pr.url} target="_blank" rel="noopener noreferrer">
             Open PR

@@ -144,7 +144,8 @@ function ProjectPage() {
         workOrderId={wo}
         stations={stations}
         baseBranch={project?.baseBranch}
-        localOnly={project?.localOnly === true}
+        delivery={project?.deliveryDefault}
+        onEditDelivery={() => setSettings(true, 'delivery')}
         state={panelState}
         onChange={(next) =>
           void navigate({
@@ -320,6 +321,7 @@ function ProjectPage() {
         onSectionChange={(section) => setSettings(true, section)}
         onOpenChange={(open) => setSettings(open)}
         autoDetect={search.detect === true}
+        onDeleted={() => navigate({ to: '/' })}
         onAutoDetected={() =>
           void navigate({ search: (prev) => ({ ...prev, detect: undefined }), replace: true })
         }

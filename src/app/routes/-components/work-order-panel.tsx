@@ -25,8 +25,12 @@ import { stationStates } from '@/features/runs/utils/station-states'
 import { useWorkOrder } from '@/features/work-orders/api/use-work-order'
 import { WorkOrderDetails } from '@/features/work-orders/components/work-order-details'
 import { WorkOrderHeader } from '@/features/work-orders/components/work-order-header'
+import { remoteQueries } from '@/features/projects/api/remote-queries'
+import { canOpenPullRequest, isDeliveryGate } from '@/features/runs/utils/delivery'
+import { requestChangesCopy } from '@/features/runs/utils/request-changes'
+import { OpenPullRequestAction } from '@/features/work-orders/components/open-pull-request'
 import { RunAgainButton } from '@/features/work-orders/components/queue-actions'
-import type { Station } from '@/lib/contracts'
+import type { DeliveryMode, Station } from '@/lib/contracts'
 
 export type PanelTab = 'activity' | 'diff' | 'findings' | 'shifts' | 'qa'
 
@@ -99,23 +103,26 @@ export function WorkOrderPanel({
   workOrderId,
   stations,
   baseBranch,
-  localOnly = false,
+  delivery,
   state,
   onChange,
   onClose,
   onEditPreview,
+  onEditDelivery,
 }: {
   projectId: string
   workOrderId: string
   stations: Station[]
   baseBranch: string | undefined
-  /** The project commits approved work locally (no push, no PR). */
-  localOnly?: boolean
+  /** The project's delivery on approving the last gate; undefined until it loads. */
+  delivery?: DeliveryMode
   state: PanelState
   onChange: (next: Partial<PanelState>) => void
   onClose: () => void
   /** Opens the project's preview settings (QA error state). */
   onEditPreview: () => void
+  /** Opens the project's delivery settings (gate menu: "Change project default…"). */
+  onEditDelivery: () => void
 }) {
   const { workOrder, isLoading } = useWorkOrder(projectId, workOrderId)
   const runs = useQuery(runQueries.list(workOrderId))
@@ -132,6 +139,12 @@ export function WorkOrderPanel({
       ? 'activity'
       : state.tab
   useDeliveredToast(workOrder?.prUrl ?? null)
+  const remote = useQuery(remoteQueries.detail(projectId))
+  // Unknown (loading, or the check failed) never blocks: the server still says no if it can't.
+  const prBlockedReason =
+    remote.data?.prPossible === false
+      ? (remote.data.reason ?? 'Pull requests can’t be opened from this repo.')
+      : null
   const isLatestRun = run !== undefined && run.id === selectRun(runs.data ?? [], undefined)?.id
 
   if (workOrder === undefined) {
@@ -208,6 +221,15 @@ export function WorkOrderPanel({
               failureAction={
                 <RunAgainButton workOrder={workOrder} variant="outline" size="xs" />
               }
+              deliveredAction={
+                canOpenPullRequest(workOrder) ? (
+                  <OpenPullRequestAction
+                    projectId={projectId}
+                    workOrderId={workOrder.id}
+                    blockedReason={prBlockedReason}
+                  />
+                ) : undefined
+              }
             />
           ) : null}
           {run === undefined ||
@@ -227,12 +249,11 @@ export function WorkOrderPanel({
               stationKey={waiting.stationKey}
               stationName={waitingStation?.name ?? waiting.stationKey}
               prompt={waitingStation?.kind === 'gate' ? waitingStation.prompt : null}
-              // The last station's approval delivers the work.
-              approveLabel={
-                localOnly && stations.at(-1)?.key === waiting.stationKey
-                  ? 'Approve & commit locally'
-                  : undefined
-              }
+              // The last station's approval delivers the work: offer the delivery choice there.
+              delivery={isDeliveryGate(stations, waiting.stationKey) ? delivery : undefined}
+              prBlockedReason={prBlockedReason}
+              requestChanges={requestChangesCopy(stations, waiting.stationKey)}
+              onChangeDefault={onEditDelivery}
               qaReview={
                 qaDiffs === null
                   ? undefined
@@ -296,7 +317,7 @@ export function WorkOrderPanel({
               )}
             </div>
           </Tabs>
-          <div className="min-h-0 flex-1 scrollbar-thin overflow-y-auto">
+          <div className="relative min-h-0 flex-1 scrollbar-thin overflow-y-auto">
             {runs.isPending ? (
               <div className="flex flex-col gap-2 p-4" aria-busy="true">
                 {Array.from({ length: 8 }, (_, index) => (
@@ -343,7 +364,7 @@ export function WorkOrderPanel({
 
         <aside
           aria-label="Work order details"
-          className="min-h-0 scrollbar-thin overflow-y-auto border-l bg-card/30"
+          className="relative min-h-0 scrollbar-thin overflow-y-auto border-l bg-card/30"
         >
           <RailSection
             title="Details"

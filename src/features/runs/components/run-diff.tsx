@@ -139,18 +139,22 @@ export function RunDiff({ run }: { run: Run }) {
   const deletions = files.reduce((sum, file) => sum + file.deletions, 0)
 
   return (
-    <div className="grid min-h-full grid-cols-[15rem_minmax(0,1fr)]">
-      <nav aria-label="Changed files" className="border-r">
-        <div className="sticky top-0 flex flex-col gap-1 p-2">
-          <p className="flex items-center justify-between px-2 py-1 text-xs text-muted-foreground">
-            <span>
-              {files.length} {files.length === 1 ? 'file' : 'files'}
-            </span>
-            <span className="flex gap-1.5 font-mono text-[0.6875rem] tabular-nums">
-              <span className="text-status-passed">+{additions}</span>
-              <span className="text-status-failed">−{deletions}</span>
-            </span>
-          </p>
+    // Fills the panel's scroll area so the file list and the patch scroll independently.
+    <div className="absolute inset-0 grid grid-cols-[15rem_minmax(0,1fr)]">
+      <nav aria-label="Changed files" className="flex min-h-0 flex-col border-r">
+        <p className="flex shrink-0 items-center justify-between px-4 pt-3 pb-1 text-xs text-muted-foreground">
+          <span>
+            {files.length} {files.length === 1 ? 'file' : 'files'}
+          </span>
+          <span className="flex gap-1.5 font-mono text-[0.6875rem] tabular-nums">
+            <span className="text-status-passed">+{additions}</span>
+            <span className="text-status-failed">−{deletions}</span>
+          </span>
+        </p>
+        <div
+          data-testid="diff-file-list"
+          className="relative min-h-0 flex-1 scrollbar-thin overflow-y-auto px-2 pb-2"
+        >
           <ul className="flex flex-col">
             {files.map((file) => (
               <li key={file.path}>
@@ -172,7 +176,7 @@ export function RunDiff({ run }: { run: Run }) {
           ) : null}
         </div>
       </nav>
-      <div className="min-w-0">
+      <div className="relative min-h-0 min-w-0 scrollbar-thin overflow-y-auto">
         {files.map((file) => (
           <FilePatch key={file.path} file={file} />
         ))}

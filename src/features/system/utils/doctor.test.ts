@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { blockingChecks, joinLabels, notReadyMessage } from '@/features/system/utils/doctor'
+import {
+  blockingChecks,
+  doctorSummary,
+  joinLabels,
+  notReadyMessage,
+} from '@/features/system/utils/doctor'
 import type { DoctorCheck, DoctorReport } from '@/lib/contracts'
 
 function check(patch: Partial<DoctorCheck>): DoctorCheck {
@@ -53,5 +58,43 @@ describe('doctor', () => {
     expect(joinLabels([])).toBe('')
     expect(joinLabels(['Claude'])).toBe('Claude')
     expect(joinLabels(['Claude', 'Worker'])).toBe('Claude and Worker')
+  })
+})
+
+describe('doctorSummary', () => {
+  it('folds an all-green report', () => {
+    expect(
+      doctorSummary(
+        report([check({}), check({ key: 'gh', label: 'GitHub CLI', required: false })]),
+      ),
+    ).toEqual({
+      tone: 'ok',
+      text: 'All 2 checks pass',
+      openByDefault: false,
+    })
+  })
+
+  it('names optional gaps but stays folded', () => {
+    const r = report([
+      check({}),
+      check({ key: 'nvm', label: 'nvm', required: false, status: 'warn' }),
+    ])
+    expect(doctorSummary(r)).toEqual({
+      tone: 'warn',
+      text: '1 of 2 OK · limited: nvm',
+      openByDefault: false,
+    })
+  })
+
+  it('opens when a required check fails', () => {
+    const r = report([
+      check({ key: 'claude', label: 'Claude', status: 'fail' }),
+      check({ key: 'worker', label: 'Worker', status: 'fail' }),
+    ])
+    expect(doctorSummary(r)).toEqual({
+      tone: 'fail',
+      text: 'Claude and Worker block runs',
+      openByDefault: true,
+    })
   })
 })

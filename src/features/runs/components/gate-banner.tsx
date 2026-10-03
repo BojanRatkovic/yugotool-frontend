@@ -1,14 +1,35 @@
-import { Check, Clock, MessageSquareReply, ScanEye, X } from 'lucide-react'
+import {
+  Check,
+  ChevronDown,
+  CircleAlert,
+  Clock,
+  MessageSquareReply,
+  ScanEye,
+  Settings2,
+  X,
+} from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Kbd, KbdGroup } from '@/components/ui/kbd'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useGateDecision } from '@/features/runs/api/run-queries'
+import { effectiveDelivery } from '@/features/runs/utils/delivery'
+import type { RequestChangesCopy } from '@/features/runs/utils/request-changes'
 import { errorMessage } from '@/lib/api-client'
-import type { GateDecision } from '@/lib/contracts'
+import type { DeliveryMode, GateDecision } from '@/lib/contracts'
+import { DELIVERY_MODES, DELIVERY_OPTIONS, isPrMode } from '@/lib/delivery'
 import { IS_MAC } from '@/lib/shortcuts'
 
 type Decision = GateDecision['decision']
@@ -34,7 +55,10 @@ export function GateBanner({
   prompt,
   focusOnMount = false,
   qaReview,
-  approveLabel = 'Approve',
+  delivery: projectDefault,
+  prBlockedReason = null,
+  onChangeDefault,
+  requestChanges,
 }: {
   runId: string
   stationKey: string
@@ -43,9 +67,24 @@ export function GateBanner({
   focusOnMount?: boolean
   /** The run has QA results: link to the QA tab with the diff count. */
   qaReview?: { diffs: number; onOpen: () => void }
-  /** e.g. "Approve & commit locally" on a local-only project's final gate. */
-  approveLabel?: string
+  /**
+   * Set at the last gate (delivery follows it): the project's default mode.
+   * Approve becomes a split button that names the outcome; the menu offers the others.
+   */
+  delivery?: DeliveryMode
+  /** Why draft/ready PRs can't work for this repo; those options are disabled. */
+  prBlockedReason?: string | null
+  /** Opens project settings on Delivery ("Change project default…"). */
+  onChangeDefault?: () => void
+  /** Where Request changes sends the work; null hides it (nothing before this gate). */
+  requestChanges: RequestChangesCopy | null
 }) {
+  // A PR default that can't work falls back to a local commit, and says so below the buttons.
+  const effective =
+    projectDefault === undefined
+      ? undefined
+      : effectiveDelivery(projectDefault, prBlockedReason)
+  const delivery = effective?.mode
   const [comment, setComment] = useState('')
   const [commentError, setCommentError] = useState<string | null>(null)
   const decide = useGateDecision(runId)
@@ -53,19 +92,28 @@ export function GateBanner({
   const commentRef = useRef<HTMLTextAreaElement>(null)
   const commentId = `gate-comment-${stationKey}`
 
-  function submit(decision: Decision) {
+  function submit(decision: Decision, mode: DeliveryMode | undefined = delivery) {
     if (decide.isPending) return
+    if (decision === 'request_changes' && requestChanges === null) return
     if (decision === 'request_changes' && comment.trim() === '') {
-      setCommentError('Say what should change — the builder resumes from your comment.')
+      setCommentError(
+        `Say what should change — ${requestChanges?.target ?? 'the station'} resumes from your comment.`,
+      )
       commentRef.current?.focus()
       return
     }
+    const choice = decision === 'approve' ? mode : undefined
     decide.mutate(
-      { stationKey, decision, comment },
+      { stationKey, decision, comment, ...(choice === undefined ? {} : { delivery: choice }) },
       {
         onSuccess: () => {
           setComment('')
-          toast.success(DONE_TOAST[decision](stationName))
+          const done = DONE_TOAST[decision](stationName)
+          toast.success(
+            choice === undefined
+              ? done
+              : `${done.slice(0, -1)} · ${DELIVERY_OPTIONS[choice].outcome}.`,
+          )
         },
         onError: (error) => toast.error(`Couldn't submit the decision: ${errorMessage(error)}`),
       },
@@ -149,7 +197,7 @@ export function GateBanner({
             }}
             aria-invalid={commentError === null ? undefined : true}
             aria-describedby={commentError === null ? undefined : `${commentId}-error`}
-            placeholder="Comment (optional · required for Request changes)"
+            placeholder={requestChanges?.placeholder ?? 'Comment (optional)'}
             rows={2}
             className="min-h-14 resize-none bg-background text-[0.8125rem]"
           />
@@ -159,29 +207,55 @@ export function GateBanner({
             </p>
           )}
           <div className="flex items-center gap-2">
-            <Button size="sm" disabled={decide.isPending} onClick={() => submit('approve')}>
-              <Check aria-hidden="true" />
-              {approveLabel}
-              <KbdGroup className="ml-1">
-                <Kbd className={KBD_CLASS}>{IS_MAC ? '⌘' : 'Ctrl'}</Kbd>
-                <Kbd className={KBD_CLASS}>↵</Kbd>
-              </KbdGroup>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={decide.isPending}
-              onClick={() => submit('request_changes')}
-              className="bg-background"
-            >
-              <MessageSquareReply aria-hidden="true" />
-              Request changes
-              <KbdGroup className="ml-1">
-                <Kbd className="h-4">{IS_MAC ? '⌘' : 'Ctrl'}</Kbd>
-                <Kbd className="h-4">⇧</Kbd>
-                <Kbd className="h-4">↵</Kbd>
-              </KbdGroup>
-            </Button>
+            <div className="flex items-center">
+              <Button
+                size="sm"
+                disabled={decide.isPending}
+                onClick={() => submit('approve')}
+                className={delivery === undefined ? undefined : 'rounded-r-none'}
+              >
+                <Check aria-hidden="true" />
+                {delivery === undefined ? 'Approve' : DELIVERY_OPTIONS[delivery].approveLabel}
+                <KbdGroup className="ml-1">
+                  <Kbd className={KBD_CLASS}>{IS_MAC ? '⌘' : 'Ctrl'}</Kbd>
+                  <Kbd className={KBD_CLASS}>↵</Kbd>
+                </KbdGroup>
+              </Button>
+              {delivery === undefined ? null : (
+                <DeliveryMenu
+                  projectDefault={projectDefault ?? delivery}
+                  prBlockedReason={prBlockedReason}
+                  disabled={decide.isPending}
+                  onPick={(mode) => submit('approve', mode)}
+                  onChangeDefault={onChangeDefault}
+                />
+              )}
+            </div>
+            {requestChanges === null ? null : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={decide.isPending}
+                    onClick={() => submit('request_changes')}
+                    aria-describedby={`${commentId}-rc-hint`}
+                    className="bg-background"
+                  >
+                    <MessageSquareReply aria-hidden="true" />
+                    Request changes
+                    <KbdGroup className="ml-1">
+                      <Kbd className="h-4">{IS_MAC ? '⌘' : 'Ctrl'}</Kbd>
+                      <Kbd className="h-4">⇧</Kbd>
+                      <Kbd className="h-4">↵</Kbd>
+                    </KbdGroup>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent id={`${commentId}-rc-hint`} className="max-w-72">
+                  {requestChanges.hint}
+                </TooltipContent>
+              </Tooltip>
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -193,8 +267,87 @@ export function GateBanner({
               Reject
             </Button>
           </div>
+          {effective?.fellBack === true && projectDefault !== undefined ? (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <CircleAlert
+                aria-hidden="true"
+                className="size-3.5 shrink-0 text-status-queued"
+              />
+              <span>
+                The project default is “{DELIVERY_OPTIONS[projectDefault].menuLabel}”, but PRs
+                aren&rsquo;t possible. {prBlockedReason} Approving commits locally.
+              </span>
+            </p>
+          ) : null}
         </div>
       </div>
     </section>
+  )
+}
+
+/** The chevron half of the approve split button: approve with a different delivery. */
+function DeliveryMenu({
+  projectDefault,
+  prBlockedReason,
+  disabled,
+  onPick,
+  onChangeDefault,
+}: {
+  projectDefault: DeliveryMode
+  prBlockedReason: string | null
+  disabled: boolean
+  onPick: (mode: DeliveryMode) => void
+  onChangeDefault?: () => void
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          size="sm"
+          disabled={disabled}
+          aria-label="Approve with a different delivery"
+          className="rounded-l-none border-l border-l-primary-foreground/20 px-1.5"
+        >
+          <ChevronDown aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-80">
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+          Approve and…
+        </DropdownMenuLabel>
+        {DELIVERY_MODES.map((mode) => {
+          const blocked = prBlockedReason !== null && isPrMode(mode)
+          return (
+            <DropdownMenuItem
+              key={mode}
+              disabled={blocked}
+              onSelect={() => onPick(mode)}
+              className="flex-col items-start gap-0.5"
+            >
+              <span className="flex w-full items-center gap-2 text-[0.8125rem] font-medium">
+                {DELIVERY_OPTIONS[mode].menuLabel}
+                {mode === projectDefault ? (
+                  <span className="ml-auto rounded-sm bg-muted px-1.5 text-[0.6875rem] font-normal text-muted-foreground">
+                    Project default
+                  </span>
+                ) : null}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {blocked ? prBlockedReason : DELIVERY_OPTIONS[mode].hint}
+              </span>
+            </DropdownMenuItem>
+          )
+        })}
+        {onChangeDefault === undefined ? null : (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={onChangeDefault} className="text-xs">
+              <Settings2 aria-hidden="true" />
+              Change project default…
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

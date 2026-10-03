@@ -19,3 +19,32 @@ export function notReadyMessage(report: DoctorReport): string | null {
     ? 'ZASTAVA can’t run work yet.'
     : `ZASTAVA can’t run work yet: ${joinLabels(labels)}.`
 }
+
+/**
+ * The one-line summary of the collapsed Doctor and whether it starts open:
+ * open only when something blocks runs; optional gaps are named but folded.
+ */
+export function doctorSummary(report: DoctorReport): {
+  tone: 'ok' | 'warn' | 'fail'
+  text: string
+  openByDefault: boolean
+} {
+  const total = report.checks.length
+  const blocking = blockingChecks(report)
+  if (blocking.length > 0) {
+    return {
+      tone: 'fail',
+      text: `${joinLabels(blocking.map((check) => check.label))} ${blocking.length === 1 ? 'blocks' : 'block'} runs`,
+      openByDefault: true,
+    }
+  }
+  const limited = report.checks.filter((check) => check.status !== 'ok')
+  if (limited.length > 0) {
+    return {
+      tone: 'warn',
+      text: `${total - limited.length} of ${total} OK · limited: ${joinLabels(limited.map((check) => check.label))}`,
+      openByDefault: false,
+    }
+  }
+  return { tone: 'ok', text: `All ${total} checks pass`, openByDefault: false }
+}

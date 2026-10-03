@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import {
+  ChevronDown,
   CircleAlert,
   CircleCheck,
   CircleX,
@@ -14,7 +15,9 @@ import { LoadError } from '@/components/data-state'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { systemQueries } from '@/features/system/api/system-queries'
-import { blockingChecks } from '@/features/system/utils/doctor'
+import { useId, useState } from 'react'
+
+import { blockingChecks, doctorSummary } from '@/features/system/utils/doctor'
 import type { DoctorCheck, DoctorReport } from '@/lib/contracts'
 import { formatDateTime, formatRelative } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -33,10 +36,6 @@ const STATUS: Record<DoctorCheck['status'], { icon: LucideIcon; word: string; to
     warn: { icon: CircleAlert, word: 'Limited', tone: 'text-status-queued' },
     fail: { icon: CircleX, word: 'Blocking', tone: 'text-status-failed' },
   }
-
-/** Rows the skeleton draws; matches the API's check list (5 required, then 4 optional). */
-const CHECK_COUNT = 9
-const REQUIRED_COUNT = 5
 
 /**
  * Settings → Doctor: one row per first-run check with the fix and a copyable
@@ -89,15 +88,7 @@ export function DoctorSection({ onFixRepos }: { onFixRepos?: () => void }) {
         </div>
       </div>
       {report !== undefined ? (
-        <ul className="divide-y rounded-lg border bg-card" aria-busy={doctor.isFetching}>
-          {report.checks.map((check) => (
-            <CheckRow
-              key={check.key}
-              check={check}
-              onFixRepos={check.key === 'repos' ? onFixRepos : undefined}
-            />
-          ))}
-        </ul>
+        <DoctorChecks report={report} busy={doctor.isFetching} onFixRepos={onFixRepos} />
       ) : doctor.isPending ? (
         <DoctorSkeleton />
       ) : (
@@ -107,6 +98,62 @@ export function DoctorSection({ onFixRepos }: { onFixRepos?: () => void }) {
         />
       )}
     </section>
+  )
+}
+
+/**
+ * Folded to one summary row while nothing blocks runs; opens by itself when a
+ * required check fails. Once toggled, the user's choice wins.
+ */
+function DoctorChecks({
+  report,
+  busy,
+  onFixRepos,
+}: {
+  report: DoctorReport
+  busy: boolean
+  onFixRepos?: () => void
+}) {
+  const summary = doctorSummary(report)
+  const [toggled, setToggled] = useState<boolean | null>(null)
+  const open = toggled ?? summary.openByDefault
+  const listId = useId()
+  const status = STATUS[summary.tone]
+  const Icon = status.icon
+  return (
+    <div className="rounded-lg border bg-card" aria-busy={busy}>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={listId}
+        onClick={() => setToggled(!open)}
+        className="flex min-h-12 w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-[0.8125rem] outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <Icon aria-hidden="true" className={cn('size-4 shrink-0', status.tone)} />
+        <span className="min-w-0 flex-1 truncate font-medium">{summary.text}</span>
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {open ? 'Hide details' : 'Details'}
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          className={cn(
+            'size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none',
+            open && 'rotate-180',
+          )}
+        />
+      </button>
+      {open ? (
+        <ul id={listId} className="divide-y border-t">
+          {report.checks.map((check) => (
+            <CheckRow
+              key={check.key}
+              check={check}
+              onFixRepos={check.key === 'repos' ? onFixRepos : undefined}
+            />
+          ))}
+        </ul>
+      ) : null}
+    </div>
   )
 }
 
@@ -181,26 +228,16 @@ function CheckRow({ check, onFixRepos }: { check: DoctorCheck; onFixRepos?: () =
 }
 
 function DoctorSkeleton() {
-  // Shaped like a healthy report: required rows are one line, optional rows add "Optional · …".
+  // Shaped like the folded summary row, the usual state once checks return.
   return (
-    <ul className="divide-y rounded-lg border bg-card" aria-busy="true" aria-label="Checking">
-      {Array.from({ length: CHECK_COUNT }, (_, index) => (
-        <li key={index} className="flex min-h-12 items-start gap-3 px-4 py-3">
-          <Skeleton className="mt-0.5 size-4 shrink-0 rounded-full" />
-          <div className="flex flex-1 flex-col gap-1">
-            <div className="flex h-[1.21875rem] items-center gap-2">
-              <Skeleton className="h-3.5 w-20" />
-              <Skeleton className="h-3.5 w-40" />
-            </div>
-            {index < REQUIRED_COUNT ? null : (
-              <div className="flex h-4 items-center">
-                <Skeleton className="h-3 w-56" />
-              </div>
-            )}
-          </div>
-          <Skeleton className="mt-0.5 h-3.5 w-10" />
-        </li>
-      ))}
-    </ul>
+    <div
+      className="flex min-h-12 items-center gap-3 rounded-lg border bg-card px-4 py-3"
+      aria-busy="true"
+      aria-label="Checking"
+    >
+      <Skeleton className="size-4 shrink-0 rounded-full" />
+      <Skeleton className="h-3.5 w-40" />
+      <Skeleton className="ml-auto h-3.5 w-12" />
+    </div>
   )
 }

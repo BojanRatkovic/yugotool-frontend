@@ -1,6 +1,7 @@
 import { useForm, useStore } from '@tanstack/react-form'
 import { useQuery } from '@tanstack/react-query'
 import {
+  CircleAlert,
   CircleCheck,
   CircleDashed,
   CircleX,
@@ -29,8 +30,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -41,6 +42,11 @@ import {
   useUpdateProject,
 } from '@/features/projects/api/preview-queries'
 import { OfferQaCallout } from '@/features/projects/components/offer-qa-callout'
+import {
+  DELETE_CONSEQUENCES,
+  DeleteProjectDialog,
+} from '@/features/projects/components/delete-project-dialog'
+import { remoteQueries } from '@/features/projects/api/remote-queries'
 import { RoutesSettings } from '@/features/projects/components/routes-settings'
 import {
   applyDetectedPreview,
@@ -48,19 +54,28 @@ import {
   toPreviewValues,
   type PreviewField,
 } from '@/features/projects/utils/preview-form'
+import { originLabel } from '@/features/projects/utils/remote'
+import { CopyButton } from '@/components/copy-button'
 import { useNow } from '@/hooks/use-now'
 import { ApiError, errorMessage } from '@/lib/api-client'
-import type { PreviewDetection, PreviewTestResult, Project } from '@/lib/contracts'
+import type {
+  PreviewDetection,
+  PreviewTestResult,
+  Project,
+  ProjectRemote,
+} from '@/lib/contracts'
+import { DELIVERY_MODES, DELIVERY_OPTIONS, isPrMode } from '@/lib/delivery'
 import { formatDuration, formatRelative } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-export const SETTINGS_SECTIONS = ['preview', 'routes', 'delivery'] as const
+export const SETTINGS_SECTIONS = ['preview', 'routes', 'delivery', 'general'] as const
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number]
 
 const SECTION_LABEL: Record<SettingsSection, string> = {
   preview: 'Preview',
   routes: 'Routes',
   delivery: 'Delivery',
+  general: 'General',
 }
 
 const id = (field: string) => `preview-${field}`
@@ -76,6 +91,7 @@ export function ProjectSettingsSheet({
   onOpenChange,
   autoDetect = false,
   onAutoDetected,
+  onDeleted,
 }: {
   project: Project | undefined
   /** Open on this section; undefined = closed. */
@@ -86,6 +102,8 @@ export function ProjectSettingsSheet({
   autoDetect?: boolean
   /** Called when the auto-detect request was consumed, so the caller can drop the flag. */
   onAutoDetected?: () => void
+  /** After a delete: leave the project (navigate away). Caches drop it afterwards. */
+  onDeleted: () => Promise<void>
 }) {
   const open = section !== undefined
   return (
@@ -98,7 +116,7 @@ export function ProjectSettingsSheet({
         }}
         className="flex w-full flex-col gap-0 focus-visible:outline-none data-[side=right]:w-[min(720px,92vw)] data-[side=right]:sm:max-w-none"
       >
-        <SheetHeader className="gap-3 border-b pb-0">
+        <SheetHeader className="border-b">
           <div className="flex flex-col gap-0.5">
             <SheetTitle>Project settings</SheetTitle>
             <SheetDescription>{project?.name ?? 'Project'}</SheetDescription>
@@ -148,6 +166,9 @@ export function ProjectSettingsSheet({
               <TabsContent value="delivery" className="flex min-h-0 flex-1 flex-col">
                 <DeliverySettings project={project} />
               </TabsContent>
+              <TabsContent value="general" className="flex min-h-0 flex-1 flex-col">
+                <GeneralSettings project={project} onDeleted={onDeleted} />
+              </TabsContent>
             </>
           )}
         </Tabs>
@@ -193,40 +214,87 @@ export function PreviewStatusChip({
   )
 }
 
+function GeneralSettings({
+  project,
+  onDeleted,
+}: {
+  project: Project
+  onDeleted: () => Promise<void>
+}) {
+  const [deleting, setDeleting] = useState(false)
+  return (
+    <div className="relative flex min-h-0 flex-1 scrollbar-thin flex-col gap-8 overflow-y-auto p-4">
+      <section aria-labelledby="general-heading" className="flex flex-col gap-3">
+        <h2 id="general-heading" className="text-sm font-semibold">
+          General
+        </h2>
+        <dl className="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-md border bg-card/50 px-3 py-2.5 text-[0.8125rem]">
+          <dt className="text-muted-foreground">Repository</dt>
+          <dd className="flex min-w-0 items-center gap-1">
+            <span className="min-w-0 font-mono text-xs break-all">{project.repoPath}</span>
+            <CopyButton value={project.repoPath} label="Copy the repository path" />
+          </dd>
+          <dt className="text-muted-foreground">Base branch</dt>
+          <dd className="font-mono text-xs">{project.baseBranch}</dd>
+        </dl>
+      </section>
+
+      <section
+        aria-labelledby="danger-heading"
+        className="flex flex-col gap-3 rounded-md border border-destructive/40 p-4"
+      >
+        <h2 id="danger-heading" className="text-sm font-semibold text-destructive">
+          Danger zone
+        </h2>
+        <div className="flex items-center gap-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <p className="text-[0.8125rem] font-medium">Delete project</p>
+            <p className="text-xs text-muted-foreground">{DELETE_CONSEQUENCES}</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => setDeleting(true)}
+          >
+            <Trash2 aria-hidden="true" />
+            Delete project…
+          </Button>
+        </div>
+      </section>
+
+      <DeleteProjectDialog
+        project={project}
+        open={deleting}
+        onOpenChange={setDeleting}
+        onDeleted={onDeleted}
+      />
+    </div>
+  )
+}
+
 function DeliverySettings({ project }: { project: Project }) {
   const update = useUpdateProject(project.id)
+  const remote = useQuery(remoteQueries.detail(project.id))
   // Show the requested value while the PATCH is in flight.
-  const checked = update.isPending
-    ? (update.variables.localOnly ?? project.localOnly)
-    : project.localOnly
-  const drafts = update.isPending
-    ? (update.variables.draftPrs ?? project.draftPrs)
-    : project.draftPrs
+  const selected = update.isPending
+    ? (update.variables.deliveryDefault ?? project.deliveryDefault)
+    : project.deliveryDefault
+  const blocked =
+    remote.data?.prPossible === false
+      ? (remote.data.reason ?? 'Pull requests can’t be opened.')
+      : null
 
-  function toggleDrafts(draftPrs: boolean) {
+  function choose(value: string) {
+    const deliveryDefault = DELIVERY_MODES.find((mode) => mode === value)
+    if (deliveryDefault === undefined || deliveryDefault === project.deliveryDefault) return
     update.mutate(
-      { draftPrs },
+      { deliveryDefault },
       {
         onSuccess: () =>
           toast.success(
-            draftPrs
-              ? 'Pull requests will open as drafts.'
-              : 'Pull requests will open ready for review.',
-          ),
-        onError: (error) => toast.error(`Couldn't change delivery: ${errorMessage(error)}`),
-      },
-    )
-  }
-
-  function toggle(localOnly: boolean) {
-    update.mutate(
-      { localOnly },
-      {
-        onSuccess: () =>
-          toast.success(
-            localOnly
-              ? 'Local only: approved work stays on its branch.'
-              : 'Approved work will be pushed and opened as a pull request.',
+            `Approving the final gate now defaults to “${DELIVERY_OPTIONS[deliveryDefault].menuLabel}”.`,
           ),
         onError: (error) => toast.error(`Couldn't change delivery: ${errorMessage(error)}`),
       },
@@ -234,53 +302,115 @@ function DeliverySettings({ project }: { project: Project }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 scrollbar-thin flex-col gap-4 overflow-y-auto p-4">
+    <div className="relative flex min-h-0 flex-1 scrollbar-thin flex-col gap-4 overflow-y-auto p-4">
       <section aria-labelledby="delivery-heading" className="flex flex-col gap-3">
         <div className="flex flex-col gap-0.5">
           <h2 id="delivery-heading" className="text-sm font-semibold">
-            Delivery
+            When you approve the final gate
           </h2>
           <p className="text-[0.8125rem] text-muted-foreground">
-            What happens when the final gate is approved.
+            You can still pick another option on each approval.
           </p>
         </div>
-        <div className="flex items-center justify-between gap-3 rounded-md border bg-card/50 px-3 py-2.5">
-          <Label htmlFor="project-local-only" className="flex flex-col items-start gap-0.5">
-            Local only
-            <span className="text-xs font-normal text-muted-foreground">
-              Approved work is committed on its branch. Nothing is pushed, no pull request.
-            </span>
-          </Label>
-          <Switch
-            id="project-local-only"
-            checked={checked}
-            disabled={update.isPending}
-            onCheckedChange={toggle}
-          />
-        </div>
-        <div
-          className={cn(
-            'flex items-center justify-between gap-3 rounded-md border bg-card/50 px-3 py-2.5',
-            checked && 'opacity-60',
-          )}
+
+        <RemoteStatus remote={remote.data} pending={remote.isPending} />
+
+        <RadioGroup
+          value={selected}
+          onValueChange={choose}
+          disabled={update.isPending}
+          aria-labelledby="delivery-heading"
+          className="gap-2"
         >
-          <Label htmlFor="project-draft-prs" className="flex flex-col items-start gap-0.5">
-            Open pull requests as drafts
-            <span className="text-xs font-normal text-muted-foreground">
-              {checked
-                ? 'Doesn’t apply while Local only is on. No pull request is opened.'
-                : 'Reviewers see them as work in progress until you mark them ready.'}
-            </span>
-          </Label>
-          <Switch
-            id="project-draft-prs"
-            checked={drafts}
-            disabled={checked || update.isPending}
-            onCheckedChange={toggleDrafts}
-          />
-        </div>
+          {DELIVERY_MODES.map((mode) => {
+            const prBlocked = blocked !== null && isPrMode(mode)
+            const checked = selected === mode
+            const itemId = `delivery-${mode}`
+            return (
+              <Label
+                key={mode}
+                htmlFor={itemId}
+                className={cn(
+                  'flex items-start gap-3 rounded-md border bg-card/50 px-3 py-2.5 font-normal transition-colors',
+                  checked ? 'border-foreground/40 bg-card' : 'hover:bg-card',
+                  // A stored PR default stays selectable-looking so it isn't silently changed.
+                  prBlocked && !checked && 'opacity-60',
+                )}
+              >
+                <RadioGroupItem
+                  id={itemId}
+                  value={mode}
+                  disabled={prBlocked && !checked}
+                  className="mt-0.5"
+                />
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-[0.8125rem] font-medium">
+                    {DELIVERY_OPTIONS[mode].menuLabel}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {DELIVERY_OPTIONS[mode].hint}
+                  </span>
+                  {prBlocked ? (
+                    <span className="flex items-center gap-1 text-xs text-status-queued">
+                      <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+                      {checked
+                        ? `Won’t work right now. ${blocked} Approvals commit locally until it’s fixed.`
+                        : blocked}
+                    </span>
+                  ) : null}
+                </span>
+              </Label>
+            )
+          })}
+        </RadioGroup>
       </section>
     </div>
+  )
+}
+
+/** "origin · github.com/owner/repo · gh logged in", or why PRs can't be opened. */
+function RemoteStatus({
+  remote,
+  pending,
+}: {
+  remote: ProjectRemote | undefined
+  pending: boolean
+}) {
+  if (remote === undefined) {
+    return pending ? (
+      <Skeleton className="h-9 w-full" />
+    ) : (
+      <p className="flex min-h-9 items-center gap-2 rounded-md border px-3 text-xs text-muted-foreground">
+        Couldn&rsquo;t check the repo&rsquo;s remote.
+      </p>
+    )
+  }
+  const ok = remote.prPossible
+  return (
+    <p className="flex min-h-9 items-center gap-2 rounded-md border px-3 py-2 text-xs">
+      {ok ? (
+        <CircleCheck aria-hidden="true" className="size-3.5 shrink-0 text-status-passed" />
+      ) : (
+        <CircleAlert aria-hidden="true" className="size-3.5 shrink-0 text-status-queued" />
+      )}
+      {ok && remote.origin !== null ? (
+        <span className="min-w-0 break-all">
+          <span className="text-muted-foreground">origin · </span>
+          <span className="font-mono">{originLabel(remote.origin)}</span>
+          <span className="text-muted-foreground"> · gh logged in</span>
+        </span>
+      ) : (
+        <span className="min-w-0 text-muted-foreground">
+          {remote.reason ?? 'Pull requests can’t be opened from this repo.'}
+          {remote.origin === null ? null : (
+            <>
+              {' '}
+              <span className="font-mono">({originLabel(remote.origin)})</span>
+            </>
+          )}
+        </span>
+      )}
+    </p>
   )
 }
 
@@ -377,7 +507,7 @@ function PreviewSettings({
   return (
     <>
       <form
-        className="flex min-h-0 flex-1 scrollbar-thin flex-col gap-5 overflow-y-auto p-4"
+        className="relative flex min-h-0 flex-1 scrollbar-thin flex-col gap-5 overflow-y-auto p-4"
         onSubmit={(event) => {
           event.preventDefault()
           void form.handleSubmit()

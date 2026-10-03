@@ -70,7 +70,10 @@ function SettingsPage() {
         <SidebarTrigger aria-label="Toggle sidebar" />
         <h1 className="text-sm font-semibold">Settings</h1>
       </header>
-      <div data-settings-scroll className="min-h-0 flex-1 scrollbar-thin overflow-y-auto">
+      <div
+        data-settings-scroll
+        className="relative min-h-0 flex-1 scrollbar-thin overflow-y-auto"
+      >
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 pt-6 pb-12">
           <DoctorSection onFixRepos={focusReposRoot} />
           {settings.isPending ? (

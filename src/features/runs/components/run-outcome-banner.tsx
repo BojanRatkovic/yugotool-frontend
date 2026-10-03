@@ -152,6 +152,7 @@ export function RunOutcomeBanner({
   branch,
   onShowActivity,
   failureAction,
+  deliveredAction,
 }: {
   run: Run
   prUrl: string | null
@@ -160,6 +161,8 @@ export function RunOutcomeBanner({
   onShowActivity: () => void
   /** Trailing action on a failed, rejected or cancelled run (e.g. Run again). */
   failureAction?: ReactNode
+  /** Trailing action on a delivered run without a PR (e.g. Open pull request). */
+  deliveredAction?: ReactNode
 }) {
   const events = useQuery(runQueries.events(run.id))
   const failure = runFailure(run, events.data ?? [])
@@ -168,6 +171,6 @@ export function RunOutcomeBanner({
       <FailureBanner failure={failure} onShowActivity={onShowActivity} action={failureAction} />
     )
   if (run.status === 'succeeded')
-    return <DeliveryBanner run={run} prUrl={prUrl} branch={branch} />
+    return <DeliveryBanner run={run} prUrl={prUrl} branch={branch} action={deliveredAction} />
   return null
 }

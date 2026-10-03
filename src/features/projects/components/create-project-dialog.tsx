@@ -61,8 +61,7 @@ export function CreateProjectDialog({
         repoPath: value.repoPath.trim(),
         baseBranch: value.baseBranch.trim(),
         preview: null,
-        localOnly: true,
-        draftPrs: false,
+        deliveryDefault: 'local',
         createdAt: now,
         updatedAt: now,
       })

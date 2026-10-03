@@ -19,6 +19,8 @@ export const queryKeys = {
   runMemory: (runId: string) => ['shifts', 'memory', runId] as const,
   /** Last preview test of a project; PATCHing the project invalidates it with the root. */
   previewStatus: (projectId: string) => ['projects', projectId, 'preview'] as const,
+  /** Where approved work can go (origin, gh); live check, under the project root. */
+  projectRemote: (projectId: string) => ['projects', projectId, 'remote'] as const,
   /** Route map of a project; under `projects` so SSE `projects` (discovery done) refreshes it. */
   projectRoutes: (projectId: string) => ['projects', projectId, 'routes'] as const,
   /** QA attempts and checks per run; SSE `qa` invalidates the root. */

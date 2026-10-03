@@ -186,7 +186,7 @@ export function LineEditor({
                   {selectedIndex + 1} of {stations.length}
                 </SheetDescription>
               </SheetHeader>
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+              <div className="relative min-h-0 flex-1 overflow-y-auto px-4 pb-4">
                 <StationEditor
                   station={selected}
                   issues={issues.byStation.get(selected.key) ?? EMPTY_ISSUES}

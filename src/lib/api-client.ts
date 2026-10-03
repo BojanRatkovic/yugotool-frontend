@@ -104,6 +104,7 @@ export const apiClient = {
   post: (path: string, body?: unknown) => request('POST', path, body ?? {}),
   patch: (path: string, body: unknown) => request('PATCH', path, body),
   put: (path: string, body: unknown) => request('PUT', path, body),
+  delete: (path: string) => request('DELETE', path),
 }
 
 export function errorMessage(error: unknown): string {
