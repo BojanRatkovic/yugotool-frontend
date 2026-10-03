@@ -39,8 +39,12 @@ function PrNavItem({
   label: string
   Icon: typeof GitPullRequest
 }) {
-  // Same query (and cache entry) as the board without team requests.
-  const { data } = useQuery(prQueries.list(projectId, scope))
+  // Same query (and cache entry) as the board without team requests; the
+  // sidebar alone polls every 5 min (GitHub's API budget), an open board every minute.
+  const { data } = useQuery({
+    ...prQueries.list(projectId, scope),
+    refetchInterval: 5 * 60_000,
+  })
   const count = data === undefined ? 0 : needsYouCount(data.items, scope)
   return (
     <SidebarMenuSubItem>
