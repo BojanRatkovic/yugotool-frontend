@@ -1,4 +1,10 @@
-import { QA_STATION_TEMPLATE, updateLineSchema, type Station } from '@/lib/contracts'
+import {
+  QA_STATION_TEMPLATE,
+  updateLineSchema,
+  updateReviewLineSchema,
+  type LineKind,
+  type Station,
+} from '@/lib/contracts'
 
 export const AGENT_TOOLS: readonly string[] = [
   'Read',
@@ -128,8 +134,9 @@ export interface LineIssues {
 }
 
 /** Client-side check with the same schema the API enforces. */
-export function lineIssues(stations: readonly Station[]): LineIssues {
-  const result = updateLineSchema.safeParse({ stations })
+export function lineIssues(stations: readonly Station[], kind: LineKind = 'build'): LineIssues {
+  const schema = kind === 'review' ? updateReviewLineSchema : updateLineSchema
+  const result = schema.safeParse({ stations })
   const issues: LineIssues = { byStation: new Map(), general: [] }
   if (result.success) return issues
   for (const issue of result.error.issues) {

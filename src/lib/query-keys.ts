@@ -5,6 +5,8 @@
 export const queryKeys = {
   projects: () => ['projects'] as const,
   line: (projectId: string) => ['projects', projectId, 'line'] as const,
+  /** The project's review line (spec 0009). */
+  reviewLine: (projectId: string) => ['projects', projectId, 'review-line'] as const,
   workOrders: () => ['work-orders'] as const,
   workOrdersByProject: (projectId: string) => ['work-orders', projectId] as const,
   runs: () => ['runs'] as const,

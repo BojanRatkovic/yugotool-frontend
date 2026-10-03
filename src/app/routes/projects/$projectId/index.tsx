@@ -31,7 +31,7 @@ import { WorkOrderBoard } from '@/features/work-orders/components/work-order-boa
 import { isTypingTarget } from '@/lib/shortcuts'
 
 const searchSchema = z.object({
-  view: z.enum(['board', 'line']).default('board').catch('board'),
+  view: z.enum(['board', 'line', 'review']).default('board').catch('board'),
   /** Open work order. The URL is the source of truth for the panel. */
   wo: z.string().optional().catch(undefined),
   woTab: z.enum(['activity', 'diff', 'findings', 'shifts', 'qa']).optional().catch(undefined),
@@ -80,6 +80,10 @@ function ProjectPage() {
   const navigate = Route.useNavigate()
   const project = useProject(projectId)
   const line = useQuery(lineQueries.detail(projectId))
+  const reviewLine = useQuery({
+    ...lineQueries.review(projectId),
+    enabled: search.view === 'review',
+  })
   const system = useQuery(systemQueries.info())
   const stations = line.data?.stations ?? []
   const { view, wo } = search
@@ -217,7 +221,7 @@ function ProjectPage() {
             void navigate({
               search: (prev) => ({
                 ...prev,
-                view: value === 'line' ? 'line' : 'board',
+                view: value === 'line' || value === 'review' ? value : 'board',
                 woFull: undefined,
                 wo: full ? undefined : prev.wo,
               }),
@@ -231,6 +235,13 @@ function ProjectPage() {
             </TabsTrigger>
             <TabsTrigger value="line" className="px-2.5 text-xs">
               Line
+            </TabsTrigger>
+            <TabsTrigger
+              value="review"
+              className="px-2.5 text-xs"
+              title="The line a ZASTAVA review of a pull request runs"
+            >
+              Review line
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -280,6 +291,22 @@ function ProjectPage() {
             />
             <OfferQaCallout projectId={projectId} variant="floating" />
           </div>
+        ) : view === 'review' ? (
+          reviewLine.error !== null ? (
+            <div className="p-4">
+              <LoadError what="the review line" message={reviewLine.error.message} />
+            </div>
+          ) : reviewLine.data === undefined ? null : (
+            <div className="h-full p-4">
+              <LineEditor
+                key={reviewLine.data.updatedAt}
+                kind="review"
+                line={reviewLine.data}
+                previewMissing={project !== undefined && project.preview === null}
+                onSetupPreview={() => setSettings(true)}
+              />
+            </div>
+          )
         ) : line.data === undefined ? null : (
           <div className="h-full p-4">
             <LineEditor

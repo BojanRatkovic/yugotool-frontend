@@ -24,10 +24,12 @@ import {
   qaThemeSchema,
   qaViewportSchema,
   type AgentStation,
+  type LineKind,
   type QaStation,
   type ShiftStation,
   type Station,
 } from '@/lib/contracts'
+import { cn } from '@/lib/utils'
 
 type Issues = ReadonlyMap<string, string>
 
@@ -46,10 +48,13 @@ export function StationEditor({
   onChange,
   previewMissing = false,
   onSetupPreview,
+  lineKind = 'build',
 }: {
   station: Station
   issues: Issues
   onChange: (station: Station) => void
+  /** Review lines (spec 0009) only read, and their reviewer returns PR findings. */
+  lineKind?: LineKind
   /** The project has no preview config (QA stations can't run). */
   previewMissing?: boolean
   onSetupPreview?: () => void
@@ -131,7 +136,13 @@ export function StationEditor({
   }
 
   return (
-    <AgentFields station={station} issues={issues} onChange={onChange} nameField={nameField} />
+    <AgentFields
+      station={station}
+      issues={issues}
+      onChange={onChange}
+      nameField={nameField}
+      lineKind={lineKind}
+    />
   )
 }
 
@@ -265,12 +276,16 @@ function AgentFields({
   issues,
   onChange,
   nameField,
+  lineKind,
 }: {
   station: AgentStation
   issues: Issues
   onChange: (station: Station) => void
   nameField: React.ReactNode
+  lineKind: LineKind
 }) {
+  const review = lineKind === 'review'
+  const verdictValue = review ? 'review' : true
   const id = (field: string) => `station-${station.key}-${field}`
   const set = (patch: Partial<AgentStation>) => onChange({ ...station, ...patch })
 
@@ -284,7 +299,7 @@ function AgentFields({
         budgetLabel="Max budget per session (USD)"
       />
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
+        <div className={cn('flex items-center justify-between gap-3', review && 'hidden')}>
           <Label htmlFor={id('canEdit')} className="flex flex-col items-start gap-0.5">
             Can edit files
             <span className="text-xs font-normal text-muted-foreground">
@@ -322,18 +337,20 @@ function AgentFields({
         )}
         <div className="flex items-center justify-between gap-3">
           <Label htmlFor={id('verdict')} className="flex flex-col items-start gap-0.5">
-            Structured verdict
+            {review ? 'Structured review' : 'Structured verdict'}
             <span className="text-xs font-normal text-muted-foreground">
-              Validator output: pass/fail with findings.
+              {review
+                ? 'Reviewer output: findings on lines of the PR diff. The line needs one.'
+                : 'Validator output: pass/fail with findings.'}
             </span>
           </Label>
           <Switch
             id={id('verdict')}
-            checked={station.structuredVerdict === true}
+            checked={station.structuredVerdict === verdictValue}
             onCheckedChange={(on) => {
               // Absent and false mean the same; dropping it keeps the dirty check honest.
               const { structuredVerdict: _drop, ...rest } = station
-              onChange(on ? { ...rest, structuredVerdict: true } : rest)
+              onChange(on ? { ...rest, structuredVerdict: verdictValue } : rest)
             }}
           />
         </div>

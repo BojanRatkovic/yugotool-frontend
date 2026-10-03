@@ -40,7 +40,7 @@ import {
   type StationKind,
 } from '@/features/projects/utils/line-draft'
 import { errorIssues, errorMessage } from '@/lib/api-client'
-import type { Line, Station } from '@/lib/contracts'
+import type { Line, LineKind, Station } from '@/lib/contracts'
 
 const EMPTY_ISSUES: ReadonlyMap<string, string> = new Map()
 
@@ -53,14 +53,17 @@ export function LineEditor({
   line,
   previewMissing,
   onSetupPreview,
+  kind = 'build',
 }: {
   line: Line
+  /** `review`: the line a ZASTAVA review of a PR runs (spec 0009); it only reads. */
+  kind?: LineKind
   /** The project has no preview config; QA stations warn about it. */
   previewMissing: boolean
   onSetupPreview: () => void
 }) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
-  const save = useSaveLine(line.projectId)
+  const save = useSaveLine(line.projectId, kind)
 
   const form = useForm({
     defaultValues: { stations: line.stations },
@@ -80,7 +83,7 @@ export function LineEditor({
     () => !sameStations(stations, line.stations),
     [stations, line.stations],
   )
-  const issues = useMemo(() => lineIssues(stations), [stations])
+  const issues = useMemo(() => lineIssues(stations, kind), [stations, kind])
   const invalidKeys = useMemo(() => new Set(issues.byStation.keys()), [issues])
   const selected = stations.find((station) => station.key === selectedKey)
   const selectedIndex = stations.findIndex((station) => station.key === selectedKey)
@@ -88,8 +91,8 @@ export function LineEditor({
   const setStations = (next: Station[]) => form.setFieldValue('stations', next)
   const onSelect = useCallback((key: string) => setSelectedKey(key), [])
 
-  function add(kind: StationKind) {
-    const station = newStation(kind, stations)
+  function add(stationKind: StationKind) {
+    const station = newStation(stationKind, stations)
     setStations(insertAfter(stations, selectedKey, station))
     setSelectedKey(station.key)
   }
@@ -100,7 +103,7 @@ export function LineEditor({
   return (
     <div className="flex h-full flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <AddStationButtons onAdd={add} label="Add" />
+        <AddStationButtons onAdd={add} label="Add" kind={kind} />
         <span className="ml-auto text-xs text-muted-foreground" aria-live="polite">
           {save.isPending
             ? 'Saving…'
@@ -156,8 +159,9 @@ export function LineEditor({
             <div className="flex max-w-sm flex-col items-center gap-1 text-center">
               <p className="text-sm font-medium">No stations yet</p>
               <p className="text-[0.8125rem] text-muted-foreground">
-                A line is the stations every work order passes through, left to right. Add the
-                first one with the buttons above.
+                {kind === 'review'
+                  ? 'A review line reads a pull request, left to right: a reviewer agent with a structured review, optionally checks and QA. Add the first station above.'
+                  : 'A line is the stations every work order passes through, left to right. Add the first one with the buttons above.'}
               </p>
             </div>
           </div>
@@ -192,6 +196,7 @@ export function LineEditor({
                   issues={issues.byStation.get(selected.key) ?? EMPTY_ISSUES}
                   onChange={(station) => setStations(replaceStation(stations, station))}
                   previewMissing={previewMissing}
+                  lineKind={kind}
                   onSetupPreview={() => {
                     // One sheet at a time: the draft stays, the settings sheet takes over.
                     setSelectedKey(null)
@@ -200,7 +205,7 @@ export function LineEditor({
                 />
               </div>
               <SheetFooter className="flex-col gap-2 border-t">
-                <AddStationButtons onAdd={add} label="Add after" />
+                <AddStationButtons onAdd={add} label="Add after" kind={kind} />
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -250,12 +255,17 @@ const ADD_KINDS: readonly { kind: StationKind; icon: typeof Bot }[] = [
   { kind: 'qa', icon: ScanEye },
 ]
 
+/** A review line only reads: no gates (triage is the gate) and no shifts. */
+const REVIEW_KINDS: ReadonlySet<StationKind> = new Set(['agent', 'checks', 'qa'])
+
 function AddStationButtons({
   onAdd,
   label,
+  kind: lineKind,
 }: {
   onAdd: (kind: StationKind) => void
   label: string
+  kind: LineKind
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -263,17 +273,19 @@ function AddStationButtons({
         <Plus aria-hidden="true" className="size-3.5" />
         {label}
       </span>
-      {ADD_KINDS.map(({ kind, icon: Icon }) => (
-        <Tooltip key={kind}>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => onAdd(kind)}>
-              <Icon aria-hidden="true" />
-              {STATION_KIND_LABEL[kind]}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-64">{STATION_KIND_HINT[kind]}</TooltipContent>
-        </Tooltip>
-      ))}
+      {ADD_KINDS.filter(({ kind }) => lineKind !== 'review' || REVIEW_KINDS.has(kind)).map(
+        ({ kind, icon: Icon }) => (
+          <Tooltip key={kind}>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" onClick={() => onAdd(kind)}>
+                <Icon aria-hidden="true" />
+                {STATION_KIND_LABEL[kind]}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-64">{STATION_KIND_HINT[kind]}</TooltipContent>
+          </Tooltip>
+        ),
+      )}
     </div>
   )
 }

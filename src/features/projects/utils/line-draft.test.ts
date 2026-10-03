@@ -56,3 +56,31 @@ describe('line draft', () => {
     ])
   })
 })
+
+describe('lineIssues on a review line', () => {
+  const reviewer: Station = {
+    key: 'review',
+    kind: 'agent',
+    name: 'Review',
+    role: 'pull-request-reviewer',
+    model: 'claude-sonnet-5-5',
+    allowedTools: ['Read'],
+    canEdit: false,
+    structuredVerdict: 'review',
+    prompt: 'Review.',
+  }
+
+  it('accepts a reviewer with checks', () => {
+    const checks: Station = { key: 'lint', kind: 'checks', name: 'Lint', command: 'pnpm lint' }
+    expect(lineIssues([reviewer, checks], 'review').general).toEqual([])
+  })
+
+  it('needs a reviewer and refuses gates', () => {
+    const { general } = lineIssues(
+      [{ ...reviewer, structuredVerdict: true }, gate('g')],
+      'review',
+    )
+    expect(general).toContain('a review line has no gates, shifts or stations that edit code')
+    expect(general).toContain('a review line needs a reviewer station (structured review)')
+  })
+})
