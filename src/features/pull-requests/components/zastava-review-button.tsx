@@ -45,6 +45,34 @@ export function ZastavaReviewButton({
     )
   }
 
+  if (state.kind === 'done' && state.reReview) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mr-1"
+            onClick={() =>
+              start.mutate(undefined, {
+                onSuccess: onOpen,
+                onError: (error) => toast.error(error.message),
+              })
+            }
+          >
+            <ScanSearch aria-hidden="true" />
+            Re-review
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          New commits since the review with {state.findings} finding
+          {state.findings === 1 ? '' : 's'}: check what was fixed.{' '}
+          <span className="font-mono">Z</span>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
   if (state.kind === 'done') {
     return (
       <Tooltip>

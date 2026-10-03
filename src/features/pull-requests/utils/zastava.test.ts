@@ -5,22 +5,28 @@ import {
   findingPlace,
   findingsLabel,
   fromBrief,
+  fixedReply,
   postPayload,
+  previousCounts,
+  previousRows,
+  stillOpenReply,
   zastavaState,
 } from '@/features/pull-requests/utils/zastava'
 
 describe('zastavaState', () => {
   it('counts the findings not posted yet', () => {
     const state = zastavaState({ status: 'succeeded', findings: 4, posted: 1, stale: false })
-    expect(state).toEqual({ kind: 'done', findings: 4, open: 3, stale: false })
+    expect(state).toEqual({ kind: 'done', findings: 4, open: 3, stale: false, reReview: false })
     if (state.kind === 'done') expect(findingsLabel(state)).toBe('3 findings')
   })
 
   it('says when everything is posted or there was nothing', () => {
-    expect(findingsLabel({ kind: 'done', findings: 2, open: 0, stale: false })).toBe('2 posted')
-    expect(findingsLabel({ kind: 'done', findings: 0, open: 0, stale: false })).toBe(
-      'No findings',
-    )
+    expect(
+      findingsLabel({ kind: 'done', findings: 2, open: 0, stale: false, reReview: false }),
+    ).toBe('2 posted')
+    expect(
+      findingsLabel({ kind: 'done', findings: 0, open: 0, stale: false, reReview: false }),
+    ).toBe('No findings')
   })
 
   it('treats a cancelled review as none and a failed one as failed', () => {
@@ -40,7 +46,9 @@ describe('zastavaState', () => {
       findings: 1,
       posted: 0,
     }
-    expect(fromBrief(brief, 'b')).toMatchObject({ kind: 'done', stale: true })
+    expect(fromBrief(brief, 'b')).toMatchObject({ kind: 'done', stale: true, reReview: true })
+    expect(fromBrief({ ...brief, findings: 0 }, 'b')).toMatchObject({ reReview: false })
+    expect(fromBrief(brief, 'a')).toMatchObject({ reReview: false })
     expect(fromBrief(undefined, 'b')).toEqual({ kind: 'none' })
   })
 })
@@ -84,5 +92,50 @@ describe('triage', () => {
     expect(findingPlace({ file: 'a.ts', line: 9, startLine: 7 })).toBe('a.ts:7–9')
     expect(findingPlace({ file: 'a.ts', line: null, startLine: null })).toBe('a.ts')
     expect(findingPlace({ file: null, line: null, startLine: null })).toBeNull()
+  })
+})
+
+const prev = (id: string) => ({
+  id,
+  severity: 'important' as const,
+  category: 'bug',
+  file: 'src/a.ts',
+  line: 3,
+  title: `title ${id}`,
+  body: 'b',
+  posted: true,
+  threadId: `T-${id}`,
+  threadResolved: false,
+})
+
+describe('re-review (spec 0010)', () => {
+  it('pairs each previous finding with its status, unchecked when missing', () => {
+    const rows = previousRows(
+      [prev('f1'), prev('f2'), prev('f3'), prev('f4'), prev('f5')],
+      [
+        { id: 'f1', status: 'fixed', note: 'src/a.ts:4' },
+        { id: 'f2', status: 'fixed', note: '' },
+        { id: 'f3', status: 'partly', note: 'one call left' },
+        { id: 'f4', status: 'open', note: 'src/a.ts:9' },
+      ],
+    )
+    expect(rows.map((r) => r.status)).toEqual(['fixed', 'fixed', 'partly', 'open', 'unchecked'])
+    expect(previousCounts(rows)).toBe('2 fixed · 1 partly · 1 still open · 1 not checked')
+    expect(previousCounts(rows.slice(0, 2))).toBe('2 fixed')
+  })
+
+  it('prefills the replies', () => {
+    expect(fixedReply('abcdef1234')).toBe('Fixed in abcdef1.')
+    const [open, partly, bare] = previousRows(
+      [prev('f1'), prev('f2'), prev('f3')],
+      [
+        { id: 'f1', status: 'open', note: 'src/a.ts:9 still reads items[0]' },
+        { id: 'f2', status: 'partly', note: 'one call left' },
+        { id: 'f3', status: 'open', note: ' ' },
+      ],
+    )
+    expect(open && stillOpenReply(open)).toBe('Still open: src/a.ts:9 still reads items[0]')
+    expect(partly && stillOpenReply(partly)).toBe('Partly fixed: one call left')
+    expect(bare && stillOpenReply(bare)).toBe('Still open.')
   })
 })

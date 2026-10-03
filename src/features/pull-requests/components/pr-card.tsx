@@ -126,6 +126,17 @@ function ZastavaChip({ state }: { state: ZastavaState }) {
       </span>
     )
   }
+  if (state.reReview) {
+    return (
+      <span
+        className="flex items-center gap-0.5 text-foreground"
+        title={`ZASTAVA: re-review (${state.findings} finding${state.findings === 1 ? '' : 's'} on an older commit)`}
+      >
+        <ScanSearch aria-hidden="true" className="size-3" />
+        <span>Re-review</span>
+      </span>
+    )
+  }
   const label = `ZASTAVA: ${findingsLabel(state)}${state.stale ? ' (older commit)' : ''}`
   return (
     <span

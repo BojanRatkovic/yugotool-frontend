@@ -1,5 +1,7 @@
 import type {
   PostFindings,
+  PreviousFinding,
+  PreviousStatus,
   ReviewFinding,
   ZastavaReview,
   ZastavaReviewBrief,
@@ -10,7 +12,14 @@ export type ZastavaState =
   | { kind: 'none' }
   | { kind: 'running' }
   | { kind: 'failed' }
-  | { kind: 'done'; findings: number; open: number; stale: boolean }
+  | {
+      kind: 'done'
+      findings: number
+      open: number
+      stale: boolean
+      /** The head moved after a review with findings: time to check they were fixed. */
+      reReview: boolean
+    }
 
 export function zastavaState(
   review: Pick<ZastavaReview, 'status'> & {
@@ -30,6 +39,7 @@ export function zastavaState(
         findings,
         open: Math.max(0, findings - review.posted),
         stale: review.stale,
+        reReview: review.stale && findings > 0,
       }
     }
     case 'failed':
@@ -107,4 +117,52 @@ export function findingPlace(
   if (f.file === null) return null
   if (f.line === null) return f.file
   return f.startLine === null ? `${f.file}:${f.line}` : `${f.file}:${f.startLine}–${f.line}`
+}
+
+/** A previous finding with what the re-review said about it (spec 0010). */
+export interface PreviousRow {
+  finding: PreviousFinding
+  /** `unchecked`: the reviewer gave it no status. */
+  status: PreviousStatus['status'] | 'unchecked'
+  note: string
+}
+
+export function previousRows(
+  findings: PreviousFinding[],
+  statuses: PreviousStatus[],
+): PreviousRow[] {
+  const byId = new Map(statuses.map((s) => [s.id, s]))
+  return findings.map((finding) => {
+    const status = byId.get(finding.id)
+    return status === undefined
+      ? { finding, status: 'unchecked', note: '' }
+      : { finding, status: status.status, note: status.note }
+  })
+}
+
+const COUNT_LABEL: Record<PreviousRow['status'], string> = {
+  fixed: 'fixed',
+  partly: 'partly',
+  open: 'still open',
+  unchecked: 'not checked',
+}
+
+/** "2 fixed · 1 partly · 1 still open", skipping the empty ones. */
+export function previousCounts(rows: PreviousRow[]): string {
+  return (['fixed', 'partly', 'open', 'unchecked'] as const)
+    .map((status) => [rows.filter((r) => r.status === status).length, status] as const)
+    .filter(([n]) => n > 0)
+    .map(([n, status]) => `${n} ${COUNT_LABEL[status]}`)
+    .join(' · ')
+}
+
+/** What a resolved thread says first, so the author sees where it was fixed. */
+export function fixedReply(headOid: string): string {
+  return `Fixed in ${headOid.slice(0, 7)}.`
+}
+
+/** The prefilled "still open" reply: the re-review's evidence. */
+export function stillOpenReply(row: PreviousRow): string {
+  const lead = row.status === 'partly' ? 'Partly fixed' : 'Still open'
+  return row.note.trim() === '' ? `${lead}.` : `${lead}: ${row.note.trim()}`
 }

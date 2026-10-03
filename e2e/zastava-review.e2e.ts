@@ -2,6 +2,7 @@ import { expect, test, type Page, type Route } from '@playwright/test'
 
 import {
   postFindingsSchema,
+  prReplyInputSchema,
   type PostFindings,
   type PullRequestDetail,
   type ReviewVerdict,
@@ -94,6 +95,8 @@ function reviewOf(patch: Partial<ZastavaReview> = {}): ZastavaReview {
       sinceOid: null,
       openThreads: [],
       posted: [],
+      postedThreads: {},
+      previousFindings: [],
     },
     stale: false,
     verdict: VERDICT,
@@ -109,7 +112,13 @@ const json = (route: Route, body: unknown, status = 200) =>
 
 /** The API with one PR and a ZASTAVA review the test drives. */
 async function mockApi(page: Page, initial: ZastavaReview | null, detail = DETAIL) {
-  const state = { review: initial, posts: [] as PostFindings[], starts: 0 }
+  const state = {
+    review: initial,
+    posts: [] as PostFindings[],
+    starts: 0,
+    /** Thread writes in order: "reply T1: …" / "resolve T1". */
+    threadCalls: [] as string[],
+  }
   await page.route(
     (url) => url.pathname.startsWith('/api/'),
     async (route) => {
@@ -164,6 +173,17 @@ async function mockApi(page: Page, initial: ZastavaReview | null, detail = DETAI
           return json(route, state.review, 201)
         }
         return json(route, { review: state.review })
+      }
+      const thread = new RegExp(`^${pulls}/21/threads/([^/]+)/(replies|resolve)$`).exec(path)
+      if (thread !== null) {
+        const [, id, action] = thread
+        if (action === 'replies') {
+          const { body } = prReplyInputSchema.parse(route.request().postDataJSON())
+          state.threadCalls.push(`reply ${id}: ${body}`)
+          return json(route, {}, 201)
+        }
+        state.threadCalls.push(`resolve ${id}`)
+        return route.fulfill({ status: 204 })
       }
       if (path === `${pulls}/21/zastava-review/post`) {
         const body = postFindingsSchema.parse(route.request().postDataJSON())
@@ -246,11 +266,99 @@ test('findings show as ghost comments in Files and go to the review one by one',
   expect(api.posts[0]?.findings.map((f) => f.id)).toEqual(['f1'])
 })
 
-test('a stale review blocks posting and offers a re-run', async ({ page }) => {
-  await mockApi(page, reviewOf({ stale: true }))
+test('a stale review blocks posting and offers a re-review', async ({ page }) => {
+  const api = await mockApi(page, reviewOf({ stale: true }))
+  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
+  await expect(page.getByRole('button', { name: 'Re-review the new commits' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /to pending review/ })).toBeDisabled()
+  await page.getByRole('button', { name: 'Re-review', exact: true }).click()
+  await expect(page.getByRole('button', { name: /Reviewing…/ })).toBeVisible()
+  expect(api.starts).toBe(1)
+})
+
+test('a stale review without findings offers a plain re-run', async ({ page }) => {
+  await mockApi(page, reviewOf({ stale: true, verdict: { ...VERDICT, findings: [] } }))
   await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
   await expect(page.getByRole('button', { name: 'Re-run on new head' })).toBeVisible()
-  await expect(page.getByRole('button', { name: /to pending review/ })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Re-review', exact: true })).toBeHidden()
+})
+
+const previousFinding = (id: string, title: string, threadId: string | null) => ({
+  id,
+  severity: 'critical' as const,
+  category: 'bug',
+  file: 'src/app.ts',
+  line: 2,
+  title,
+  body: 'body',
+  posted: true,
+  threadId,
+  threadResolved: threadId === null ? null : false,
+})
+
+/** A re-review of new commits: two of the three earlier findings had threads. */
+const reReview = () =>
+  reviewOf({
+    pullRequest: {
+      ...reviewOf().pullRequest,
+      sinceOid: 'e'.repeat(40),
+      previousFindings: [
+        previousFinding('p1', 'Totals off by one', 'T1'),
+        previousFinding('p2', 'Export ignores filters', 'T2'),
+        previousFinding('p3', 'No empty-list test', null),
+      ],
+    },
+    verdict: {
+      ...VERDICT,
+      findings: [VERDICT.findings[1] ?? VERDICT.findings[0]].filter((f) => f !== undefined),
+      previous: [
+        { id: 'p1', status: 'fixed', note: 'src/app.ts:2 is back to 2' },
+        { id: 'p2', status: 'open', note: 'src/app.ts:3 still exports every row' },
+        { id: 'p3', status: 'partly', note: 'a test exists, not for the empty list' },
+      ],
+    },
+  })
+
+test('a re-review shows what was fixed since the last review', async ({ page }) => {
+  const api = await mockApi(page, reReview())
+  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
+  const since = page.getByRole('region', { name: 'Since your last review' })
+  await expect(since).toContainText('1 fixed · 1 partly · 1 still open')
+  await expect(since.getByText('src/app.ts:3 still exports every row')).toBeVisible()
+  await expect(page.getByText('New findings')).toBeVisible()
+  await page.screenshot({ path: test.info().outputPath('re-review.png') })
+
+  // Fixed + open thread: reply "Fixed in <sha>" (default on), then resolve.
+  await since.getByRole('button', { name: 'Resolve thread' }).click()
+  await expect(since.getByText('Resolved')).toBeVisible()
+  expect(api.threadCalls).toEqual([
+    `reply T1: Fixed in ${DETAIL.headOid.slice(0, 7)}.`,
+    'resolve T1',
+  ])
+
+  // Still open + thread: the composer is prefilled with the note.
+  await since.getByRole('button', { name: 'Reply “still open”' }).click()
+  await expect(since.getByRole('textbox', { name: 'Reply' })).toHaveValue(
+    'Still open: src/app.ts:3 still exports every row',
+  )
+  await since.getByRole('button', { name: 'Send reply' }).click()
+  await expect(since.getByText('Replied on GitHub')).toBeVisible()
+  expect(api.threadCalls.at(-1)).toBe(
+    'reply T2: Still open: src/app.ts:3 still exports every row',
+  )
+
+  // No thread: status and note only.
+  await expect(since.getByRole('button', { name: /Reply|Resolve/ })).toHaveCount(0)
+})
+
+test('resolve without the reply when the box is unticked', async ({ page }) => {
+  const api = await mockApi(page, reReview())
+  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
+  const since = page.getByRole('region', { name: 'Since your last review' })
+  await since.getByRole('checkbox', { name: /Fixed in/ }).uncheck()
+  await since.getByRole('button', { name: 'Resolve thread' }).click()
+  await expect(since.getByText('Resolved')).toBeVisible()
+  expect(api.threadCalls).toEqual(['resolve T1'])
 })
 
 test('the card shows the review', async ({ page }) => {
@@ -258,6 +366,17 @@ test('the card shows the review', async ({ page }) => {
   await page.goto(`/projects/${PROJECT}/pulls/assigned`)
   await expect(page.locator('[data-pr-card="21"]')).toBeVisible()
   await expect(page.getByTitle('ZASTAVA: 2 findings')).toBeVisible()
+})
+
+test('the card asks for a re-review when new commits came after findings', async ({ page }) => {
+  await mockApi(
+    page,
+    reviewOf({ pullRequest: { ...reviewOf().pullRequest, headOid: 'f'.repeat(40) } }),
+  )
+  await page.goto(`/projects/${PROJECT}/pulls/assigned`)
+  await expect(
+    page.getByTitle('ZASTAVA: re-review (2 findings on an older commit)'),
+  ).toBeVisible()
 })
 
 test('the review dialog fits long pending comments', async ({ page }) => {

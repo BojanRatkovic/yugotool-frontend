@@ -12,12 +12,14 @@ import {
   useStartZastavaReview,
 } from '@/features/pull-requests/api/pr-mutations'
 import { prQueries } from '@/features/pull-requests/api/pr-queries'
+import { PrPreviousFindings } from '@/features/pull-requests/components/pr-previous-findings'
 import { ReviewText } from '@/features/pull-requests/components/review-text'
 import {
   defaultSelection,
   findingPlace,
   type FindingEdit,
   postPayload,
+  previousRows,
 } from '@/features/pull-requests/utils/zastava'
 import { errorMessage } from '@/lib/api-client'
 import type {
@@ -225,6 +227,7 @@ function Findings({
   const rerun = useStartZastavaReview(projectId, pr.number)
   const payload = postPayload(verdict.findings, selected, posted, edits)
   const recommendation = RECOMMENDATION[verdict.recommendation]
+  const previous = previousRows(review.pullRequest.previousFindings, verdict.previous)
   const editOf = (f: ReviewFinding): FindingEdit =>
     edits[f.id] ?? { title: f.title, body: f.body, suggestion: f.suggestion }
 
@@ -270,14 +273,32 @@ function Findings({
                   rerun.mutate(undefined, { onError: (e) => toast.error(errorMessage(e)) })
                 }
               >
-                Re-run on new head
+                {verdict.findings.length > 0 || previous.length > 0
+                  ? 'Re-review the new commits'
+                  : 'Re-run on new head'}
               </Button>
             </div>
           ) : null}
         </section>
+        {previous.length === 0 ? null : (
+          <PrPreviousFindings
+            projectId={projectId}
+            number={pr.number}
+            headOid={review.pullRequest.headOid}
+            rows={previous}
+            onOpenFile={onOpenFile}
+          />
+        )}
+        {previous.length === 0 ? null : (
+          <h3 className="border-b bg-muted/40 px-4 py-2 text-[0.8125rem] font-semibold">
+            New findings
+          </h3>
+        )}
         {verdict.findings.length === 0 ? (
           <p className="px-4 py-6 text-[0.8125rem] text-muted-foreground">
-            No findings. Nothing here needs a comment.
+            {previous.length === 0
+              ? 'No findings. Nothing here needs a comment.'
+              : 'Nothing new in the commits since.'}
           </p>
         ) : (
           <ul aria-label="Findings">
