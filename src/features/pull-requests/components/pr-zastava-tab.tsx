@@ -12,6 +12,7 @@ import {
   useStartZastavaReview,
 } from '@/features/pull-requests/api/pr-mutations'
 import { prQueries } from '@/features/pull-requests/api/pr-queries'
+import { ReviewText } from '@/features/pull-requests/components/review-text'
 import {
   defaultSelection,
   findingPlace,
@@ -156,7 +157,7 @@ function FindingRow({
           {open ? (
             <div id={id} className="flex flex-col gap-2 pt-1.5 pl-[1.375rem]">
               {posted ? (
-                <p className="text-[0.8125rem] whitespace-pre-wrap">{edit.body}</p>
+                <ReviewText text={edit.body} className="text-[0.8125rem]" />
               ) : (
                 <>
                   <Input
@@ -254,7 +255,7 @@ function Findings({
             </span>
             <span className="font-mono tabular-nums">{formatUsd(review.costUsd)}</span>
           </div>
-          <p className="text-[0.8125rem] leading-5">{verdict.summary}</p>
+          <ReviewText text={verdict.summary} className="max-w-3xl text-[0.8125rem]" />
           {review.stale ? (
             <div className="flex items-center gap-3 rounded-md bg-status-waiting-soft px-3 py-2 text-[0.8125rem]">
               <span className="flex-1">

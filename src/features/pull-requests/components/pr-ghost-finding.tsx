@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { usePostZastavaFindings } from '@/features/pull-requests/api/pr-mutations'
+import { ReviewText } from '@/features/pull-requests/components/review-text'
 import { errorMessage } from '@/lib/api-client'
 import type { ReviewFinding } from '@/lib/contracts'
 import { cn } from '@/lib/utils'
@@ -70,7 +71,7 @@ export function PrGhostFinding({
           <X aria-hidden="true" />
         </Button>
       </header>
-      <p className="whitespace-pre-wrap text-muted-foreground">{finding.body}</p>
+      <ReviewText text={finding.body} className="text-muted-foreground" />
       {finding.suggestion === null ? null : (
         <pre className="overflow-x-auto rounded-sm bg-muted px-2 py-1 font-mono text-xs">
           {finding.suggestion}
