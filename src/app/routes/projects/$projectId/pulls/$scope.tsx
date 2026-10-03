@@ -16,7 +16,7 @@ const searchSchema = z.object({
   /** Open pull request. The URL is the source of truth for the panel. */
   pr: z.coerce.number().int().positive().optional().catch(undefined),
   prTab: z
-    .enum(['overview', 'files', 'threads', 'checks', 'commits'])
+    .enum(['overview', 'files', 'threads', 'checks', 'commits', 'zastava'])
     .optional()
     .catch(undefined),
   /** Files tab: the file shown. */

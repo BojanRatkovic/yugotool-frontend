@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 import { LoadError } from '@/components/data-state'
 import { Button } from '@/components/ui/button'
@@ -22,11 +23,14 @@ import {
   type ReviewEvent,
 } from '@/features/pull-requests/components/pr-review-dialog'
 import { PrTabBody } from '@/features/pull-requests/components/pr-tab-body'
+import { ZastavaReviewButton } from '@/features/pull-requests/components/zastava-review-button'
+import { useStartZastavaReview } from '@/features/pull-requests/api/pr-mutations'
 import { ApiError } from '@/lib/api-client'
 import type { PullRequestDetail } from '@/lib/contracts'
 import { isPanelTypingTarget } from '@/features/pull-requests/utils/keys'
+import { fromReview, type ZastavaState } from '@/features/pull-requests/utils/zastava'
 
-export const PR_TABS = ['overview', 'files', 'threads', 'checks', 'commits'] as const
+export const PR_TABS = ['overview', 'files', 'threads', 'checks', 'commits', 'zastava'] as const
 export type PrTab = (typeof PR_TABS)[number]
 
 /** The panel's URL state (the route owns it). */
@@ -47,9 +51,10 @@ const TAB_LABEL: Record<PrTab, string> = {
   threads: 'Threads',
   checks: 'Checks',
   commits: 'Commits',
+  zastava: 'ZASTAVA',
 }
 
-function tabCount(pr: PullRequestDetail, tab: PrTab): number | null {
+function tabCount(pr: PullRequestDetail, tab: PrTab, zastava: ZastavaState): number | null {
   switch (tab) {
     case 'files':
       return pr.changedFiles
@@ -57,6 +62,8 @@ function tabCount(pr: PullRequestDetail, tab: PrTab): number | null {
       return pr.threads.unresolved
     case 'commits':
       return pr.commits.length
+    case 'zastava':
+      return zastava.kind === 'done' ? zastava.open : null
     default:
       return null
   }
@@ -102,6 +109,12 @@ export function PrPanel({
   onClose: () => void
 }) {
   const detail = useQuery(prQueries.detail(projectId, number))
+  const zastavaQuery = useQuery({
+    ...prQueries.zastavaReview(projectId, number, detail.data?.headOid ?? ''),
+    enabled: detail.data !== undefined,
+  })
+  const zastava = fromReview(zastavaQuery.data?.review ?? null)
+  const startZastava = useStartZastavaReview(projectId, number)
   /** The review dialog, open with this event preselected. */
   const [review, setReview] = useState<ReviewEvent | null>(null)
 
@@ -109,6 +122,25 @@ export function PrPanel({
     function onKeyDown(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey || isPanelTypingTarget(event.target))
         return
+      if (
+        event.key === 'z' &&
+        detail.data?.state === 'open' &&
+        zastavaQuery.data !== undefined
+      ) {
+        event.preventDefault()
+        // Z: open the review when there is one, else start it.
+        if (zastava.kind === 'none' || zastava.kind === 'failed') {
+          if (!startZastava.isPending) {
+            startZastava.mutate(undefined, {
+              onSuccess: () => onChange({ tab: 'zastava' }),
+              onError: (error) => toast.error(error.message),
+            })
+          }
+        } else {
+          onChange({ tab: 'zastava' })
+        }
+        return
+      }
       const tab = PR_TABS[Number(event.key) - 1]
       if (tab !== undefined) {
         event.preventDefault()
@@ -145,7 +177,14 @@ export function PrPanel({
   }
 
   const isAuthor = pr.author.login === viewer
-  const actions = isAuthor ? (
+  const zastavaButton = (
+    <ZastavaReviewButton
+      projectId={projectId}
+      pr={pr}
+      onOpen={() => onChange({ tab: 'zastava' })}
+    />
+  )
+  const reviewActions = isAuthor ? (
     <PrAuthorActions projectId={projectId} pr={pr} />
   ) : pr.state !== 'open' ? null : (
     <DropdownMenu>
@@ -163,6 +202,12 @@ export function PrPanel({
         <DropdownMenuItem onSelect={() => setReview('COMMENT')}>Comment</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  )
+  const actions = (
+    <>
+      {zastavaButton}
+      {reviewActions}
+    </>
   )
 
   return (
@@ -185,7 +230,7 @@ export function PrPanel({
         <div className="flex h-10 items-center gap-3 border-b px-4">
           <TabsList variant="line" className="h-10 gap-4 p-0">
             {PR_TABS.map((tab, index) => {
-              const count = tabCount(pr, tab)
+              const count = tabCount(pr, tab, zastava)
               return (
                 <TabsTrigger
                   key={tab}

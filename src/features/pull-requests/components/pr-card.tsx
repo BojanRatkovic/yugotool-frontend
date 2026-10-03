@@ -1,5 +1,7 @@
 import {
   ExternalLink,
+  LoaderCircle,
+  ScanSearch,
   GitBranch,
   Link2,
   MessageSquare,
@@ -18,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { PrAvatar } from '@/features/pull-requests/components/pr-avatar'
 import { shortAge, type PrPlacement } from '@/features/pull-requests/utils/columns'
 import { prSize, sizeLabel } from '@/features/pull-requests/utils/size'
+import { findingsLabel, type ZastavaState } from '@/features/pull-requests/utils/zastava'
 import type { PrCiState, PrReviewer, PullRequestSummary } from '@/lib/contracts'
 import { cn } from '@/lib/utils'
 
@@ -98,6 +101,48 @@ function ReviewerStack({ reviewers }: { reviewers: PrReviewer[] }) {
   )
 }
 
+/** The PR's ZASTAVA review on its card: running, findings to triage, or stale. */
+function ZastavaChip({ state }: { state: ZastavaState }) {
+  if (state.kind === 'none') return null
+  if (state.kind === 'running') {
+    return (
+      <span
+        className="flex items-center gap-0.5 text-status-running"
+        title="ZASTAVA is reviewing"
+      >
+        <LoaderCircle aria-hidden="true" className="size-3 animate-spin" />
+        <span className="sr-only">ZASTAVA is reviewing</span>
+      </span>
+    )
+  }
+  if (state.kind === 'failed') {
+    return (
+      <span
+        className="flex items-center gap-0.5 text-status-failed"
+        title="ZASTAVA review failed"
+      >
+        <ScanSearch aria-hidden="true" className="size-3" />
+        <span className="sr-only">ZASTAVA review failed</span>
+      </span>
+    )
+  }
+  const label = `ZASTAVA: ${findingsLabel(state)}${state.stale ? ' (older commit)' : ''}`
+  return (
+    <span
+      className={cn(
+        'flex items-center gap-0.5',
+        state.open > 0 && 'text-foreground',
+        state.stale && 'opacity-60',
+      )}
+      title={label}
+    >
+      <ScanSearch aria-hidden="true" className="size-3" />
+      <span className="sr-only">{label}</span>
+      {state.open > 0 ? <span aria-hidden="true">{state.open}</span> : null}
+    </span>
+  )
+}
+
 /** A PR on the board: number, title, why it's in this column, and the vitals. */
 export function PrCard({
   pr,
@@ -106,6 +151,7 @@ export function PrCard({
   showAuthor,
   onOpen,
   now,
+  zastava = { kind: 'none' },
 }: {
   pr: PullRequestSummary
   placement: PrPlacement
@@ -113,6 +159,8 @@ export function PrCard({
   showAuthor: boolean
   onOpen: (number: number) => void
   now: number
+  /** Its latest ZASTAVA review (spec 0009). */
+  zastava?: ZastavaState
 }) {
   const size = prSize(pr.additions, pr.deletions)
   const ci = CI_DOT[pr.ci]
@@ -175,6 +223,7 @@ export function PrCard({
               </span>
             )}
             <span className="ml-auto flex items-center gap-2">
+              <ZastavaChip state={zastava} />
               <ReviewerStack reviewers={pr.reviewers} />
               {pr.threads.unresolved === 0 ? null : (
                 <span

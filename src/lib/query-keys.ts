@@ -50,8 +50,9 @@ export const queryKeys = {
   pullRequests: (projectId: string) => ['pull-requests', projectId] as const,
   /** ZASTAVA reviews of pull requests (spec 0009); the root invalidates every PR's. */
   zastavaReviews: () => ['zastava-reviews'] as const,
-  zastavaReview: (projectId: string, number: number) =>
-    ['zastava-reviews', projectId, number] as const,
+  zastavaReview: (projectId: string, number: number, head: string) =>
+    ['zastava-reviews', projectId, 'detail', number, head] as const,
+  zastavaReviewBriefs: (projectId: string) => ['zastava-reviews', projectId, 'briefs'] as const,
   pullRequestList: (projectId: string, scope: string, teams: boolean) =>
     ['pull-requests', projectId, 'list', scope, teams] as const,
   pullRequest: (projectId: string, number: number) =>

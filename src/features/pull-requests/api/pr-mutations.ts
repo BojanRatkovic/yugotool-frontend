@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { apiClient } from '@/lib/api-client'
-import type {
-  PrLineCommentInput,
-  PrMergeMethod,
-  PrSubmitReviewInput,
-  PullRequestDetail,
+import {
+  type PostFindings,
+  type PrLineCommentInput,
+  type PrMergeMethod,
+  type PrSubmitReviewInput,
+  type PullRequestDetail,
+  zastavaReviewSchema,
 } from '@/lib/contracts'
 import { queryKeys } from '@/lib/query-keys'
 
@@ -150,5 +152,37 @@ export function useMergePr(projectId: string, number: number) {
     mutationFn: ({ method }: { method: PrMergeMethod }) =>
       apiClient.post(`${base(projectId, number)}/merge`, { method }),
     onSuccess: invalidate,
+  })
+}
+
+/** Every ZASTAVA review change also changes the cards' chips. */
+function useInvalidateReviews() {
+  const queryClient = useQueryClient()
+  return () => queryClient.invalidateQueries({ queryKey: queryKeys.zastavaReviews() })
+}
+
+/** Starts a ZASTAVA review of the PR's current head (spec 0009). */
+export function useStartZastavaReview(projectId: string, number: number) {
+  const invalidate = useInvalidateReviews()
+  return useMutation({
+    mutationFn: async () =>
+      zastavaReviewSchema.parse(
+        await apiClient.post(`${base(projectId, number)}/zastava-review`, {
+          id: crypto.randomUUID(),
+        }),
+      ),
+    onSuccess: invalidate,
+  })
+}
+
+/** The kept findings (as edited) into my pending review on GitHub; never submits. */
+export function usePostZastavaFindings(projectId: string, number: number) {
+  const invalidateReviews = useInvalidateReviews()
+  const invalidatePr = useInvalidatePr(projectId)
+  return useMutation({
+    mutationFn: (input: PostFindings) =>
+      apiClient.post(`${base(projectId, number)}/zastava-review/post`, input),
+    // A refusal halfway still posted some: refresh either way.
+    onSettled: () => Promise.all([invalidateReviews(), invalidatePr()]),
   })
 }

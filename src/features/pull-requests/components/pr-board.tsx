@@ -18,6 +18,7 @@ import { LoadError } from '@/components/data-state'
 import { Button } from '@/components/ui/button'
 import { prQueries } from '@/features/pull-requests/api/pr-queries'
 import { PrCard } from '@/features/pull-requests/components/pr-card'
+import { fromBrief } from '@/features/pull-requests/utils/zastava'
 import { buildPrColumns, type PrColumnKey } from '@/features/pull-requests/utils/columns'
 import { useNow } from '@/hooks/use-now'
 import { useShiftWheel } from '@/hooks/use-shift-wheel'
@@ -53,6 +54,11 @@ export function PrBoard({
   onEditDelivery: () => void
 }) {
   const list = useQuery(prQueries.list(projectId, scope, teams))
+  const briefs = useQuery(prQueries.zastavaBriefs(projectId))
+  const reviewByNumber = useMemo(
+    () => new Map((briefs.data?.items ?? []).map((brief) => [brief.number, brief])),
+    [briefs.data],
+  )
   const now = useNow(60_000, true)
   const columns = useMemo(
     () => (list.data === undefined ? [] : buildPrColumns(list.data.items, scope, now)),
@@ -120,6 +126,7 @@ export function PrBoard({
                   showAuthor={scope === 'assigned'}
                   onOpen={onOpen}
                   now={now}
+                  zastava={fromBrief(reviewByNumber.get(pr.number), pr.headOid)}
                 />
               ))
             )}

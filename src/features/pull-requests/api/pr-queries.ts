@@ -9,6 +9,10 @@ import {
   type PrScope,
   type PullRequestDetail,
   type PullRequestList,
+  type ZastavaReviewBriefList,
+  type ZastavaReviewResult,
+  zastavaReviewBriefListSchema,
+  zastavaReviewResultSchema,
 } from '@/lib/contracts'
 import { queryKeys } from '@/lib/query-keys'
 
@@ -36,6 +40,25 @@ async function getDiff(
   return prDiffSchema.parse(await apiClient.get(`${base(projectId)}/${number}/diff${query}`))
 }
 
+async function getZastavaReview(
+  projectId: string,
+  number: number,
+  head: string,
+): Promise<ZastavaReviewResult> {
+  return zastavaReviewResultSchema.parse(
+    await apiClient.get(`${base(projectId)}/${number}/zastava-review?head=${head}`),
+  )
+}
+
+async function getZastavaBriefs(projectId: string): Promise<ZastavaReviewBriefList> {
+  return zastavaReviewBriefListSchema.parse(
+    await apiClient.get(`${base(projectId)}/zastava-reviews`),
+  )
+}
+
+/** A running review polls (its cost moves); a finished one waits for the SSE `reviews` event. */
+const whileRunning = (running: boolean) => (running ? 4_000 : false)
+
 /**
  * GitHub is the source of truth and there are no webhooks: lists poll every
  * minute and an open PR every 30 s, only while the window is focused.
@@ -61,6 +84,23 @@ export const prQueries = {
       refetchInterval: 30_000,
       refetchIntervalInBackground: false,
       refetchOnWindowFocus: true,
+      retry: 1,
+    }),
+  /** The PR's latest ZASTAVA review (spec 0009); `head` = the PR's current head, for `stale`. */
+  zastavaReview: (projectId: string, number: number, head: string) =>
+    queryOptions({
+      queryKey: queryKeys.zastavaReview(projectId, number, head),
+      queryFn: () => getZastavaReview(projectId, number, head),
+      refetchInterval: (query) => whileRunning(query.state.data?.review?.status === 'running'),
+      retry: 1,
+    }),
+  /** Every PR's latest ZASTAVA review, for the cards. */
+  zastavaBriefs: (projectId: string) =>
+    queryOptions({
+      queryKey: queryKeys.zastavaReviewBriefs(projectId),
+      queryFn: () => getZastavaBriefs(projectId),
+      refetchInterval: (query) =>
+        whileRunning(query.state.data?.items.some((r) => r.status === 'running') === true),
       retry: 1,
     }),
   /** Keyed on the head: refetches only when someone pushes. */
