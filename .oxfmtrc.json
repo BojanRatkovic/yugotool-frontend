@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "semi": false,
+  "singleQuote": true,
+  "printWidth": 96,
+  "sortTailwindcss": {
+    "stylesheet": "src/index.css",
+    "functions": ["cn", "cva"]
+  },
+  "ignorePatterns": ["src/app/routeTree.gen.ts"]
+}

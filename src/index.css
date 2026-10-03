@@ -1,0 +1,347 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, 'SF Mono', monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+
+  /* Status palette — see the design skill. Deliberately contains no orange:
+     red is the accent, and "interactive" must never read as "warning". */
+  --color-status-queued: var(--status-queued);
+  --color-status-queued-soft: var(--status-queued-soft);
+  --color-status-running: var(--status-running);
+  --color-status-running-soft: var(--status-running-soft);
+  --color-status-passed: var(--status-passed);
+  --color-status-passed-soft: var(--status-passed-soft);
+  --color-status-failed: var(--status-failed);
+  --color-status-failed-soft: var(--status-failed-soft);
+  --color-status-waiting: var(--status-waiting);
+  --color-status-waiting-soft: var(--status-waiting-soft);
+  --color-status-cancelled: var(--status-cancelled);
+  --color-status-cancelled-soft: var(--status-cancelled-soft);
+  --color-status-skipped: var(--status-skipped);
+  --color-status-skipped-soft: var(--status-skipped-soft);
+
+  /* Nodes sit on the canvas, not on a panel: their border is a graphical object
+     that must reach 3:1 against the canvas background (WCAG 1.4.11). The
+     regular --border is far too faint for that. */
+  --color-node-border: var(--node-border);
+  /* Signal red: logo, active-line dot, focus ring, canvas selection. Never a state. */
+  --color-brand: var(--brand);
+  --color-canvas-dot: var(--canvas-dot);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* light — designed, not derived: cool paper, graphite ink */
+  --background: oklch(0.985 0.002 260);
+  --foreground: oklch(0.2 0.006 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.006 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.006 260);
+  --primary: oklch(0.2 0.006 260);
+  --primary-foreground: oklch(0.985 0.002 260);
+  --secondary: oklch(0.955 0.003 260);
+  --secondary-foreground: oklch(0.24 0.006 260);
+  --muted: oklch(0.955 0.003 260);
+  --muted-foreground: oklch(0.49 0.012 260);
+  --accent: oklch(0.94 0.004 260);
+  --accent-foreground: oklch(0.2 0.006 260);
+  --destructive: oklch(0.52 0.2 18);
+  --border: oklch(0.905 0.004 260);
+  --input: oklch(0.87 0.005 260);
+  --ring: oklch(0.56 0.2 25);
+  --brand: oklch(0.55 0.21 25);
+  --node-border: oklch(0.66 0.01 260);
+  --canvas-dot: oklch(0.2 0.006 260 / 14%);
+  --radius: 0.5rem;
+
+  --status-queued: oklch(0.5 0.03 260);
+  --status-queued-soft: oklch(0.95 0.008 260);
+  --status-running: oklch(0.52 0.15 235);
+  --status-running-soft: oklch(0.95 0.03 235);
+  --status-passed: oklch(0.5 0.14 150);
+  --status-passed-soft: oklch(0.95 0.03 150);
+  --status-failed: oklch(0.52 0.2 18);
+  --status-failed-soft: oklch(0.95 0.03 18);
+  --status-waiting: oklch(0.5 0.17 300);
+  --status-waiting-soft: oklch(0.955 0.03 300);
+  --status-cancelled: oklch(0.52 0.012 260);
+  --status-cancelled-soft: oklch(0.95 0.004 260);
+  --status-skipped: oklch(0.58 0.01 260);
+  --status-skipped-soft: oklch(0.96 0.003 260);
+
+  --sidebar: oklch(0.97 0.003 260);
+  --sidebar-foreground: oklch(0.2 0.006 260);
+  --sidebar-primary: oklch(0.2 0.006 260);
+  --sidebar-primary-foreground: oklch(0.985 0.002 260);
+  --sidebar-accent: oklch(0.93 0.004 260);
+  --sidebar-accent-foreground: oklch(0.2 0.006 260);
+  --sidebar-border: oklch(0.905 0.004 260);
+  --sidebar-ring: oklch(0.56 0.2 25);
+
+  /* Syntax (Shiki css-variables theme) — graphite ink, no amber */
+  --shiki-foreground: oklch(0.32 0.01 260);
+  --shiki-background: transparent;
+  --shiki-token-keyword: oklch(0.5 0.16 290);
+  --shiki-token-string: oklch(0.46 0.11 230);
+  --shiki-token-string-expression: oklch(0.46 0.11 230);
+  --shiki-token-constant: oklch(0.5 0.15 258);
+  --shiki-token-function: oklch(0.5 0.15 330);
+  --shiki-token-parameter: oklch(0.38 0.01 260);
+  --shiki-token-comment: oklch(0.58 0.01 260);
+  --shiki-token-punctuation: oklch(0.52 0.01 260);
+  --shiki-token-link: oklch(0.46 0.11 230);
+  --shiki-token-inserted: var(--status-passed);
+  --shiki-token-deleted: var(--status-failed);
+  --shiki-token-changed: oklch(0.5 0.16 290);
+  --shiki-ansi-black: oklch(0.32 0.01 260);
+  --shiki-ansi-red: var(--status-failed);
+  --shiki-ansi-green: var(--status-passed);
+  --shiki-ansi-yellow: oklch(0.4 0.01 260);
+  --shiki-ansi-blue: oklch(0.5 0.15 258);
+  --shiki-ansi-magenta: oklch(0.5 0.15 330);
+  --shiki-ansi-cyan: oklch(0.5 0.1 210);
+  --shiki-ansi-white: oklch(0.6 0.01 260);
+}
+
+.dark {
+  /* cool graphite — the primary theme */
+  --background: oklch(0.145 0.004 260);
+  --foreground: oklch(0.96 0.003 260);
+  --card: oklch(0.175 0.005 260);
+  --card-foreground: oklch(0.96 0.003 260);
+  --popover: oklch(0.2 0.006 260);
+  --popover-foreground: oklch(0.96 0.003 260);
+  --primary: oklch(0.96 0.003 260);
+  --primary-foreground: oklch(0.17 0.005 260);
+  --secondary: oklch(0.225 0.006 260);
+  --secondary-foreground: oklch(0.96 0.003 260);
+  --muted: oklch(0.225 0.006 260);
+  --muted-foreground: oklch(0.66 0.01 260);
+  --accent: oklch(0.24 0.006 260);
+  --accent-foreground: oklch(0.96 0.003 260);
+  --destructive: oklch(0.68 0.19 18);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.62 0.19 25);
+  --brand: oklch(0.58 0.21 25);
+  --node-border: oklch(0.42 0.008 260);
+  --canvas-dot: oklch(1 0 0 / 11%);
+
+  --status-queued: oklch(0.68 0.02 260);
+  --status-queued-soft: oklch(0.25 0.012 260);
+  --status-running: oklch(0.72 0.13 235);
+  --status-running-soft: oklch(0.27 0.055 235);
+  --status-passed: oklch(0.74 0.15 150);
+  --status-passed-soft: oklch(0.27 0.05 150);
+  --status-failed: oklch(0.69 0.18 18);
+  --status-failed-soft: oklch(0.27 0.07 18);
+  --status-waiting: oklch(0.73 0.14 300);
+  --status-waiting-soft: oklch(0.27 0.06 300);
+  --status-cancelled: oklch(0.62 0.01 260);
+  --status-cancelled-soft: oklch(0.24 0.006 260);
+  --status-skipped: oklch(0.56 0.008 260);
+  --status-skipped-soft: oklch(0.22 0.004 260);
+
+  --sidebar: oklch(0.155 0.004 260);
+  --sidebar-foreground: oklch(0.96 0.003 260);
+  --sidebar-primary: oklch(0.96 0.003 260);
+  --sidebar-primary-foreground: oklch(0.17 0.005 260);
+  --sidebar-accent: oklch(0.21 0.006 260);
+  --sidebar-accent-foreground: oklch(0.96 0.003 260);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.62 0.19 25);
+
+  --shiki-foreground: oklch(0.86 0.006 260);
+  --shiki-background: transparent;
+  --shiki-token-keyword: oklch(0.76 0.11 290);
+  --shiki-token-string: oklch(0.8 0.08 225);
+  --shiki-token-string-expression: oklch(0.8 0.08 225);
+  --shiki-token-constant: oklch(0.76 0.11 255);
+  --shiki-token-function: oklch(0.8 0.09 330);
+  --shiki-token-parameter: oklch(0.82 0.006 260);
+  --shiki-token-comment: oklch(0.58 0.01 260);
+  --shiki-token-punctuation: oklch(0.66 0.01 260);
+  --shiki-token-link: oklch(0.8 0.08 225);
+  --shiki-token-inserted: var(--status-passed);
+  --shiki-token-deleted: var(--status-failed);
+  --shiki-token-changed: oklch(0.76 0.11 290);
+  --shiki-ansi-black: oklch(0.45 0.01 260);
+  --shiki-ansi-red: var(--status-failed);
+  --shiki-ansi-green: var(--status-passed);
+  --shiki-ansi-yellow: oklch(0.9 0.006 260);
+  --shiki-ansi-blue: oklch(0.76 0.11 255);
+  --shiki-ansi-magenta: oklch(0.8 0.09 330);
+  --shiki-ansi-cyan: oklch(0.8 0.08 210);
+  --shiki-ansi-white: oklch(0.9 0.006 260);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  /* One focus treatment everywhere: a 2px ember ring with a ground-colored
+     gap, so it reads on both the page and inside dense tables. */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--brand) 35%, transparent);
+  }
+
+  /* Digits that sit in columns always align. */
+  th,
+  td,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* Code blocks (components/code-block.tsx): bright ANSI = base, dim = 55%. */
+  .code-block {
+    --shiki-ansi-bright-black: var(--shiki-ansi-black);
+    --shiki-ansi-bright-red: var(--shiki-ansi-red);
+    --shiki-ansi-bright-green: var(--shiki-ansi-green);
+    --shiki-ansi-bright-yellow: var(--shiki-ansi-yellow);
+    --shiki-ansi-bright-blue: var(--shiki-ansi-blue);
+    --shiki-ansi-bright-magenta: var(--shiki-ansi-magenta);
+    --shiki-ansi-bright-cyan: var(--shiki-ansi-cyan);
+    --shiki-ansi-bright-white: var(--shiki-ansi-white);
+  }
+
+  .code-block [style*='-dim)'] {
+    opacity: 0.55;
+  }
+  /* React Flow gives nodes and edges a tabIndex but no focus indicator. */
+  .react-flow__node:focus-visible,
+  .react-flow__edge:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 4px;
+    border-radius: var(--radius);
+  }
+
+  /* The handle keeps its 10px look but carries a 24px hit area, so pointer
+     users are not asked to hit a 10px target (WCAG 2.5.8). */
+  .react-flow__handle::after {
+    content: '';
+    position: absolute;
+    inset: -7px;
+  }
+
+  .react-flow__edge-path {
+    stroke: var(--node-border);
+  }
+
+  .react-flow__edge.selected .react-flow__edge-path,
+  .react-flow__edge:focus-visible .react-flow__edge-path {
+    stroke: var(--ring);
+  }
+}
+
+@layer utilities {
+  .label-caps {
+    font-size: 0.6875rem;
+    line-height: 1.3;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  /* Horizontal scrollers fade at both edges instead of clipping hard. */
+  .fade-x {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 16px,
+      #000 calc(100% - 16px),
+      transparent
+    );
+  }
+
+  .dot-grid {
+    background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+}
+
+@keyframes pulse-soft {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 1.6s cubic-bezier(0.2, 0, 0, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
