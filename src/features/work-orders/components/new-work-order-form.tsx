@@ -42,8 +42,10 @@ export function NewWorkOrderForm({
       const tx = workOrdersCollection(projectId).insert({
         id: crypto.randomUUID(),
         projectId,
+        kind: 'build',
         title: value.title.trim(),
         description: value.description,
+        pullRequest: null,
         status: 'backlog',
         stationKey: null,
         position,

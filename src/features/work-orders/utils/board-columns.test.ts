@@ -26,8 +26,10 @@ function wo(patch: Partial<WorkOrder>): WorkOrder {
   return {
     id: crypto.randomUUID(),
     projectId: crypto.randomUUID(),
+    kind: 'build',
     title: 't',
     description: '',
+    pullRequest: null,
     status: 'backlog',
     stationKey: null,
     position: 1,
