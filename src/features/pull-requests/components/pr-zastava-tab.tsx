@@ -257,6 +257,30 @@ function Findings({
               )}
             </span>
             <span className="font-mono tabular-nums">{formatUsd(review.costUsd)}</span>
+            {review.stale ? null : (
+              // Same head: a re-review still checks each finding and its thread (spec 0010).
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto h-7"
+                disabled={rerun.isPending || pr.state !== 'open'}
+                title={
+                  verdict.findings.length > 0
+                    ? 'Check each finding again, with the state of its thread on GitHub'
+                    : 'Run the review again on this commit'
+                }
+                onClick={() =>
+                  rerun.mutate(undefined, { onError: (e) => toast.error(errorMessage(e)) })
+                }
+              >
+                {rerun.isPending ? (
+                  <LoaderCircle aria-hidden="true" className="animate-spin" />
+                ) : (
+                  <ScanSearch aria-hidden="true" />
+                )}
+                {verdict.findings.length > 0 ? 'Re-review' : 'Review again'}
+              </Button>
+            )}
           </div>
           <ReviewText text={verdict.summary} className="max-w-3xl text-[0.8125rem]" />
           {review.stale ? (

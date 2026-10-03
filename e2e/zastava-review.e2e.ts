@@ -276,6 +276,20 @@ test('a stale review blocks posting and offers a re-review', async ({ page }) =>
   expect(api.starts).toBe(1)
 })
 
+test('a done review on the current head can be re-reviewed from the tab', async ({ page }) => {
+  const api = await mockApi(page, reviewOf())
+  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
+  await page.getByRole('button', { name: 'Re-review', exact: true }).click()
+  await expect(page.getByText(/Reviewing/).first()).toBeVisible()
+  expect(api.starts).toBe(1)
+})
+
+test('a done review without findings offers Review again', async ({ page }) => {
+  await mockApi(page, reviewOf({ verdict: { ...VERDICT, findings: [] } }))
+  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
+  await expect(page.getByRole('button', { name: 'Review again' })).toBeVisible()
+})
+
 test('a stale review without findings offers a plain re-run', async ({ page }) => {
   await mockApi(page, reviewOf({ stale: true, verdict: { ...VERDICT, findings: [] } }))
   await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
