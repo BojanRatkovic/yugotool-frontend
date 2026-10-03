@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { z } from 'zod'
 
 import { WorkOrderPanel, type PanelState } from '@/app/routes/-components/work-order-panel'
+import { BoardSkeleton } from '@/components/board/board-skeleton'
 import { BranchChip } from '@/components/branch-chip'
 import { LoadError } from '@/components/data-state'
 import { Button } from '@/components/ui/button'
@@ -26,10 +27,7 @@ import { ProjectKnowledgeSettings } from '@/features/knowledge/components/projec
 import { ProjectStats } from '@/features/projects/components/project-stats'
 import { systemQueries } from '@/features/system/api/system-queries'
 import { NewWorkOrderDialog } from '@/features/work-orders/components/new-work-order-dialog'
-import {
-  BoardSkeleton,
-  WorkOrderBoard,
-} from '@/features/work-orders/components/work-order-board'
+import { WorkOrderBoard } from '@/features/work-orders/components/work-order-board'
 import { isTypingTarget } from '@/lib/shortcuts'
 
 const searchSchema = z.object({

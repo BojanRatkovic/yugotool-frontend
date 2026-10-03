@@ -1,11 +1,13 @@
-import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { useEffect } from 'react'
 import { z } from 'zod'
 
-import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useProject } from '@/features/projects/components/project-nav'
 import { prQueries } from '@/features/pull-requests/api/pr-queries'
+import { PrBoard } from '@/features/pull-requests/components/pr-board'
+import { PrBoardHeader } from '@/features/pull-requests/components/pr-board-header'
 import { prScopeSchema } from '@/lib/contracts'
+import { isTypingTarget } from '@/lib/shortcuts'
 
 const searchSchema = z.object({
   /** Open pull request. The URL is the source of truth for the panel. */
@@ -43,24 +45,76 @@ export const Route = createFileRoute('/projects/$projectId/pulls/$scope')({
   component: PullRequestsPage,
 })
 
+/** J/K walk the board's cards in reading order; Enter opens (native button). */
+function moveCardFocus(step: 1 | -1) {
+  const cards = [...document.querySelectorAll<HTMLElement>('[data-pr-card]')]
+  if (cards.length === 0) return
+  const index = cards.findIndex((card) => card === document.activeElement)
+  const next = index === -1 ? (step === 1 ? 0 : cards.length - 1) : index + step
+  const card = cards[Math.max(0, Math.min(cards.length - 1, next))]
+  card?.focus()
+  card?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+}
+
 function PullRequestsPage() {
   const { projectId, scope: rawScope } = Route.useParams()
   const scope = prScopeSchema.catch('mine').parse(rawScope)
-  const { teams } = Route.useSearch()
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
   const project = useProject(projectId)
-  const list = useQuery(prQueries.list(projectId, scope, teams === true))
+  const teams = scope === 'assigned' && search.teams === true
+
+  const openPr = (number: number | undefined) =>
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        pr: number,
+        prTab: undefined,
+        file: undefined,
+        thread: undefined,
+        since: undefined,
+        prFull: number === undefined ? undefined : prev.prFull,
+      }),
+    })
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return
+      if (search.pr === undefined && (event.key === 'j' || event.key === 'k')) {
+        event.preventDefault()
+        moveCardFocus(event.key === 'j' ? 1 : -1)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  })
+
   return (
     <div className="flex h-svh min-w-0 flex-col">
-      <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
-        <SidebarTrigger aria-label="Toggle sidebar" />
-        <h1 className="truncate text-sm font-semibold">{project?.name ?? 'Project'}</h1>
-        <span className="text-sm text-muted-foreground">
-          {scope === 'mine' ? 'My pull requests' : 'Assigned pull requests'}
-        </span>
-      </header>
-      <p className="p-4 text-sm text-muted-foreground">
-        {list.data === undefined ? 'Loading…' : `${list.data.items.length} pull requests`}
-      </p>
+      <PrBoardHeader
+        projectId={projectId}
+        projectName={project?.name ?? 'Project'}
+        scope={scope}
+        teams={teams}
+        onTeamsChange={(next) =>
+          void navigate({ search: (prev) => ({ ...prev, teams: next ? true : undefined }) })
+        }
+      />
+      <div className="min-h-0 flex-1 pt-3">
+        <PrBoard
+          projectId={projectId}
+          scope={scope}
+          teams={teams}
+          onOpen={openPr}
+          onEditDelivery={() =>
+            void navigate({
+              to: '/projects/$projectId',
+              params: { projectId },
+              search: { settings: 'delivery' },
+            })
+          }
+        />
+      </div>
     </div>
   )
 }
