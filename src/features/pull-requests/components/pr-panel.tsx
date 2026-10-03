@@ -13,6 +13,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { prQueries } from '@/features/pull-requests/api/pr-queries'
+import { PrAuthorActions } from '@/features/pull-requests/components/pr-author-actions'
 import { PrHeader } from '@/features/pull-requests/components/pr-header'
 import { PrReadiness } from '@/features/pull-requests/components/pr-readiness'
 import { PrReviewBar } from '@/features/pull-requests/components/pr-review-bar'
@@ -143,31 +144,32 @@ export function PrPanel({
   }
 
   const isAuthor = pr.author.login === viewer
-  const reviewMenu =
-    isAuthor || pr.state !== 'open' ? null : (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button size="sm" className="mr-1">
-            Review
-            <ChevronDown aria-hidden="true" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onSelect={() => setReview('APPROVE')}>Approve</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setReview('REQUEST_CHANGES')}>
-            Request changes
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setReview('COMMENT')}>Comment</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    )
+  const actions = isAuthor ? (
+    <PrAuthorActions projectId={projectId} pr={pr} />
+  ) : pr.state !== 'open' ? null : (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="sm" className="mr-1">
+          Review
+          <ChevronDown aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem onSelect={() => setReview('APPROVE')}>Approve</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => setReview('REQUEST_CHANGES')}>
+          Request changes
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => setReview('COMMENT')}>Comment</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <PrHeader
         pr={pr}
         full={state.full}
-        actions={reviewMenu}
+        actions={actions}
         onToggleFull={() => onChange({ full: !state.full })}
         onClose={onClose}
       />

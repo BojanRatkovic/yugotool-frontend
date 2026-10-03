@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api-client'
 import type {
   PrLineCommentInput,
+  PrMergeMethod,
   PrSubmitReviewInput,
   PullRequestDetail,
 } from '@/lib/contracts'
@@ -129,6 +130,25 @@ export function useDiscardReview(projectId: string, number: number) {
   const invalidate = useInvalidatePr(projectId)
   return useMutation({
     mutationFn: () => apiClient.delete(`${base(projectId, number)}/review`),
+    onSuccess: invalidate,
+  })
+}
+
+/** Draft → ready for review. */
+export function useMarkReady(projectId: string, number: number) {
+  const invalidate = useInvalidatePr(projectId)
+  return useMutation({
+    mutationFn: () => apiClient.post(`${base(projectId, number)}/ready`),
+    onSuccess: invalidate,
+  })
+}
+
+/** Merges with the method; GitHub's refusal comes back as a 409 with its reason. */
+export function useMergePr(projectId: string, number: number) {
+  const invalidate = useInvalidatePr(projectId)
+  return useMutation({
+    mutationFn: ({ method }: { method: PrMergeMethod }) =>
+      apiClient.post(`${base(projectId, number)}/merge`, { method }),
     onSuccess: invalidate,
   })
 }

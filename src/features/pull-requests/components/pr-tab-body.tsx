@@ -1,4 +1,6 @@
 import type { PrPanelState, PrTab } from '@/features/pull-requests/components/pr-panel'
+import { PrChecksTab } from '@/features/pull-requests/components/pr-checks-tab'
+import { PrCommitsTab } from '@/features/pull-requests/components/pr-commits-tab'
 import { PrFilesTab } from '@/features/pull-requests/components/pr-files-tab'
 import { PrThreadsTab } from '@/features/pull-requests/components/pr-threads-tab'
 import { PrOverviewTab } from '@/features/pull-requests/components/pr-overview-tab'
@@ -49,12 +51,11 @@ export function PrTabBody({
           onChange={onChange}
         />
       )
+    case 'checks':
+      return <PrChecksTab pr={pr} />
+    case 'commits':
+      return <PrCommitsTab pr={pr} />
     default:
-      // Checks, Commits: spec 0008 T15.
-      return (
-        <p className="p-4 text-sm text-muted-foreground">
-          {tab} · #{pr.number}
-        </p>
-      )
+      return null
   }
 }
