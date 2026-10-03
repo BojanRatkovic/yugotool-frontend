@@ -23,8 +23,8 @@ export interface PrPanelState {
   file: string | undefined
   /** A focused thread (Threads tab, or inline in Files). */
   thread: string | undefined
-  /** Files tab: only the changes since my last review. */
-  since: boolean
+  /** Files tab: "review" = only the changes since my last review, "all" = the whole PR; unset = the default (on in Re-review). */
+  since: 'review' | 'all' | undefined
   full: boolean
 }
 
@@ -168,7 +168,14 @@ export function PrPanel({
         </div>
       </Tabs>
       <div className="relative min-h-0 flex-1">
-        <PrTabBody tab={state.tab} projectId={projectId} pr={pr} onChange={onChange} />
+        <PrTabBody
+          tab={state.tab}
+          projectId={projectId}
+          pr={pr}
+          viewer={viewer}
+          state={state}
+          onChange={onChange}
+        />
       </div>
     </div>
   )

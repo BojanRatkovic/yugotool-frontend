@@ -23,8 +23,8 @@ const searchSchema = z.object({
   file: z.string().optional().catch(undefined),
   /** Threads tab (or a file's inline thread): the focused thread id. */
   thread: z.string().optional().catch(undefined),
-  /** Files tab: only what changed since my last review. */
-  since: z.literal('review').optional().catch(undefined),
+  /** Files tab: "review" = only what changed since my last review, "all" = the whole PR. */
+  since: z.enum(['review', 'all']).optional().catch(undefined),
   /** Pull request expanded to a full page instead of a side panel. */
   prFull: z.boolean().optional().catch(undefined),
   /** Assigned board: include team review requests. */
@@ -102,7 +102,7 @@ function PullRequestsPage() {
     tab: search.prTab ?? 'overview',
     file: search.file,
     thread: search.thread,
-    since: search.since === 'review',
+    since: search.since,
     full,
   }
   const panel =
@@ -122,9 +122,7 @@ function PullRequestsPage() {
                 : {}),
               ...('file' in next ? { file: next.file } : {}),
               ...('thread' in next ? { thread: next.thread } : {}),
-              ...('since' in next
-                ? { since: next.since === true ? ('review' as const) : undefined }
-                : {}),
+              ...('since' in next ? { since: next.since } : {}),
               ...('full' in next ? { prFull: next.full === true ? true : undefined } : {}),
             }),
           })

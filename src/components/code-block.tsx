@@ -31,7 +31,8 @@ function diffLineClass(line: string): string | undefined {
   return undefined
 }
 
-function Tokens({ tokens }: { tokens: ThemedToken[] }) {
+/** Shiki tokens as styled spans (diff and code views). */
+export function Tokens({ tokens }: { tokens: ThemedToken[] }) {
   return tokens.map((token, index) => (
     <span key={index} style={tokenStyle(token)}>
       {token.content}
