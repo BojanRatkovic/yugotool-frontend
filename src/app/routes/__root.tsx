@@ -24,6 +24,7 @@ import { ProjectNav, useProject } from '@/features/projects/components/project-n
 import { ProjectPrNav } from '@/app/routes/-components/project-pr-nav'
 import { NotificationBell } from '@/features/notifications/components/notification-bell'
 import { showNotificationToast } from '@/features/notifications/components/notification-toast'
+import { notifyInBrowser } from '@/features/notifications/utils/browser-notifications'
 import { AuthChip } from '@/features/system/components/auth-chip'
 import { DispatcherCard } from '@/features/system/components/dispatcher-card'
 import { PlanUsageCard } from '@/features/system/components/plan-usage-card'
@@ -71,7 +72,10 @@ function RootLayout() {
   // Notification paths are in-app and may carry a query string (`?view=board&wo=…`).
   const openPath = (path: string) => router.history.push(path)
   useRealtime({
-    onNotification: (notification) => showNotificationToast(notification, openPath),
+    onNotification: (notification) => {
+      showNotificationToast(notification, openPath)
+      notifyInBrowser(notification, openPath)
+    },
   })
   const { items, countByProject } = useNeedsYou()
   const params = useParams({ strict: false })

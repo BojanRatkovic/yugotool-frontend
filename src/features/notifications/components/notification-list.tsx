@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { notificationQueries } from '@/features/notifications/api/notifications-queries'
 import { useMarkRead } from '@/features/notifications/api/use-mark-read'
+import { BrowserNotificationsSwitch } from '@/features/notifications/components/browser-notifications-switch'
 import { NotificationKindIcon } from '@/features/notifications/components/notification-kind-icon'
 import { groupByDay } from '@/features/notifications/utils/notifications'
 import { useNow } from '@/hooks/use-now'
@@ -159,6 +160,7 @@ export function NotificationList({ onOpen }: { onOpen: (path: string) => void })
           )}
         </div>
       </ScrollArea>
+      <BrowserNotificationsSwitch />
     </div>
   )
 }
