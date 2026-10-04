@@ -122,7 +122,9 @@ export function NotificationList({ onOpen }: { onOpen: (path: string) => void })
           Mark all read
         </Button>
       </div>
-      <ScrollArea className="[&>[data-slot=scroll-area-viewport]]:max-h-[min(28rem,70svh)]">
+      {/* Radix wraps the viewport's content in `display: table`, which lets long titles
+          widen the rows past the popover; block keeps `truncate` working. */}
+      <ScrollArea className="[&>[data-slot=scroll-area-viewport]]:max-h-[min(28rem,70svh)] [&>[data-slot=scroll-area-viewport]>div]:!block">
         <div className="flex flex-col p-1.5">
           {list.isPending ? (
             <div className="flex flex-col gap-3 p-2" aria-label="Loading notifications">

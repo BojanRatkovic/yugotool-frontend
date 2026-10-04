@@ -32,7 +32,7 @@ const item = (n: number, overrides: Partial<Notification>): Notification => ({
 
 const ITEMS: Notification[] = [
   item(1, {
-    title: 'Fix login waits for you at Review',
+    title: 'Fix login waits for you at Review, with a title long enough to need truncating',
     body: 'Approve, request changes or reject.',
   }),
   item(2, { kind: 'run_failed', title: 'Fix login failed', createdAt: ago(0.1) }),
@@ -102,6 +102,13 @@ test('the bell counts unread, groups the list and marks all read', async ({ page
   await expect(today).toContainText('Fix login failed')
   await expect(today).toContainText('Review requested: #7 Fix login')
   await expect(page.getByRole('region', { name: 'Earlier' })).toContainText('CI passed on #42')
+
+  // Long titles truncate inside the popover instead of widening it past the screen.
+  const popover = page.locator('[data-slot=popover-content]')
+  const row = today.getByRole('button', { name: /Fix login waits for you/ })
+  const [box, rowBox] = [await popover.boundingBox(), await row.boundingBox()]
+  expect(rowBox!.x + rowBox!.width).toBeLessThanOrEqual(box!.x + box!.width)
+  expect(box!.x + box!.width).toBeLessThanOrEqual(page.viewportSize()!.width)
 
   await page.getByRole('button', { name: 'Mark all read' }).click()
   await expect(page.getByRole('button', { name: 'Mark all read' })).toBeDisabled()
