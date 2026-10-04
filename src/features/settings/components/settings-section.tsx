@@ -46,6 +46,7 @@ export function Row({
   errors = [],
   children,
   after,
+  labelIcon,
 }: {
   id: string
   label: string
@@ -54,12 +55,15 @@ export function Row({
   children: ReactNode
   /** Rendered under the error, e.g. a "Send test" button. */
   after?: ReactNode
+  /** Small icon before the label. */
+  labelIcon?: ReactNode
 }) {
   const error = firstError(errors)
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,20rem)] items-start gap-6 px-4 py-3">
       <div className="flex min-w-0 flex-col gap-0.5 pt-1">
         <Label htmlFor={id} className="text-[0.8125rem]">
+          {labelIcon}
           {label}
         </Label>
         {help === undefined ? null : <p className="text-xs text-muted-foreground">{help}</p>}

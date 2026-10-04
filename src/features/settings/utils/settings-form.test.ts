@@ -22,6 +22,18 @@ const saved: Settings = {
   reposRoot: null,
   anthropicApiKeyHint: null,
   anthropicApiKeySource: null,
+  notificationExternal: {
+    gate_waiting: true,
+    run_failed: true,
+    run_succeeded: true,
+    review_ready: true,
+    ci_failed: true,
+    ci_passed: false,
+    shift_handoff_ready: true,
+    shift_stuck: true,
+    knowledge_sync_failed: false,
+    dispatcher_paused: false,
+  },
   updatedAt: '2026-10-02T10:00:00.000Z',
 }
 

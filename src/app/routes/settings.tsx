@@ -8,11 +8,14 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { settingsQueries } from '@/features/settings/api/settings-queries'
 import { KnowledgeLibrary } from '@/features/knowledge/components/knowledge-library'
+import { NotificationKindIcon } from '@/features/notifications/components/notification-kind-icon'
 import { ClaudeAccessSection } from '@/features/settings/components/claude-access-section'
+import { NotificationKindsSection } from '@/features/settings/components/notification-kinds-section'
 import { REPOS_ROOT_FIELD_ID, SettingsForm } from '@/features/settings/components/settings-form'
 import { systemQueries } from '@/features/system/api/system-queries'
 import { settingsFormKey } from '@/features/settings/utils/settings-form'
 import { DoctorSection } from '@/features/system/components/doctor-section'
+import type { NotificationKind } from '@/lib/contracts'
 import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/settings')({
@@ -59,6 +62,8 @@ function focusReposRoot() {
   }
   input.focus({ preventScroll: true })
 }
+
+const kindIcon = (kind: NotificationKind) => <NotificationKindIcon kind={kind} />
 
 function SettingsPage() {
   const settings = useQuery(settingsQueries.detail())
@@ -108,6 +113,7 @@ function SettingsPage() {
             <>
               <ClaudeAccessSection settings={settings.data} />
               <KnowledgeLibrary />
+              <NotificationKindsSection settings={settings.data} icon={kindIcon} />
               <SettingsForm
                 key={settingsFormKey(settings.data)}
                 settings={settings.data}

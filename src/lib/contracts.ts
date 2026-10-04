@@ -1577,6 +1577,20 @@ export type Enqueue = z.infer<typeof enqueueSchema>
 
 const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'HH:MM')
 
+export const notificationKindSchema = z.enum([
+  'gate_waiting',
+  'run_failed',
+  'run_succeeded',
+  'review_ready',
+  'ci_failed',
+  'ci_passed',
+  'shift_handoff_ready',
+  'shift_stuck',
+  'knowledge_sync_failed',
+  'dispatcher_paused',
+])
+export type NotificationKind = z.infer<typeof notificationKindSchema>
+
 export const settingsSchema = z.object({
   /** Agent runs allowed at once; runs parked at a gate do not count. */
   maxConcurrentRuns: z.number().int().min(1).max(10),
@@ -1597,6 +1611,8 @@ export const settingsSchema = z.object({
   anthropicApiKeyHint: z.string().nullable(),
   /** "env" = ANTHROPIC_API_KEY of the environment (not removable here); "settings" = saved in Settings. */
   anthropicApiKeySource: z.enum(['settings', 'env']).nullable(),
+  /** Per kind: also send outside the app (spec 0011). Every kind, defaults filled in. */
+  notificationExternal: z.record(notificationKindSchema, z.boolean()),
   updatedAt: isoDate,
 })
 export type Settings = z.infer<typeof settingsSchema>
@@ -1607,6 +1623,8 @@ export const updateSettingsSchema = settingsSchema
   .extend({
     /** Write-only: a key saves it (checked with Anthropic first), null removes the saved key. */
     anthropicApiKey: z.string().trim().min(1).nullable().optional(),
+    /** Only the kinds sent change; the rest keep their setting. */
+    notificationExternal: z.partialRecord(notificationKindSchema, z.boolean()).optional(),
   })
 export type UpdateSettings = z.infer<typeof updateSettingsSchema>
 
@@ -1629,20 +1647,6 @@ export const notificationTestSchema = z.object({
 })
 
 // ── Notifications (spec 0011) ───────────────────────────────────────────────
-
-export const notificationKindSchema = z.enum([
-  'gate_waiting',
-  'run_failed',
-  'run_succeeded',
-  'review_ready',
-  'ci_failed',
-  'ci_passed',
-  'shift_handoff_ready',
-  'shift_stuck',
-  'knowledge_sync_failed',
-  'dispatcher_paused',
-])
-export type NotificationKind = z.infer<typeof notificationKindSchema>
 
 export const notificationSchema = z.object({
   id: z.uuid(),
