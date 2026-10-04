@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { ExternalLink, RefreshCw } from 'lucide-react'
 import { useId } from 'react'
 
+import { HeaderActions } from '@/components/layout/header-actions'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { SidebarTrigger } from '@/components/ui/sidebar'
@@ -107,6 +108,7 @@ export function PrBoardHeader({
             </a>
           </Button>
         )}
+        <HeaderActions />
       </div>
     </header>
   )

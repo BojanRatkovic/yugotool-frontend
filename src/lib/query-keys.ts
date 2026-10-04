@@ -61,4 +61,8 @@ export const queryKeys = {
     ['pull-requests', projectId, 'detail', number] as const,
   pullRequestDiff: (projectId: string, number: number, since: string | null, headOid: string) =>
     ['pull-requests', projectId, 'diff', number, since, headOid] as const,
+  /** The bell (spec 0011); SSE `notifications` invalidates the root, `notification` prepends. */
+  notifications: () => ['notifications'] as const,
+  /** The infinite list; its first page carries the unread count. */
+  notificationList: () => ['notifications', 'list'] as const,
 }

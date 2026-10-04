@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { FactoryScene, type SceneFocus } from '@/app/routes/-components/factory-scene'
 import { type NeedsYouItem, useNeedsYou } from '@/app/routes/-components/use-needs-you'
 import { StatusIcon } from '@/components/status/status-chip'
+import { HeaderActions } from '@/components/layout/header-actions'
 import { Button } from '@/components/ui/button'
 import { Kbd, KbdGroup } from '@/components/ui/kbd'
 import { NewProjectDialog } from '@/app/routes/-components/new-project-dialog'
@@ -213,7 +214,9 @@ function HomePage() {
   const [creating, setCreating] = useState(false)
   const { items: needsYou } = useNeedsYou()
   return (
-    <div className="dot-grid flex h-svh flex-1 flex-col">
+    <div className="dot-grid relative flex h-svh flex-1 flex-col">
+      {/* No page header here: the app-wide actions float in the header band's spot. */}
+      <HeaderActions className="absolute top-0 right-3 z-10 h-12" />
       {/* Reserved slot: the banner appears once the checks return without moving the page. */}
       <div className="flex min-h-16 shrink-0 items-end justify-center px-8">
         <DoctorBanner />

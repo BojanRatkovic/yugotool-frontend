@@ -1628,6 +1628,56 @@ export const notificationTestSchema = z.object({
   channel: z.enum(['desktop', 'slack', 'telegram']),
 })
 
+// ── Notifications (spec 0011) ───────────────────────────────────────────────
+
+export const notificationKindSchema = z.enum([
+  'gate_waiting',
+  'run_failed',
+  'run_succeeded',
+  'review_ready',
+  'ci_failed',
+  'ci_passed',
+  'shift_handoff_ready',
+  'shift_stuck',
+  'knowledge_sync_failed',
+  'dispatcher_paused',
+])
+export type NotificationKind = z.infer<typeof notificationKindSchema>
+
+export const notificationSchema = z.object({
+  id: z.uuid(),
+  kind: notificationKindSchema,
+  title: z.string().max(200),
+  body: z.string().max(2_000),
+  /** In-app path to open, e.g. `/projects/<id>?view=board&wo=<id>`. */
+  path: z.string().max(1_000),
+  projectId: z.uuid().nullable(),
+  workOrderId: z.uuid().nullable(),
+  readAt: isoDate.nullable(),
+  createdAt: isoDate,
+})
+export type Notification = z.infer<typeof notificationSchema>
+
+export const notificationPageSchema = z.object({
+  items: z.array(notificationSchema),
+  unreadCount: z.number().int().nonnegative(),
+  nextCursor: z.string().nullable(),
+})
+export type NotificationPage = z.infer<typeof notificationPageSchema>
+
+export const markNotificationsReadSchema = z
+  .object({
+    ids: z.array(z.uuid()).min(1).max(100).optional(),
+    all: z.literal(true).optional(),
+  })
+  .refine((v) => (v.ids === undefined) !== (v.all === undefined), {
+    message: 'Send either ids or all: true',
+  })
+export type MarkNotificationsRead = z.infer<typeof markNotificationsReadSchema>
+
+export const unreadCountSchema = z.object({ unreadCount: z.number().int().nonnegative() })
+export type UnreadCount = z.infer<typeof unreadCountSchema>
+
 // ── Realtime ────────────────────────────────────────────────────────────────
 
 export const collectionNameSchema = z.enum([
@@ -1641,6 +1691,8 @@ export const collectionNameSchema = z.enum([
   'knowledge_sources',
   /** ZASTAVA reviews of pull requests (spec 0009). */
   'reviews',
+  /** The bell (spec 0011): read state changed. New ones arrive as `notification`. */
+  'notifications',
 ])
 export type CollectionName = z.infer<typeof collectionNameSchema>
 
@@ -1658,5 +1710,7 @@ export const serverEventSchema = z.discriminatedUnion('type', [
     body: z.string().max(2_000),
     url: z.string().max(1_000),
   }),
+  /** A new notification for the bell (spec 0011); the client prepends it and toasts. */
+  z.object({ type: z.literal('notification'), notification: notificationSchema }),
 ])
 export type ServerEvent = z.infer<typeof serverEventSchema>

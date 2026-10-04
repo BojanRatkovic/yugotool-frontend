@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import type { CSSProperties, ReactNode } from 'react'
 
+import { HeaderActionsProvider } from '@/components/layout/header-actions'
 import {
   Sidebar,
   SidebarContent,
@@ -39,6 +40,7 @@ export function AppShell({
   projects,
   projectActions,
   footer,
+  headerActions,
   children,
 }: {
   projects: ReactNode
@@ -46,6 +48,8 @@ export function AppShell({
   projectActions: ReactNode
   /** Plan usage, auth, settings — pinned to the bottom. */
   footer?: ReactNode
+  /** App-wide actions top-right of the main area; pages place them via `<HeaderActions />`. */
+  headerActions?: ReactNode
   children: ReactNode
 }) {
   return (
@@ -76,7 +80,9 @@ export function AppShell({
           )}
         </Sidebar>
         <SidebarInset id="main-content" className="min-w-0">
-          {children}
+          <HeaderActionsProvider value={headerActions ?? null}>
+            {children}
+          </HeaderActionsProvider>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

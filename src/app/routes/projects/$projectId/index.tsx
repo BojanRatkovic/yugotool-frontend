@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { WorkOrderPanel, type PanelState } from '@/app/routes/-components/work-order-panel'
 import { BoardSkeleton } from '@/components/board/board-skeleton'
 import { BranchChip } from '@/components/branch-chip'
+import { HeaderActions } from '@/components/layout/header-actions'
 import { LoadError } from '@/components/data-state'
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
@@ -267,6 +268,7 @@ function ProjectPage() {
               C
             </Kbd>
           </Button>
+          <HeaderActions />
         </div>
       </header>
 

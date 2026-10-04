@@ -3,6 +3,7 @@ import { createFileRoute, useLocation } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
 import { LoadError } from '@/components/data-state'
+import { HeaderActions } from '@/components/layout/header-actions'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { settingsQueries } from '@/features/settings/api/settings-queries'
@@ -77,6 +78,7 @@ function SettingsPage() {
       <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
         <SidebarTrigger aria-label="Toggle sidebar" />
         <h1 className="text-sm font-semibold">Settings</h1>
+        <HeaderActions className="ml-auto" />
       </header>
       <div
         data-settings-scroll
