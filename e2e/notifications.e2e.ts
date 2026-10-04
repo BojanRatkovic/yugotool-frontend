@@ -36,6 +36,12 @@ const ITEMS: Notification[] = [
     body: 'Approve, request changes or reject.',
   }),
   item(2, { kind: 'run_failed', title: 'Fix login failed', createdAt: ago(0.1) }),
+  item(4, {
+    kind: 'pr_review_requested',
+    title: 'Review requested: #7 Fix login',
+    readAt: ago(0.5),
+    createdAt: ago(0.5),
+  }),
   item(3, {
     kind: 'ci_passed',
     title: 'CI passed on #42',
@@ -94,6 +100,7 @@ test('the bell counts unread, groups the list and marks all read', async ({ page
   const today = page.getByRole('region', { name: 'Today' })
   await expect(today).toContainText('Fix login waits for you at Review')
   await expect(today).toContainText('Fix login failed')
+  await expect(today).toContainText('Review requested: #7 Fix login')
   await expect(page.getByRole('region', { name: 'Earlier' })).toContainText('CI passed on #42')
 
   await page.getByRole('button', { name: 'Mark all read' }).click()

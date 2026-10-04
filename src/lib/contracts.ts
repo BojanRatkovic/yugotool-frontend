@@ -1588,6 +1588,8 @@ export const notificationKindSchema = z.enum([
   'shift_stuck',
   'knowledge_sync_failed',
   'dispatcher_paused',
+  /** Someone asked you to review a pull request (polled from GitHub). */
+  'pr_review_requested',
 ])
 export type NotificationKind = z.infer<typeof notificationKindSchema>
 

@@ -27,6 +27,7 @@ const settings: Settings = {
     shift_stuck: true,
     knowledge_sync_failed: false,
     dispatcher_paused: false,
+    pr_review_requested: true,
   },
   updatedAt: new Date().toISOString(),
 }
@@ -74,6 +75,9 @@ test('a notification kind can be sent outside the app or kept in the bell', asyn
 
   const ciPassed = section.getByRole('switch', { name: 'Send "CI passed" outside the app' })
   const runFailed = section.getByRole('switch', { name: 'Send "Run failed" outside the app' })
+  await expect(
+    section.getByRole('switch', { name: 'Send "Review requested" outside the app' }),
+  ).toBeChecked()
   await expect(ciPassed).not.toBeChecked()
   await expect(runFailed).toBeChecked()
 

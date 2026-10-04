@@ -33,6 +33,7 @@ const saved: Settings = {
     shift_stuck: true,
     knowledge_sync_failed: false,
     dispatcher_paused: false,
+    pr_review_requested: true,
   },
   updatedAt: '2026-10-02T10:00:00.000Z',
 }

@@ -1,5 +1,6 @@
 import {
   ArrowRightLeft,
+  GitPullRequestArrow,
   BookX,
   CircleCheck,
   CirclePause,
@@ -23,6 +24,7 @@ const KIND_ICONS: Record<NotificationKind, { icon: LucideIcon; className: string
   gate_waiting: { icon: Hand, className: 'text-status-waiting' },
   review_ready: { icon: MessageSquareText, className: 'text-status-waiting' },
   shift_handoff_ready: { icon: ArrowRightLeft, className: 'text-status-waiting' },
+  pr_review_requested: { icon: GitPullRequestArrow, className: 'text-status-waiting' },
   run_failed: { icon: CircleX, className: 'text-status-failed' },
   ci_failed: { icon: OctagonX, className: 'text-status-failed' },
   shift_stuck: { icon: TriangleAlert, className: 'text-status-failed' },

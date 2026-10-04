@@ -10,6 +10,10 @@ import { Row, Section } from './settings-section'
 /** What each kind means to the person deciding whether it may ping their phone. */
 const KIND_COPY: Record<NotificationKind, { label: string; help: string }> = {
   gate_waiting: { label: 'Needs you', help: 'A run stopped at a gate for your decision.' },
+  pr_review_requested: {
+    label: 'Review requested',
+    help: 'Someone asked you to review a pull request on GitHub.',
+  },
   review_ready: { label: 'Review ready', help: 'A ZASTAVA review of a pull request finished.' },
   shift_handoff_ready: {
     label: 'Handoff ready',
