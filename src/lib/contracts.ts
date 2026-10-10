@@ -506,6 +506,13 @@ export const researchPlanSchema = z.object({
 })
 export type ResearchPlan = z.infer<typeof researchPlanSchema>
 
+/**
+ * Research's plan as stored on its station run: `repo` resolved against the
+ * hub's repos, null when it named none of them (the plan gate asks).
+ */
+export const stationResearchSchema = researchPlanSchema.extend({ repo: z.string().nullable() })
+export type StationResearch = z.infer<typeof stationResearchSchema>
+
 export const createProjectSchema = z.object({
   id: z.uuid().optional(),
   name: z.string().trim().min(1).max(120),
@@ -928,7 +935,7 @@ export const stationRunSchema = z.object({
   verdict: verdictSchema.nullable(),
   error: z.string().nullable(),
   /** Research in a hub project: the chosen repo and an optional split (spec 0014). */
-  research: researchPlanSchema.nullable(),
+  research: stationResearchSchema.nullable(),
   costUsd: z.number(),
   inputTokens: z.number().int(),
   outputTokens: z.number().int(),
