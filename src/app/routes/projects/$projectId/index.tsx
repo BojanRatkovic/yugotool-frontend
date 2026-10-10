@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { Plus, Settings } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { z } from 'zod'
 
 import { WorkOrderPanel, type PanelState } from '@/app/routes/-components/work-order-panel'
@@ -86,7 +86,14 @@ function ProjectPage() {
   })
   const system = useQuery(systemQueries.info())
   const stations = line.data?.stations ?? []
-  const { view, wo } = search
+  const hub = project?.kind === 'hub'
+  // A hub project (spec 0014) has no review line: PR review is per repo, later.
+  const view = hub && search.view === 'review' ? 'board' : search.view
+  const { wo } = search
+  const hubRepos = useMemo(
+    () => (project?.kind === 'hub' ? project.repos.map((repo) => repo.name) : undefined),
+    [project],
+  )
   const full = wo !== undefined && search.woFull === true
 
   const setNew = (open: boolean) =>
@@ -211,7 +218,13 @@ function ProjectPage() {
                   <TooltipContent className="font-mono">{project.repoPath}</TooltipContent>
                 </Tooltip>
               )}
-              <BranchChip branch={project.baseBranch} />
+              {project.kind === 'hub' ? (
+                <span className="inline-flex h-5 shrink-0 items-center rounded-sm bg-muted px-1.5 text-[0.6875rem] text-muted-foreground">
+                  hub · {project.repos.length} {project.repos.length === 1 ? 'repo' : 'repos'}
+                </span>
+              ) : (
+                <BranchChip branch={project.baseBranch} />
+              )}
             </>
           )}
         </div>
@@ -236,13 +249,15 @@ function ProjectPage() {
             <TabsTrigger value="line" className="px-2.5 text-xs">
               Line
             </TabsTrigger>
-            <TabsTrigger
-              value="review"
-              className="px-2.5 text-xs"
-              title="The line a ZASTAVA review of a pull request runs"
-            >
-              Review line
-            </TabsTrigger>
+            {hub ? null : (
+              <TabsTrigger
+                value="review"
+                className="px-2.5 text-xs"
+                title="The line a ZASTAVA review of a pull request runs"
+              >
+                Review line
+              </TabsTrigger>
+            )}
           </TabsList>
         </Tabs>
         <div className="ml-auto flex items-center gap-3">
@@ -288,6 +303,7 @@ function ProjectPage() {
               stations={stations}
               onOpen={(id) => openWorkOrder(id)}
               onCreate={() => setNew(true)}
+              hubRepos={hubRepos}
             />
             <OfferQaCallout projectId={projectId} variant="floating" />
           </div>
@@ -302,7 +318,12 @@ function ProjectPage() {
                 key={reviewLine.data.updatedAt}
                 kind="review"
                 line={reviewLine.data}
-                previewMissing={project !== undefined && project.preview === null}
+                previewMissing={
+                  project !== undefined &&
+                  (project.kind === 'hub'
+                    ? project.repos.every((repo) => repo.preview === null)
+                    : project.preview === null)
+                }
                 onSetupPreview={() => setSettings(true)}
               />
             </div>
@@ -313,7 +334,12 @@ function ProjectPage() {
               key={line.data.updatedAt}
               line={line.data}
               // Unknown until the project loads: don't flash a warning.
-              previewMissing={project !== undefined && project.preview === null}
+              previewMissing={
+                project !== undefined &&
+                (project.kind === 'hub'
+                  ? project.repos.every((repo) => repo.preview === null)
+                  : project.preview === null)
+              }
               onSetupPreview={() => setSettings(true)}
             />
           </div>
@@ -363,6 +389,7 @@ function ProjectPage() {
         projectId={projectId}
         open={search.new === true}
         onOpenChange={setNew}
+        repos={hubRepos}
       />
     </div>
   )

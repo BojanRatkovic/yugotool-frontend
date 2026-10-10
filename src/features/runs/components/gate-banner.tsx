@@ -3,6 +3,8 @@ import {
   ChevronDown,
   CircleAlert,
   Clock,
+  FolderGit2,
+  Split,
   MessageSquareReply,
   ScanEye,
   Settings2,
@@ -22,13 +24,21 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Kbd, KbdGroup } from '@/components/ui/kbd'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useGateDecision } from '@/features/runs/api/run-queries'
 import { effectiveDelivery } from '@/features/runs/utils/delivery'
+import { splitRoute } from '@/features/runs/utils/hub-plan'
 import type { RequestChangesCopy } from '@/features/runs/utils/request-changes'
 import { errorMessage } from '@/lib/api-client'
-import type { DeliveryMode, GateDecision } from '@/lib/contracts'
+import type { DeliveryMode, GateDecision, SplitItem } from '@/lib/contracts'
 import { DELIVERY_MODES, DELIVERY_OPTIONS, isPrMode } from '@/lib/delivery'
 import { IS_MAC } from '@/lib/shortcuts'
 
@@ -41,6 +51,19 @@ const DONE_TOAST: Record<Decision, (stationName: string) => string> = {
 }
 
 const KBD_CLASS = 'h-4 bg-primary-foreground/15 text-primary-foreground/80'
+
+/** The plan gate of a hub run, before its worktree exists (spec 0014). */
+export interface HubPlanGate {
+  repos: string[]
+  /** Where the select starts: preset, else Research's pick; null = none named. */
+  suggested: string | null
+  /** Research's proposed split, if any. */
+  split: SplitItem[] | null
+  /** The split was created (the work order has followers). */
+  splitDone: boolean
+  splitting: boolean
+  onCreateSplit: () => void
+}
 
 /**
  * Sticky decision bar for a gate that awaits a human. `⌘↵` approves,
@@ -59,6 +82,7 @@ export function GateBanner({
   prBlockedReason = null,
   onChangeDefault,
   requestChanges,
+  hub,
 }: {
   runId: string
   stationKey: string
@@ -78,6 +102,8 @@ export function GateBanner({
   onChangeDefault?: () => void
   /** Where Request changes sends the work; null hides it (nothing before this gate). */
   requestChanges: RequestChangesCopy | null
+  /** A hub run's plan gate: pick the repo, accept a split. */
+  hub?: HubPlanGate
 }) {
   // A PR default that can't work falls back to a local commit, and says so below the buttons.
   const effective =
@@ -91,6 +117,10 @@ export function GateBanner({
   const sectionRef = useRef<HTMLElement>(null)
   const commentRef = useRef<HTMLTextAreaElement>(null)
   const commentId = `gate-comment-${stationKey}`
+  const [repo, setRepo] = useState<string | null>(hub?.suggested ?? null)
+  // A created split puts this work order on its first item's repo.
+  const splitHead = hub?.splitDone === true ? (hub.split?.[0]?.repo ?? null) : null
+  const chosenRepo = splitHead ?? repo
 
   function submit(decision: Decision, mode: DeliveryMode | undefined = delivery) {
     if (decide.isPending) return
@@ -102,9 +132,20 @@ export function GateBanner({
       commentRef.current?.focus()
       return
     }
+    if (decision === 'approve' && hub !== undefined && chosenRepo === null) {
+      toast.error('Pick the repo this work goes in.')
+      return
+    }
     const choice = decision === 'approve' ? mode : undefined
+    const repoChoice = decision === 'approve' && hub !== undefined ? chosenRepo : null
     decide.mutate(
-      { stationKey, decision, comment, ...(choice === undefined ? {} : { delivery: choice }) },
+      {
+        stationKey,
+        decision,
+        comment,
+        ...(choice === undefined ? {} : { delivery: choice }),
+        ...(repoChoice === null ? {} : { repo: repoChoice }),
+      },
       {
         onSuccess: () => {
           setComment('')
@@ -183,6 +224,15 @@ export function GateBanner({
               <p className="text-[0.8125rem] text-muted-foreground">{prompt}</p>
             )}
           </div>
+          {hub === undefined ? null : (
+            <HubPlanBlock
+              hub={hub}
+              repo={chosenRepo}
+              locked={splitHead !== null}
+              onRepo={setRepo}
+              idPrefix={commentId}
+            />
+          )}
           <Label htmlFor={commentId} className="sr-only">
             Comment
           </Label>
@@ -282,6 +332,97 @@ export function GateBanner({
         </div>
       </div>
     </section>
+  )
+}
+
+/** Repo select and, when Research proposed one, the split into a chain of work orders. */
+function HubPlanBlock({
+  hub,
+  repo,
+  locked,
+  onRepo,
+  idPrefix,
+}: {
+  hub: HubPlanGate
+  repo: string | null
+  /** Set by a created split: the repo is its first item's. */
+  locked: boolean
+  onRepo: (repo: string) => void
+  idPrefix: string
+}) {
+  const selectId = `${idPrefix}-repo`
+  const split = hub.split
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <Label htmlFor={selectId} className="flex items-center gap-1.5 text-[0.8125rem]">
+          <FolderGit2 aria-hidden="true" className="size-3.5 text-muted-foreground" />
+          Repo
+        </Label>
+        <Select value={repo ?? undefined} onValueChange={onRepo} disabled={locked}>
+          <SelectTrigger
+            id={selectId}
+            size="sm"
+            className="w-60 bg-background font-mono text-xs"
+          >
+            <SelectValue placeholder="Pick the repo" />
+          </SelectTrigger>
+          <SelectContent>
+            {hub.repos.map((name) => (
+              <SelectItem key={name} value={name} className="font-mono text-xs">
+                {name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="text-xs text-muted-foreground">
+          {hub.suggested === null
+            ? 'Research named no repo: pick one to approve.'
+            : 'The worktree is made here after you approve.'}
+        </span>
+      </div>
+      {split === null || split.length < 2 ? null : (
+        <div className="flex flex-col gap-2 rounded-md border bg-background px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <Split aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
+            <p className="min-w-0 flex-1 text-[0.8125rem] font-medium">
+              Research suggests {split.length} work orders
+              <span className="font-mono text-xs font-normal text-muted-foreground">
+                {' '}
+                · {splitRoute(split)}
+              </span>
+            </p>
+            {hub.splitDone ? (
+              <span className="flex shrink-0 items-center gap-1 text-xs text-status-passed">
+                <Check aria-hidden="true" className="size-3.5" />
+                Created
+              </span>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 shrink-0"
+                disabled={hub.splitting}
+                onClick={hub.onCreateSplit}
+              >
+                Create them
+              </Button>
+            )}
+          </div>
+          <ol className="flex list-decimal flex-col gap-0.5 pl-5 text-xs text-muted-foreground">
+            {split.map((item, index) => (
+              <li key={`${index}-${item.title}`}>
+                <span className="text-foreground">{item.title}</span>
+                <span className="font-mono"> · {item.repo}</span>
+                {index === 0
+                  ? ' · this work order'
+                  : ' · starts after the previous one is delivered'}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+    </div>
   )
 }
 

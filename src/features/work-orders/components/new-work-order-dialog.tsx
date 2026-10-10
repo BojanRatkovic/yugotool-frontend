@@ -14,10 +14,13 @@ export function NewWorkOrderDialog({
   projectId,
   open,
   onOpenChange,
+  repos,
 }: {
   projectId: string
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** A hub project's repos (spec 0014). */
+  repos?: string[]
 }) {
   const workOrders = useWorkOrders(projectId)
   const last = workOrders
@@ -39,6 +42,7 @@ export function NewWorkOrderDialog({
           position={positionBetween(last, undefined)}
           onDone={() => onOpenChange(false)}
           className="border-0 bg-transparent p-0"
+          repos={repos}
         />
       </DialogContent>
     </Dialog>

@@ -8,6 +8,7 @@ import {
   openPullRequestResultSchema,
   type OpenPullRequest,
   type QueueMode,
+  type SplitWorkOrder,
 } from '@/lib/contracts'
 import { queryKeys } from '@/lib/query-keys'
 
@@ -113,5 +114,18 @@ export function useRefreshCi() {
   return useMutation({
     mutationFn: ({ workOrderId }: { workOrderId: string }) =>
       apiClient.post(`/work-orders/${workOrderId}/ci/refresh`),
+  })
+}
+
+/**
+ * Hub projects (spec 0014): accept Research's split. The work order keeps
+ * item 1; the rest land in the backlog, each following the previous one.
+ */
+export function useSplitWorkOrder() {
+  const invalidate = useInvalidateLine()
+  return useMutation({
+    mutationFn: ({ workOrderId, ...body }: SplitWorkOrder & { workOrderId: string }) =>
+      apiClient.post(`/work-orders/${workOrderId}/split`, body),
+    onSuccess: invalidate,
   })
 }

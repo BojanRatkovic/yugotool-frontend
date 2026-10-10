@@ -4,6 +4,13 @@ import { toast } from 'sonner'
 import { FormField } from '@/components/form-field'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { workOrdersCollection } from '@/features/work-orders/api/work-orders-collection'
 import { OverrideFields } from '@/features/work-orders/components/override-fields'
@@ -15,8 +22,15 @@ import {
 import { errorMessage } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { createWorkOrderSchema, effortSchema } from '@/lib/contracts'
+import { z } from 'zod'
+
+/** The Repo field's value for "Research picks". */
+const AUTO = ''
+/** Radix Select items can't have an empty value. */
+const AUTO_ITEM = '__auto__'
 
 const formSchema = createWorkOrderSchema.pick({ title: true }).extend({
+  repo: z.string(),
   description: createWorkOrderSchema.shape.description.removeDefault(),
   modelOverride: createWorkOrderSchema.shape.modelOverride.unwrap(),
   effortOverride: effortSchema.nullable(),
@@ -28,14 +42,17 @@ export function NewWorkOrderForm({
   position,
   onDone,
   className,
+  repos,
 }: {
   projectId: string
   position: number
   onDone: () => void
   className?: string
+  /** A hub project's repos (spec 0014): a Repo select, Auto by default. */
+  repos?: string[]
 }) {
   const form = useForm({
-    defaultValues: { title: '', description: '', ...toOverrideValues({}) },
+    defaultValues: { title: '', description: '', repo: AUTO, ...toOverrideValues({}) },
     validators: { onSubmit: formSchema },
     onSubmit: ({ value, formApi }) => {
       const now = new Date().toISOString()
@@ -49,7 +66,7 @@ export function NewWorkOrderForm({
         status: 'backlog',
         stationKey: null,
         position,
-        repo: null,
+        repo: repos === undefined || value.repo === AUTO ? null : value.repo,
         followsId: null,
         branch: null,
         currentRunId: null,
@@ -111,6 +128,32 @@ export function NewWorkOrderForm({
           </FormField>
         )}
       </form.Field>
+      {repos === undefined ? null : (
+        <form.Field name="repo">
+          {(field) => (
+            <FormField id="new-wo-repo" label="Repo" errors={field.state.meta.errors}>
+              <Select
+                value={field.state.value === AUTO ? AUTO_ITEM : field.state.value}
+                onValueChange={(value) =>
+                  field.handleChange(value === AUTO_ITEM ? AUTO : value)
+                }
+              >
+                <SelectTrigger id="new-wo-repo" className="w-full sm:w-72">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={AUTO_ITEM}>Auto · Research picks</SelectItem>
+                  {repos.map((repo) => (
+                    <SelectItem key={repo} value={repo} className="font-mono">
+                      {repo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+          )}
+        </form.Field>
+      )}
       <form.Field name="budget">
         {(budget) => (
           <form.Subscribe

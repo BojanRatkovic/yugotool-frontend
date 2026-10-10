@@ -41,6 +41,7 @@ function createWorkOrdersCollection(projectId: string) {
               title: modified.title,
               description: modified.description,
               position: modified.position,
+              repo: modified.repo,
               modelOverride: modified.modelOverride,
               effortOverride: modified.effortOverride,
               maxBudgetUsd: modified.maxBudgetUsd,

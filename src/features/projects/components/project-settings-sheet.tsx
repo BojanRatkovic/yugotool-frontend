@@ -39,6 +39,7 @@ import {
   previewQueries,
   useDetectPreview,
   useTestPreview,
+  useUpdateHubRepo,
   useUpdateProject,
 } from '@/features/projects/api/preview-queries'
 import { OfferQaCallout } from '@/features/projects/components/offer-qa-callout'
@@ -48,6 +49,7 @@ import {
   DeleteProjectDialog,
 } from '@/features/projects/components/delete-project-dialog'
 import { remoteQueries } from '@/features/projects/api/remote-queries'
+import { BranchSelect } from '@/features/projects/components/branch-select'
 import { RoutesSettings } from '@/features/projects/components/routes-settings'
 import {
   applyDetectedPreview,
@@ -56,10 +58,18 @@ import {
   type PreviewField,
 } from '@/features/projects/utils/preview-form'
 import { originLabel } from '@/features/projects/utils/remote'
+import {
+  SETTINGS_SECTIONS,
+  type SettingsSection,
+  shownSection,
+  visibleSections,
+} from '@/features/projects/utils/settings-sections'
 import { CopyButton } from '@/components/copy-button'
 import { useNow } from '@/hooks/use-now'
 import { ApiError, errorMessage } from '@/lib/api-client'
 import type {
+  HubRepo,
+  Preview,
   PreviewDetection,
   PreviewTestResult,
   Project,
@@ -69,16 +79,13 @@ import { DELIVERY_MODES, DELIVERY_OPTIONS, isPrMode } from '@/lib/delivery'
 import { formatDuration, formatRelative } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-export const SETTINGS_SECTIONS = [
-  'preview',
-  'routes',
-  'delivery',
-  'knowledge',
-  'general',
-] as const
-export type SettingsSection = (typeof SETTINGS_SECTIONS)[number]
+export {
+  SETTINGS_SECTIONS,
+  type SettingsSection,
+} from '@/features/projects/utils/settings-sections'
 
 const SECTION_LABEL: Record<SettingsSection, string> = {
+  repos: 'Repos',
   preview: 'Preview',
   routes: 'Routes',
   delivery: 'Delivery',
@@ -118,6 +125,7 @@ export function ProjectSettingsSheet({
   knowledge?: ReactNode
 }) {
   const open = section !== undefined
+  const kind = project?.kind ?? 'repo'
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -135,7 +143,7 @@ export function ProjectSettingsSheet({
           </div>
         </SheetHeader>
         <Tabs
-          value={section ?? 'preview'}
+          value={shownSection(kind, section)}
           onValueChange={(value) => {
             const next = SETTINGS_SECTIONS.find((s) => s === value)
             if (next !== undefined) onSectionChange(next)
@@ -144,7 +152,7 @@ export function ProjectSettingsSheet({
         >
           <div className="flex h-10 shrink-0 items-center border-b px-4">
             <TabsList variant="line" className="h-10 gap-4 p-0">
-              {SETTINGS_SECTIONS.map((value) => (
+              {visibleSections(kind).map((value) => (
                 <TabsTrigger key={value} value={value} className="px-0 text-[0.8125rem]">
                   {SECTION_LABEL[value]}
                 </TabsTrigger>
@@ -158,23 +166,35 @@ export function ProjectSettingsSheet({
             </div>
           ) : (
             <>
-              {/* Kept mounted so unsaved preview edits survive a tab switch. */}
-              <TabsContent
-                value="preview"
-                forceMount
-                className="flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden"
-              >
-                {/* Remount when the saved config changes so the form starts from it. */}
-                <PreviewSettings
-                  key={JSON.stringify(project.preview)}
-                  project={project}
-                  autoDetect={autoDetect}
-                  onAutoDetected={onAutoDetected}
-                />
-              </TabsContent>
-              <TabsContent value="routes" className="flex min-h-0 flex-1 flex-col">
-                <RoutesSettings projectId={project.id} />
-              </TabsContent>
+              {project.kind === 'hub' ? (
+                <TabsContent
+                  value="repos"
+                  forceMount
+                  className="flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden"
+                >
+                  <HubReposSettings project={project} />
+                </TabsContent>
+              ) : (
+                <>
+                  {/* Kept mounted so unsaved preview edits survive a tab switch. */}
+                  <TabsContent
+                    value="preview"
+                    forceMount
+                    className="flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden"
+                  >
+                    {/* Remount when the saved config changes so the form starts from it. */}
+                    <PreviewSettings
+                      key={JSON.stringify(project.preview)}
+                      project={project}
+                      autoDetect={autoDetect}
+                      onAutoDetected={onAutoDetected}
+                    />
+                  </TabsContent>
+                  <TabsContent value="routes" className="flex min-h-0 flex-1 flex-col">
+                    <RoutesSettings projectId={project.id} />
+                  </TabsContent>
+                </>
+              )}
               <TabsContent value="delivery" className="flex min-h-0 flex-1 flex-col">
                 <DeliverySettings project={project} />
               </TabsContent>
@@ -196,25 +216,30 @@ export function ProjectSettingsSheet({
 export function PreviewStatusChip({
   last,
   configured,
+  testable = true,
 }: {
   last: PreviewTestResult | null | undefined
   configured: boolean
+  /** False for a hub repo's preview (spec 0014): it can't be tested from here yet. */
+  testable?: boolean
 }) {
   const state = !configured
     ? { icon: CircleDashed, label: 'Not set up', tone: 'bg-muted text-muted-foreground' }
-    : last == null
-      ? { icon: CircleDashed, label: 'Not tested', tone: 'bg-muted text-muted-foreground' }
-      : last.ok
-        ? {
-            icon: CircleCheck,
-            label: 'Preview ready',
-            tone: 'bg-status-passed-soft text-status-passed',
-          }
-        : {
-            icon: CircleX,
-            label: 'Preview failing',
-            tone: 'bg-status-failed-soft text-status-failed',
-          }
+    : !testable
+      ? { icon: CircleCheck, label: 'Set up', tone: 'bg-muted text-muted-foreground' }
+      : last == null
+        ? { icon: CircleDashed, label: 'Not tested', tone: 'bg-muted text-muted-foreground' }
+        : last.ok
+          ? {
+              icon: CircleCheck,
+              label: 'Preview ready',
+              tone: 'bg-status-passed-soft text-status-passed',
+            }
+          : {
+              icon: CircleX,
+              label: 'Preview failing',
+              tone: 'bg-status-failed-soft text-status-failed',
+            }
   const Icon = state.icon
   return (
     <span
@@ -244,13 +269,33 @@ function GeneralSettings({
           General
         </h2>
         <dl className="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-md border bg-card/50 px-3 py-2.5 text-[0.8125rem]">
-          <dt className="text-muted-foreground">Repository</dt>
+          <dt className="text-muted-foreground">
+            {project.kind === 'hub' ? 'Work hub' : 'Repository'}
+          </dt>
           <dd className="flex min-w-0 items-center gap-1">
             <span className="min-w-0 font-mono text-xs break-all">{project.repoPath}</span>
-            <CopyButton value={project.repoPath} label="Copy the repository path" />
+            <CopyButton
+              value={project.repoPath}
+              label={
+                project.kind === 'hub' ? 'Copy the work hub path' : 'Copy the repository path'
+              }
+            />
           </dd>
-          <dt className="text-muted-foreground">Base branch</dt>
-          <dd className="font-mono text-xs">{project.baseBranch}</dd>
+          {project.kind === 'hub' ? (
+            <>
+              <dt className="text-muted-foreground">Repos</dt>
+              <dd className="text-xs">
+                {project.repos.length === 0
+                  ? 'None in repos/'
+                  : project.repos.map((repo) => repo.name).join(', ')}
+              </dd>
+            </>
+          ) : (
+            <>
+              <dt className="text-muted-foreground">Base branch</dt>
+              <dd className="font-mono text-xs">{project.baseBranch}</dd>
+            </>
+          )}
         </dl>
       </section>
 
@@ -291,7 +336,9 @@ function GeneralSettings({
 
 function DeliverySettings({ project }: { project: Project }) {
   const update = useUpdateProject(project.id)
-  const remote = useQuery(remoteQueries.detail(project.id))
+  const hub = project.kind === 'hub'
+  // A hub's own remote says nothing: each run delivers from its repo's (spec 0014).
+  const remote = useQuery({ ...remoteQueries.detail(project.id), enabled: !hub })
   // Show the requested value while the PATCH is in flight.
   const selected = update.isPending
     ? (update.variables.deliveryDefault ?? project.deliveryDefault)
@@ -328,7 +375,13 @@ function DeliverySettings({ project }: { project: Project }) {
           </p>
         </div>
 
-        <RemoteStatus remote={remote.data} pending={remote.isPending} />
+        {hub ? (
+          <p className="flex min-h-9 items-center gap-2 rounded-md border px-3 py-2 text-xs text-muted-foreground">
+            Each work order delivers from its repo&rsquo;s remote; the final gate checks it.
+          </p>
+        ) : (
+          <RemoteStatus remote={remote.data} pending={remote.isPending} />
+        )}
 
         <RadioGroup
           value={selected}
@@ -431,20 +484,33 @@ function RemoteStatus({
 
 function PreviewSettings({
   project,
-  autoDetect,
+  repo,
+  autoDetect = false,
   onAutoDetected,
 }: {
   project: Project
-  autoDetect: boolean
+  /** A hub project's repo (spec 0014): edits that repo's preview; no test or sign-in yet. */
+  repo?: HubRepo
+  autoDetect?: boolean
   onAutoDetected?: () => void
 }) {
-  const update = useUpdateProject(project.id)
+  const updateProject = useUpdateProject(project.id)
+  const updateRepo = useUpdateHubRepo(project.id)
+  const saving = repo === undefined ? updateProject.isPending : updateRepo.isPending
+  const save = (
+    preview: Preview | null,
+    callbacks: { onSuccess: () => void; onError: (error: Error) => void },
+  ) =>
+    repo === undefined
+      ? updateProject.mutate({ preview }, callbacks)
+      : updateRepo.mutate({ repo: repo.name, preview }, callbacks)
   const test = useTestPreview(project.id)
   const detect = useDetectPreview(project.id)
-  const status = useQuery(previewQueries.status(project.id))
+  const status = useQuery({ ...previewQueries.status(project.id), enabled: repo === undefined })
   const [errors, setErrors] = useState<Partial<Record<PreviewField, string>>>({})
-  const configured = project.preview !== null
-  const initial = toPreviewValues(project.preview)
+  const saved = repo === undefined ? project.preview : repo.preview
+  const configured = saved !== null
+  const initial = toPreviewValues(saved)
 
   const form = useForm({
     defaultValues: initial,
@@ -455,13 +521,10 @@ function PreviewSettings({
         return
       }
       setErrors({})
-      update.mutate(
-        { preview: parsed.preview },
-        {
-          onSuccess: () => toast.success('Preview saved.'),
-          onError: (error) => toast.error(`Couldn't save the preview: ${errorMessage(error)}`),
-        },
-      )
+      save(parsed.preview, {
+        onSuccess: () => toast.success('Preview saved.'),
+        onError: (error) => toast.error(`Couldn't save the preview: ${errorMessage(error)}`),
+      })
     },
   })
   const values = useStore(form.store, (state) => state.values)
@@ -484,14 +547,11 @@ function PreviewSettings({
   }
 
   function remove() {
-    update.mutate(
-      { preview: null },
-      {
-        onSuccess: () =>
-          toast.success('Preview removed. QA stations will fail until it is set up again.'),
-        onError: (error) => toast.error(`Couldn't remove the preview: ${errorMessage(error)}`),
-      },
-    )
+    save(null, {
+      onSuccess: () =>
+        toast.success('Preview removed. QA stations will fail until it is set up again.'),
+      onError: (error) => toast.error(`Couldn't remove the preview: ${errorMessage(error)}`),
+    })
   }
 
   /** Fills the form from the repo (unsaved). With nothing runnable found, the form stays as is. */
@@ -511,7 +571,7 @@ function PreviewSettings({
   // New-project flow: detect once on open. The ref survives StrictMode's double effect.
   const autoDetected = useRef(false)
   useEffect(() => {
-    if (!autoDetect || autoDetected.current) return
+    if (!autoDetect || autoDetected.current || repo !== undefined) return
     autoDetected.current = true
     onAutoDetected?.()
     if (project.preview === null) runDetect()
@@ -532,33 +592,38 @@ function PreviewSettings({
           <div className="flex items-start gap-3">
             <div className="flex min-w-0 flex-col gap-0.5">
               <h2 id="preview-heading" className="text-sm font-semibold">
-                Preview
+                {repo === undefined ? 'Preview' : `Preview · ${repo.name}`}
               </h2>
               <p className="text-[0.8125rem] text-muted-foreground">
-                How to run the app locally. QA stations boot it twice — base branch and the work
-                order&rsquo;s branch — and compare screenshots.
+                {repo === undefined
+                  ? 'How to run the app locally. QA stations boot it twice — base branch and the work order’s branch — and compare screenshots.'
+                  : `How to run ${repo.name} locally. QA stations of work in ${repo.name} boot it twice — base branch and the work order’s branch — and compare screenshots.`}
               </p>
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              {status.isPending && configured ? (
+              {repo !== undefined ? (
+                <PreviewStatusChip last={null} configured={configured} testable={false} />
+              ) : status.isPending && configured ? (
                 <Skeleton className="h-5 w-24 rounded-full" />
               ) : (
                 <PreviewStatusChip last={last} configured={configured} />
               )}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={detect.isPending}
-                onClick={runDetect}
-              >
-                {detect.isPending ? (
-                  <LoaderCircle aria-hidden="true" className="animate-spin" />
-                ) : (
-                  <ScanSearch aria-hidden="true" />
-                )}
-                {detect.isPending ? 'Detecting…' : 'Detect from repo'}
-              </Button>
+              {repo === undefined ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={detect.isPending}
+                  onClick={runDetect}
+                >
+                  {detect.isPending ? (
+                    <LoaderCircle aria-hidden="true" className="animate-spin" />
+                  ) : (
+                    <ScanSearch aria-hidden="true" />
+                  )}
+                  {detect.isPending ? 'Detecting…' : 'Detect from repo'}
+                </Button>
+              ) : null}
             </div>
           </div>
 
@@ -779,20 +844,33 @@ function PreviewSettings({
           </form.Field>
         </section>
 
-        <PreviewSessionSettings projectId={project.id} configured={configured} dirty={dirty} />
+        {repo !== undefined ? (
+          <p className="border-t pt-4 text-xs text-muted-foreground">
+            Test and sign-in work on repo projects for now; QA uses this preview on runs in{' '}
+            {repo.name}.
+          </p>
+        ) : (
+          <>
+            <PreviewSessionSettings
+              projectId={project.id}
+              configured={configured}
+              dirty={dirty}
+            />
 
-        <PreviewTest
-          configured={configured}
-          dirty={dirty}
-          pending={test.isPending}
-          startedAt={test.submittedAt}
-          timeoutSec={project.preview?.readyTimeoutSec ?? null}
-          last={last ?? null}
-          onTest={runTest}
-        />
-        {!test.isPending && last?.ok === true ? (
-          <OfferQaCallout projectId={project.id} variant="inline" />
-        ) : null}
+            <PreviewTest
+              configured={configured}
+              dirty={dirty}
+              pending={test.isPending}
+              startedAt={test.submittedAt}
+              timeoutSec={project.preview?.readyTimeoutSec ?? null}
+              last={last ?? null}
+              onTest={runTest}
+            />
+            {!test.isPending && last?.ok === true ? (
+              <OfferQaCallout projectId={project.id} variant="inline" />
+            ) : null}
+          </>
+        )}
       </form>
 
       <SheetFooter className="flex-row items-center gap-2 border-t">
@@ -801,7 +879,7 @@ function PreviewSettings({
             type="button"
             variant="outline"
             size="sm"
-            disabled={update.isPending}
+            disabled={saving}
             onClick={remove}
             className="border-status-failed/40 text-status-failed hover:bg-status-failed-soft hover:text-status-failed"
           >
@@ -810,13 +888,13 @@ function PreviewSettings({
           </Button>
         ) : null}
         <span className="ml-auto text-xs text-muted-foreground" aria-live="polite">
-          {update.isPending ? 'Saving…' : dirty ? 'Unsaved changes' : configured ? 'Saved' : ''}
+          {saving ? 'Saving…' : dirty ? 'Unsaved changes' : configured ? 'Saved' : ''}
         </span>
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          disabled={!dirty || update.isPending}
+          disabled={!dirty || saving}
           onClick={() => {
             form.reset(initial)
             setErrors({})
@@ -828,13 +906,102 @@ function PreviewSettings({
         <Button
           type="button"
           size="sm"
-          disabled={!dirty || update.isPending}
+          disabled={!dirty || saving}
           onClick={() => void form.handleSubmit()}
         >
           <Save aria-hidden="true" />
           Save preview
         </Button>
       </SheetFooter>
+    </>
+  )
+}
+
+/**
+ * Hub projects (spec 0014): each repo's base branch (work starts from it) and
+ * preview (what QA boots for work in that repo).
+ */
+function HubReposSettings({ project }: { project: Project }) {
+  const update = useUpdateHubRepo(project.id)
+  const [selected, setSelected] = useState<string | null>(null)
+  const current = project.repos.find((repo) => repo.name === selected) ?? project.repos[0]
+
+  if (project.repos.length === 0) {
+    return (
+      <p className="p-4 text-[0.8125rem] text-muted-foreground">
+        No git checkouts in <span className="font-mono">{project.repoPath}/repos</span>. Clone
+        one there; it shows up here.
+      </p>
+    )
+  }
+
+  function changeBase(repo: HubRepo, baseBranch: string) {
+    if (baseBranch.trim() === '' || baseBranch === repo.baseBranch) return
+    update.mutate(
+      { repo: repo.name, baseBranch },
+      {
+        onSuccess: () => toast.success(`${repo.name} now starts work from ${baseBranch}.`),
+        onError: (error) =>
+          toast.error(`Couldn't change the base branch: ${errorMessage(error)}`),
+      },
+    )
+  }
+
+  return (
+    <>
+      <section aria-labelledby="repos-heading" className="flex flex-col gap-3 border-b p-4">
+        <div className="flex flex-col gap-0.5">
+          <h2 id="repos-heading" className="text-sm font-semibold">
+            Repos
+          </h2>
+          <p className="text-[0.8125rem] text-muted-foreground">
+            Research picks the repo for each work order; its worktree branches off that
+            repo&rsquo;s base branch.
+          </p>
+        </div>
+        <ul className="flex max-h-56 scrollbar-thin flex-col gap-1 overflow-y-auto">
+          {project.repos.map((repo) => {
+            const active = repo.name === current?.name
+            return (
+              <li
+                key={repo.name}
+                className={cn(
+                  'grid grid-cols-[minmax(0,1fr)_12rem_auto] items-center gap-3 rounded-md border px-3 py-1.5',
+                  active ? 'border-foreground/40 bg-card' : 'bg-card/50',
+                )}
+              >
+                <button
+                  type="button"
+                  className="min-w-0 truncate text-left text-[0.8125rem] font-medium underline-offset-4 hover:underline"
+                  aria-pressed={active}
+                  onClick={() => setSelected(repo.name)}
+                >
+                  {repo.name}
+                </button>
+                <BranchSelect
+                  id={`repo-base-${repo.name}`}
+                  repoPath={repo.path}
+                  value={repo.baseBranch}
+                  onChange={(branch) => changeBase(repo, branch)}
+                />
+                <PreviewStatusChip
+                  last={null}
+                  configured={repo.preview !== null}
+                  testable={false}
+                />
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+      {current === undefined ? null : (
+        // Remount per repo and when its saved preview changes, so the form starts from it.
+        <PreviewSettings
+          key={`${current.name}:${JSON.stringify(current.preview)}`}
+          project={project}
+          repo={current}
+        />
+      )}
     </>
   )
 }

@@ -34,6 +34,7 @@ import {
 import { useRunBacklog } from '@/features/work-orders/api/work-order-mutations'
 import { workOrdersCollection } from '@/features/work-orders/api/work-orders-collection'
 import { NewWorkOrderForm } from '@/features/work-orders/components/new-work-order-form'
+import { type BoardHub, boardHub } from '@/features/work-orders/utils/hub-card'
 import {
   SortableWorkOrderCard,
   WorkOrderCard,
@@ -56,12 +57,15 @@ export function WorkOrderBoard({
   stations,
   onOpen,
   onCreate,
+  hubRepos,
 }: {
   projectId: string
   stations: Station[]
   onOpen: (workOrderId: string) => void
   /** Opens the app-level "New work order" dialog; without it the backlog adds inline. */
   onCreate?: () => void
+  /** A hub project's repos (spec 0014): cards show their repo; undefined for repo projects. */
+  hubRepos?: string[]
 }) {
   const collection = workOrdersCollection(projectId)
   const { data: workOrders, isLoading } = useLiveQuery(
@@ -70,6 +74,7 @@ export function WorkOrderBoard({
   )
   const error = useQueryError(queryKeys.workOrdersByProject(projectId))
   const columns = useMemo(() => buildColumns(stations, workOrders), [stations, workOrders])
+  const hub = useMemo(() => boardHub(hubRepos, workOrders), [hubRepos, workOrders])
   const boardRef = useRef<HTMLDivElement>(null)
 
   useShiftWheel(boardRef)
@@ -97,6 +102,7 @@ export function WorkOrderBoard({
             stations={stations}
             onOpen={onOpen}
             onCreate={onCreate}
+            hub={hub}
           />
         ) : (
           <Column key={column.key} column={column}>
@@ -106,6 +112,7 @@ export function WorkOrderBoard({
                 workOrder={workOrder}
                 stations={stations}
                 onOpen={onOpen}
+                hub={hub}
               />
             ))}
           </Column>
@@ -233,12 +240,14 @@ function BacklogColumn({
   stations,
   onOpen,
   onCreate,
+  hub,
 }: {
   column: BoardColumn
   projectId: string
   stations: Station[]
   onOpen: (id: string) => void
   onCreate?: () => void
+  hub: BoardHub | null
 }) {
   const [adding, setAdding] = useState(false)
   const sensors = useSensors(
@@ -287,6 +296,7 @@ function BacklogColumn({
           projectId={projectId}
           position={positionBetween(lastPosition, undefined)}
           onDone={() => setAdding(false)}
+          repos={hub?.repos}
         />
       ) : null}
       <DndContext
@@ -301,6 +311,7 @@ function BacklogColumn({
               workOrder={workOrder}
               stations={stations}
               onOpen={onOpen}
+              hub={hub}
             />
           ))}
         </SortableContext>

@@ -132,11 +132,14 @@ export function WorkOrderDetails({
   projectId,
   workOrder,
   baseBranch,
+  repo,
   worktreePath,
 }: {
   projectId: string
   workOrder: WorkOrder
   baseBranch: string | undefined
+  /** Hub projects (spec 0014): the repo, null while Research picks; undefined otherwise. */
+  repo?: string | null
   worktreePath: string | null
 }) {
   return (
@@ -148,6 +151,15 @@ export function WorkOrderDetails({
         <OverridesSummary workOrder={workOrder} />
       )}
       <dl className="flex flex-col gap-1">
+        {repo === undefined ? null : (
+          <Meta label="Repo">
+            {repo === null ? (
+              <span className="text-muted-foreground">Auto · Research picks</span>
+            ) : (
+              <span className="truncate">{repo}</span>
+            )}
+          </Meta>
+        )}
         <Meta label="Branch">
           {workOrder.branch === null ? (
             <span className="text-muted-foreground">Created on start</span>

@@ -62,7 +62,7 @@ export function ProjectNav({
               <span className="min-w-0 flex-1 truncate">{project.name}</span>
               <NeedsYouPill count={needsYou?.get(project.id) ?? 0} />
               <span className="max-w-24 truncate rounded-sm bg-muted px-1 font-mono text-[0.6875rem] text-muted-foreground">
-                {project.baseBranch}
+                {project.kind === 'hub' ? 'hub' : project.baseBranch}
               </span>
             </Link>
           </SidebarMenuButton>

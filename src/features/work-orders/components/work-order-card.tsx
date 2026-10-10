@@ -1,6 +1,12 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GitBranch, GitCommitHorizontal, SquareArrowOutUpRight } from 'lucide-react'
+import {
+  CornerDownRight,
+  FolderGit2,
+  GitBranch,
+  GitCommitHorizontal,
+  SquareArrowOutUpRight,
+} from 'lucide-react'
 
 import { STATUS_LABEL, TONE, TONE_BG } from '@/components/status/status'
 import { StatusChip } from '@/components/status/status-chip'
@@ -14,6 +20,11 @@ import { CiBadge } from '@/components/ci-badge'
 import { PrLink } from '@/components/pr-link'
 import { QueuedChip, QueueMenuItems } from '@/features/work-orders/components/queue-actions'
 import { stoppedLabel } from '@/features/work-orders/utils/card-outcome'
+import {
+  type BoardHub,
+  followsLabel,
+  repoChipLabel,
+} from '@/features/work-orders/utils/hub-card'
 import { pipelineFor } from '@/features/work-orders/utils/pipeline'
 import type { Station, WorkOrder } from '@/lib/contracts'
 import { cn } from '@/lib/utils'
@@ -51,14 +62,41 @@ function PipelineStrip({ workOrder, stations }: { workOrder: WorkOrder; stations
  * card stays one click target while the PR link stays a real, separate link
  * (a link can't live inside a button).
  */
+/** Hub projects (spec 0014): the repo (or Auto) and, for a follower, what it waits for. */
+function HubChips({ workOrder, hub }: { workOrder: WorkOrder; hub: BoardHub }) {
+  const after = followsLabel(workOrder, hub.titles)
+  return (
+    <span className="flex w-full min-w-0 items-center gap-2 text-[0.6875rem] text-muted-foreground">
+      <span
+        className={cn(
+          'inline-flex h-5 shrink-0 items-center gap-1 rounded-sm border px-1.5 font-mono',
+          workOrder.repo === null && 'border-dashed',
+        )}
+        title={workOrder.repo === null ? 'Research picks the repo' : `Repo: ${workOrder.repo}`}
+      >
+        <FolderGit2 aria-hidden="true" className="size-3" />
+        {repoChipLabel(workOrder)}
+      </span>
+      {after === null ? null : (
+        <span className="flex min-w-0 items-center gap-1" title={after}>
+          <CornerDownRight aria-hidden="true" className="size-3 shrink-0" />
+          <span className="truncate">{after}</span>
+        </span>
+      )}
+    </span>
+  )
+}
+
 function CardBody({
   workOrder,
   stations,
   onOpen,
+  hub,
 }: {
   workOrder: WorkOrder
   stations: Station[]
   onOpen: (id: string) => void
+  hub: BoardHub | null
 }) {
   const needsYou = workOrder.status === 'awaiting_approval'
   const stopped = stoppedLabel(workOrder, stations)
@@ -90,6 +128,7 @@ function CardBody({
       ) : (
         <StatusChip status={workOrder.status} label={stopped ?? undefined} />
       )}
+      {hub === null ? null : <HubChips workOrder={workOrder} hub={hub} />}
       <PipelineStrip workOrder={workOrder} stations={stations} />
       {workOrder.branch === null && workOrder.prUrl == null && !committedLocally ? null : (
         <span className="flex w-full min-w-0 items-center gap-2 font-mono text-[0.6875rem] text-muted-foreground">
@@ -159,15 +198,17 @@ export function WorkOrderCard({
   workOrder,
   stations,
   onOpen,
+  hub = null,
 }: {
   workOrder: WorkOrder
   stations: Station[]
   onOpen: (id: string) => void
+  hub?: BoardHub | null
 }) {
   return (
     <CardMenu workOrder={workOrder} onOpen={onOpen}>
       <div className={CARD_CLASS}>
-        <CardBody workOrder={workOrder} stations={stations} onOpen={onOpen} />
+        <CardBody workOrder={workOrder} stations={stations} onOpen={onOpen} hub={hub} />
       </div>
     </CardMenu>
   )
@@ -178,10 +219,12 @@ export function SortableWorkOrderCard({
   workOrder,
   stations,
   onOpen,
+  hub = null,
 }: {
   workOrder: WorkOrder
   stations: Station[]
   onOpen: (id: string) => void
+  hub?: BoardHub | null
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: workOrder.id,
@@ -195,7 +238,7 @@ export function SortableWorkOrderCard({
         {...attributes}
         {...listeners}
       >
-        <CardBody workOrder={workOrder} stations={stations} onOpen={onOpen} />
+        <CardBody workOrder={workOrder} stations={stations} onOpen={onOpen} hub={hub} />
       </div>
     </CardMenu>
   )
