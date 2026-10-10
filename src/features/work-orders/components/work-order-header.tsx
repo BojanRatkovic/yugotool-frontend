@@ -1,4 +1,4 @@
-import { Code2, Square } from 'lucide-react'
+import { Code2, Ellipsis, Square, Trash2 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
@@ -16,10 +16,20 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
   useCancelWorkOrder,
   useOpenInEditor,
 } from '@/features/work-orders/api/work-order-mutations'
 import { workOrdersCollection } from '@/features/work-orders/api/work-orders-collection'
+import {
+  canDeleteWorkOrder,
+  DeleteWorkOrderDialog,
+} from '@/features/work-orders/components/delete-work-order-dialog'
 import { PrLink } from '@/components/pr-link'
 import { QueueButtons, QueuedChip } from '@/features/work-orders/components/queue-actions'
 import { errorMessage } from '@/lib/api-client'
@@ -62,16 +72,66 @@ function TitleField({ projectId, workOrder }: { projectId: string; workOrder: Wo
   )
 }
 
+/** Rarely-used, destructive actions live behind ⋯, away from the run buttons. */
+function MoreMenu({
+  projectId,
+  workOrder,
+  onDeleted,
+}: {
+  projectId: string
+  workOrder: WorkOrder
+  onDeleted: () => void
+}) {
+  const [confirming, setConfirming] = useState(false)
+  const deletable = canDeleteWorkOrder(workOrder.status)
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon-sm" aria-label="More actions">
+            <Ellipsis aria-hidden="true" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem
+            variant="destructive"
+            disabled={!deletable}
+            onSelect={() => setConfirming(true)}
+          >
+            <Trash2 aria-hidden="true" />
+            Delete work order…
+          </DropdownMenuItem>
+          {deletable ? null : (
+            <p className="px-1.5 pt-0.5 pb-1 text-xs text-muted-foreground">
+              Cancel the run before deleting.
+            </p>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <DeleteWorkOrderDialog
+        projectId={projectId}
+        workOrder={workOrder}
+        open={confirming}
+        onOpenChange={setConfirming}
+        onDeleted={onDeleted}
+      />
+    </>
+  )
+}
+
 /** Panel header: status, editable title, the commands that move the order, and slot controls. */
 export function WorkOrderHeader({
   projectId,
   workOrder,
   controls,
+  onDeleted,
 }: {
   projectId: string
   workOrder: WorkOrder
   /** Expand / close, owned by the route. */
   controls: ReactNode
+  /** The order is gone; the route closes the panel. */
+  onDeleted: () => void
 }) {
   const cancel = useCancelWorkOrder()
   const openEditor = useOpenInEditor()
@@ -159,6 +219,7 @@ export function WorkOrderHeader({
             </AlertDialog>
           ) : null}
           <QueueButtons workOrder={workOrder} />
+          <MoreMenu projectId={projectId} workOrder={workOrder} onDeleted={onDeleted} />
           <span aria-hidden="true" className="mx-1 h-4 w-px bg-border" />
           {controls}
         </div>

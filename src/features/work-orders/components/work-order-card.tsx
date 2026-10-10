@@ -1,6 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GitBranch, GitCommitHorizontal, SquareArrowOutUpRight } from 'lucide-react'
+import { GitBranch, GitCommitHorizontal, SquareArrowOutUpRight, Trash2 } from 'lucide-react'
+import { useState } from 'react'
 
 import { STATUS_LABEL, TONE, TONE_BG } from '@/components/status/status'
 import { StatusChip } from '@/components/status/status-chip'
@@ -8,10 +9,15 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { CiBadge } from '@/components/ci-badge'
 import { PrLink } from '@/components/pr-link'
+import {
+  canDeleteWorkOrder,
+  DeleteWorkOrderDialog,
+} from '@/features/work-orders/components/delete-work-order-dialog'
 import { QueuedChip, QueueMenuItems } from '@/features/work-orders/components/queue-actions'
 import { stoppedLabel } from '@/features/work-orders/utils/card-outcome'
 import { pipelineFor } from '@/features/work-orders/utils/pipeline'
@@ -131,7 +137,7 @@ function CardBody({
 const CARD_CLASS =
   'group relative flex min-h-18 w-full shrink-0 flex-col items-start gap-2 rounded-md border bg-card px-3 py-2.5 text-left transition-colors duration-150 hover:border-foreground/15 hover:bg-accent/60'
 
-/** Right-click (or the context-menu key) on a card: open, start, queue. */
+/** Right-click (or the context-menu key) on a card: open, start, queue, delete. */
 function CardMenu({
   workOrder,
   onOpen,
@@ -141,17 +147,35 @@ function CardMenu({
   onOpen: (id: string) => void
   children: React.ReactNode
 }) {
+  const [confirming, setConfirming] = useState(false)
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="w-56">
-        <ContextMenuItem onSelect={() => onOpen(workOrder.id)}>
-          <SquareArrowOutUpRight aria-hidden="true" />
-          Open
-        </ContextMenuItem>
-        <QueueMenuItems workOrder={workOrder} />
-      </ContextMenuContent>
-    </ContextMenu>
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+        <ContextMenuContent className="w-56">
+          <ContextMenuItem onSelect={() => onOpen(workOrder.id)}>
+            <SquareArrowOutUpRight aria-hidden="true" />
+            Open
+          </ContextMenuItem>
+          <QueueMenuItems workOrder={workOrder} />
+          {canDeleteWorkOrder(workOrder.status) ? (
+            <>
+              <ContextMenuSeparator />
+              <ContextMenuItem variant="destructive" onSelect={() => setConfirming(true)}>
+                <Trash2 aria-hidden="true" />
+                Delete…
+              </ContextMenuItem>
+            </>
+          ) : null}
+        </ContextMenuContent>
+      </ContextMenu>
+      <DeleteWorkOrderDialog
+        projectId={workOrder.projectId}
+        workOrder={workOrder}
+        open={confirming}
+        onOpenChange={setConfirming}
+      />
+    </>
   )
 }
 

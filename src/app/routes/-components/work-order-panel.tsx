@@ -199,7 +199,12 @@ export function WorkOrderPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <WorkOrderHeader projectId={projectId} workOrder={workOrder} controls={controls} />
+      <WorkOrderHeader
+        projectId={projectId}
+        workOrder={workOrder}
+        controls={controls}
+        onDeleted={onClose}
+      />
       {stations.length === 0 ? null : (
         <div className="border-b bg-card/40">
           <PipelineStepper

@@ -64,6 +64,12 @@ function createWorkOrdersCollection(projectId: string) {
           }),
         )
       },
+      // Idempotent server-side; 409 `work_order_active` rolls the row back.
+      onDelete: async ({ transaction }) => {
+        await Promise.all(
+          transaction.mutations.map(({ key }) => apiClient.delete(`/work-orders/${key}`)),
+        )
+      },
     }),
   )
 }
@@ -82,6 +88,6 @@ export function workOrdersCollection(projectId: string): WorkOrdersCollection {
   return collection
 }
 
-// TODO(offline): wrap inserts/updates in @tanstack/offline-transactions so
+// TODO(offline): wrap inserts/updates/deletes in @tanstack/offline-transactions so
 // edits made offline queue in IndexedDB and replay on reconnect. Today an
 // offline write is optimistic but rolls back when the request fails.
