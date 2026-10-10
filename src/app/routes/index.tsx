@@ -30,7 +30,7 @@ const TOUR: readonly TourStep[] = [
     term: 'Project',
     title: 'Point ZASTAVA at a repo',
     description:
-      'A project is a local git repository. Every run gets its own branch and worktree, so your checkout stays yours.',
+      'A project is a local Git repository. Every run gets its own branch and worktree, so your checkout stays yours.',
   },
   {
     focus: 'line',
@@ -222,7 +222,7 @@ function HomePage() {
         <div className="flex flex-col items-center gap-2">
           <h1 className="text-xl font-semibold text-balance">Pick a project</h1>
           <p className="max-w-sm text-[0.8125rem] text-muted-foreground">
-            Choose one in the sidebar, or start a new one from a local git repository.
+            Choose one in the sidebar, or start a new one from a local Git repository.
           </p>
         </div>
         <NeedsYouList items={needsYou} />

@@ -180,7 +180,7 @@ export function SettingsForm({
             <Row
               id={REPOS_ROOT_FIELD_ID}
               label="Repos folder"
-              help="Where your git repos live. The repo picker lists repos under it. Leave empty for the default."
+              help="Where your Git repos live. The repo picker lists repos under it. Leave empty for the default."
               errors={reposRootError === null ? [] : [reposRootError]}
             >
               <div className="flex w-full items-center gap-2">

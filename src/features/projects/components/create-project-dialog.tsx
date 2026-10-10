@@ -95,7 +95,7 @@ export function CreateProjectDialog({
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>New project</DialogTitle>
-          <DialogDescription>Point ZASTAVA at a local git repository.</DialogDescription>
+          <DialogDescription>Point ZASTAVA at a local Git repository.</DialogDescription>
         </DialogHeader>
         <form
           className="flex flex-col gap-4"

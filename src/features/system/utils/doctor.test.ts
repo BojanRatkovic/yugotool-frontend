@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   blockingChecks,
+  doctorRows,
   doctorSummary,
   joinLabels,
   notReadyMessage,
@@ -11,13 +12,14 @@ import type { DoctorCheck, DoctorReport } from '@/lib/contracts'
 function check(patch: Partial<DoctorCheck>): DoctorCheck {
   return {
     key: 'git',
-    label: 'git',
+    label: 'Git',
     status: 'ok',
     required: true,
-    detail: 'git 2.47.1',
+    detail: 'Git 2.47.1',
     neededFor: null,
     fix: null,
     fixCommand: null,
+    group: 'machine',
     ...patch,
   }
 }
@@ -35,7 +37,7 @@ describe('doctor', () => {
     const r = report([
       check({ key: 'claude', label: 'Claude', status: 'fail' }),
       check({ key: 'gh', label: 'GitHub CLI', status: 'warn', required: false }),
-      check({ key: 'git', label: 'git', status: 'warn' }),
+      check({ key: 'git', label: 'Git', status: 'warn' }),
     ])
     expect(blockingChecks(r).map((c) => c.key)).toEqual(['claude'])
   })
@@ -77,11 +79,11 @@ describe('doctorSummary', () => {
   it('names optional gaps but stays folded', () => {
     const r = report([
       check({}),
-      check({ key: 'nvm', label: 'nvm', required: false, status: 'warn' }),
+      check({ key: 'gh', label: 'GitHub CLI', required: false, status: 'warn' }),
     ])
     expect(doctorSummary(r)).toEqual({
       tone: 'warn',
-      text: '1 of 2 OK · limited: nvm',
+      text: '1 of 2 OK · limited: GitHub CLI',
       openByDefault: false,
     })
   })
@@ -96,5 +98,31 @@ describe('doctorSummary', () => {
       text: 'Claude and Worker block runs',
       openByDefault: true,
     })
+  })
+})
+
+describe('doctorRows (spec 0013)', () => {
+  const services = [
+    check({ key: 'database', label: 'Database', group: 'service', detail: 'Postgres 14.18' }),
+    check({ key: 'temporal', label: 'Temporal', group: 'service' }),
+    check({ key: 'worker', label: 'Worker', group: 'service' }),
+  ]
+
+  it('folds running services into one row after the machine checks', () => {
+    const rows = doctorRows(report([check({}), ...services]))
+    expect(rows.map((row) => row.kind)).toEqual(['check', 'services'])
+  })
+
+  it('shows every service on its own once one is down', () => {
+    const down = services.map((s) =>
+      s.key === 'worker' ? { ...s, status: 'fail' as const } : s,
+    )
+    const rows = doctorRows(report([check({}), ...down]))
+    expect(rows.map((row) => (row.kind === 'check' ? row.check.key : row.kind))).toEqual([
+      'git',
+      'database',
+      'temporal',
+      'worker',
+    ])
   })
 })
