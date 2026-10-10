@@ -49,6 +49,8 @@ export function NewWorkOrderForm({
         status: 'backlog',
         stationKey: null,
         position,
+        repo: null,
+        followsId: null,
         branch: null,
         currentRunId: null,
         queueMode: null,

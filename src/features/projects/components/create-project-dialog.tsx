@@ -59,12 +59,14 @@ export function CreateProjectDialog({
       const id = crypto.randomUUID()
       const tx = projectsCollection.insert({
         id,
+        kind: 'repo',
         name: value.name.trim(),
         repoPath: value.repoPath.trim(),
         baseBranch: value.baseBranch.trim(),
         preview: null,
         deliveryDefault: 'local',
         hubPath: null,
+        repos: [],
         createdAt: now,
         updatedAt: now,
       })

@@ -33,6 +33,8 @@ function wo(patch: Partial<WorkOrder>): WorkOrder {
     status: 'backlog',
     stationKey: null,
     position: 1,
+    repo: null,
+    followsId: null,
     branch: null,
     currentRunId: null,
     queueMode: null,
