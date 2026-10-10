@@ -39,7 +39,9 @@ export function RepoPicker({
   const picked = repos.data?.find((repo) => repo.path === value)
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    // `modal`: the picker opens inside a Dialog, whose scroll lock swallows wheel
+    // events on this portaled list. A modal popover takes over the lock and lets it scroll.
+    <Popover modal open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           id={id}
