@@ -4,7 +4,6 @@ import {
   CircleAlert,
   CircleCheck,
   CircleX,
-  FolderCog,
   LoaderCircle,
   RotateCw,
   type LucideIcon,
@@ -17,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { systemQueries } from '@/features/system/api/system-queries'
 import { useId, useState } from 'react'
 
-import { blockingChecks, doctorSummary } from '@/features/system/utils/doctor'
+import { blockingChecks, doctorRows, doctorSummary } from '@/features/system/utils/doctor'
 import type { DoctorCheck, DoctorReport } from '@/lib/contracts'
 import { formatDateTime, formatRelative } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -38,10 +37,10 @@ const STATUS: Record<DoctorCheck['status'], { icon: LucideIcon; word: string; to
   }
 
 /**
- * Settings → Doctor: one row per first-run check with the fix and a copyable
- * command. `onFixRepos` jumps to the Repos folder field.
+ * Settings → Doctor: one row per thing the person provides, with the fix and a
+ * copyable command, and one row for ZASTAVA's own services.
  */
-export function DoctorSection({ onFixRepos }: { onFixRepos?: () => void }) {
+export function DoctorSection() {
   const doctor = useQuery(systemQueries.doctor())
   const report = doctor.data
   return (
@@ -57,8 +56,8 @@ export function DoctorSection({ onFixRepos }: { onFixRepos?: () => void }) {
             {report === undefined ? null : <ReadyChip report={report} />}
           </h2>
           <p className="text-[0.8125rem] text-muted-foreground">
-            What ZASTAVA needs on this machine. Required checks stop runs; optional ones turn
-            off one feature.
+            What ZASTAVA needs from this machine. Node versions and Chromium are fetched when a
+            run needs them.
           </p>
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-3">
@@ -88,7 +87,7 @@ export function DoctorSection({ onFixRepos }: { onFixRepos?: () => void }) {
         </div>
       </div>
       {report !== undefined ? (
-        <DoctorChecks report={report} busy={doctor.isFetching} onFixRepos={onFixRepos} />
+        <DoctorChecks report={report} busy={doctor.isFetching} />
       ) : doctor.isPending ? (
         <DoctorSkeleton />
       ) : (
@@ -105,15 +104,7 @@ export function DoctorSection({ onFixRepos }: { onFixRepos?: () => void }) {
  * Folded to one summary row while nothing blocks runs; opens by itself when a
  * required check fails. Once toggled, the user's choice wins.
  */
-function DoctorChecks({
-  report,
-  busy,
-  onFixRepos,
-}: {
-  report: DoctorReport
-  busy: boolean
-  onFixRepos?: () => void
-}) {
+function DoctorChecks({ report, busy }: { report: DoctorReport; busy: boolean }) {
   const summary = doctorSummary(report)
   const [toggled, setToggled] = useState<boolean | null>(null)
   const open = toggled ?? summary.openByDefault
@@ -144,13 +135,13 @@ function DoctorChecks({
       </button>
       {open ? (
         <ul id={listId} className="divide-y border-t">
-          {report.checks.map((check) => (
-            <CheckRow
-              key={check.key}
-              check={check}
-              onFixRepos={check.key === 'repos' ? onFixRepos : undefined}
-            />
-          ))}
+          {doctorRows(report).map((row) =>
+            row.kind === 'check' ? (
+              <CheckRow key={row.check.key} check={row.check} />
+            ) : (
+              <ServicesRow key="services" checks={row.checks} />
+            ),
+          )}
         </ul>
       ) : null}
     </div>
@@ -180,7 +171,29 @@ function ReadyChip({ report }: { report: DoctorReport }) {
   )
 }
 
-function CheckRow({ check, onFixRepos }: { check: DoctorCheck; onFixRepos?: () => void }) {
+/** ZASTAVA's own services while they all run: one quiet row. */
+function ServicesRow({ checks }: { checks: DoctorCheck[] }) {
+  const status = STATUS.ok
+  const Icon = status.icon
+  return (
+    <li className="flex min-h-12 items-start gap-3 px-4 py-3">
+      <Icon aria-hidden="true" className={cn('mt-0.5 size-4 shrink-0', status.tone)} />
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <p className="flex flex-wrap items-baseline gap-x-2 text-[0.8125rem]">
+          <span className="font-medium">ZASTAVA services</span>
+          <span className="break-words text-muted-foreground">
+            {checks.map((check) => `${check.label}: ${check.detail}`).join(' · ')}
+          </span>
+        </p>
+      </div>
+      <span className={cn('shrink-0 pt-px text-xs font-medium', status.tone)}>
+        {status.word}
+      </span>
+    </li>
+  )
+}
+
+function CheckRow({ check }: { check: DoctorCheck }) {
   const status = STATUS[check.status]
   const Icon = status.icon
   const showFix = check.status !== 'ok'
@@ -206,18 +219,6 @@ function CheckRow({ check, onFixRepos }: { check: DoctorCheck; onFixRepos?: () =
               label={`Copy the ${check.label} fix command`}
             />
           </div>
-        ) : null}
-        {showFix && onFixRepos !== undefined ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="self-start"
-            onClick={onFixRepos}
-          >
-            <FolderCog aria-hidden="true" />
-            Set repos folder
-          </Button>
         ) : null}
       </div>
       <span className={cn('shrink-0 pt-px text-xs font-medium', status.tone)}>

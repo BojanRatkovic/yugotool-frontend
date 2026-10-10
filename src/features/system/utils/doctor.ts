@@ -1,5 +1,25 @@
 import type { DoctorCheck, DoctorReport } from '@/lib/contracts'
 
+export type DoctorRow =
+  | { kind: 'check'; check: DoctorCheck }
+  /** ZASTAVA's own services, folded into one row while they all run. */
+  | { kind: 'services'; checks: DoctorCheck[] }
+
+/**
+ * What the person provides, one row each; ZASTAVA's services as one row while
+ * they are all OK, and one row each as soon as one is not (spec 0013).
+ */
+export function doctorRows(report: DoctorReport): DoctorRow[] {
+  const machine = report.checks.filter((check) => check.group === 'machine')
+  const services = report.checks.filter((check) => check.group === 'service')
+  const rows: DoctorRow[] = machine.map((check) => ({ kind: 'check', check }))
+  if (services.length === 0) return rows
+  if (services.every((check) => check.status === 'ok')) {
+    return [...rows, { kind: 'services', checks: services }]
+  }
+  return [...rows, ...services.map((check) => ({ kind: 'check' as const, check }))]
+}
+
 /** Required checks that fail: these stop runs. */
 export function blockingChecks(report: DoctorReport): DoctorCheck[] {
   return report.checks.filter((check) => check.required && check.status === 'fail')
@@ -46,5 +66,10 @@ export function doctorSummary(report: DoctorReport): {
       openByDefault: false,
     }
   }
-  return { tone: 'ok', text: `All ${total} checks pass`, openByDefault: false }
+  // Counted as shown: the services are one row while they all run.
+  return {
+    tone: 'ok',
+    text: `All ${doctorRows(report).length} checks pass`,
+    openByDefault: false,
+  }
 }

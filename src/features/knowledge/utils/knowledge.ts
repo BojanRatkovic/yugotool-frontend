@@ -2,7 +2,7 @@ import type { KnowledgeSource, KnowledgeSourceKind } from '@/lib/contracts'
 import { formatRelative } from '@/lib/format'
 
 export const KIND_LABEL: Record<KnowledgeSourceKind, string> = {
-  git_local: 'Local git repo',
+  git_local: 'Local Git repo',
   git_remote: 'Git URL',
   path: 'Folder or file',
 }

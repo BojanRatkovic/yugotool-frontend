@@ -14,6 +14,7 @@ import {
   type PreviewStatus,
   type PreviewTestResult,
   type Project,
+  type UpdateHubRepo,
   type UpdateProject,
 } from '@/lib/contracts'
 import { queryKeys } from '@/lib/query-keys'
@@ -25,6 +26,18 @@ async function getPreviewStatus(projectId: string): Promise<PreviewStatus> {
 
 async function patchProject(projectId: string, body: UpdateProject): Promise<Project> {
   const data = await apiClient.patch(`/projects/${projectId}`, body)
+  return projectSchema.parse(data)
+}
+
+async function patchHubRepo(
+  projectId: string,
+  repo: string,
+  body: UpdateHubRepo,
+): Promise<Project> {
+  const data = await apiClient.patch(
+    `/projects/${projectId}/repos/${encodeURIComponent(repo)}`,
+    body,
+  )
   return projectSchema.parse(data)
 }
 
@@ -94,6 +107,16 @@ export function useUpdateProject(projectId: string) {
   return useMutation({
     mutationFn: (body: UpdateProject) => patchProject(projectId, body),
     // The projects collection is backed by this key; the preview status sits under it too.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.projects() }),
+  })
+}
+
+/** A hub project's repo: its base branch and preview (spec 0014). */
+export function useUpdateHubRepo(projectId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ repo, ...body }: UpdateHubRepo & { repo: string }) =>
+      patchHubRepo(projectId, repo, body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.projects() }),
   })
 }

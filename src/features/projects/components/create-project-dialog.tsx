@@ -47,6 +47,10 @@ export function CreateProjectDialog({
   const open = controlledOpen ?? ownOpen
   const setOpen = onOpenChange ?? setOwnOpen
   const [manualPath, setManualPath] = useState(false)
+  /** The work hub of the picked repo (spec 0012), shown as a hint. */
+  const [pickedHub, setPickedHub] = useState<string | null>(null)
+  /** The hub itself was picked: a hub project (spec 0014), with its repo count. */
+  const [pickedHubProject, setPickedHubProject] = useState<{ repos: number } | null>(null)
   const navigate = useNavigate()
 
   const form = useForm({
@@ -55,13 +59,17 @@ export function CreateProjectDialog({
     onSubmit: ({ value, formApi }) => {
       const now = new Date().toISOString()
       const id = crypto.randomUUID()
+      const hub = pickedHubProject !== null && !manualPath
       const tx = projectsCollection.insert({
         id,
+        kind: hub ? 'hub' : 'repo',
         name: value.name.trim(),
         repoPath: value.repoPath.trim(),
         baseBranch: value.baseBranch.trim(),
         preview: null,
         deliveryDefault: 'local',
+        hubPath: hub ? value.repoPath.trim() : null,
+        repos: [],
         createdAt: now,
         updatedAt: now,
       })
@@ -70,11 +78,16 @@ export function CreateProjectDialog({
       })
       formApi.reset()
       setManualPath(false)
+      setPickedHub(null)
+      setPickedHubProject(null)
       setOpen(false)
       void navigate({
         to: '/projects/$projectId',
         params: { projectId: id },
-        search: { view: 'board', settings: 'preview', detect: true },
+        // A hub sets base branch and preview per repo.
+        search: hub
+          ? { view: 'board', settings: 'repos' }
+          : { view: 'board', settings: 'preview', detect: true },
       })
     },
   })
@@ -91,7 +104,7 @@ export function CreateProjectDialog({
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>New project</DialogTitle>
-          <DialogDescription>Point ZASTAVA at a local git repository.</DialogDescription>
+          <DialogDescription>Point ZASTAVA at a local Git repository.</DialogDescription>
         </DialogHeader>
         <form
           className="flex flex-col gap-4"
@@ -127,6 +140,10 @@ export function CreateProjectDialog({
                     }
                     onPick={(repo) => {
                       field.handleChange(repo.path)
+                      setPickedHub(repo.kind === 'hub' ? null : repo.hubPath)
+                      setPickedHubProject(
+                        repo.kind === 'hub' ? { repos: repo.repoCount ?? 0 } : null,
+                      )
                       if (form.getFieldValue('name').trim() === '') {
                         form.setFieldValue('name', repo.name)
                       }
@@ -134,6 +151,20 @@ export function CreateProjectDialog({
                     }}
                   />
                 )}
+                {pickedHubProject !== null && !manualPath ? (
+                  <p className="text-xs text-muted-foreground">
+                    A work hub: one board for its {pickedHubProject.repos}{' '}
+                    {pickedHubProject.repos === 1 ? 'repo' : 'repos'}. Research plans in the hub
+                    and picks the repo for each work order; base branches are detected per repo.
+                  </p>
+                ) : null}
+                {pickedHub !== null && !manualPath ? (
+                  <p className="text-xs text-muted-foreground">
+                    In the work hub <span className="font-mono">{pickedHub}</span>: runs get
+                    their worktree in its <span className="font-mono">worktrees/</span> and use
+                    its CLAUDE.md, knowledge and skills.
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   className="self-start text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
@@ -158,30 +189,34 @@ export function CreateProjectDialog({
             )}
           </form.Field>
           <form.Subscribe selector={(state) => state.values.repoPath}>
-            {(repoPath) => (
-              <form.Field name="baseBranch">
-                {(field) => (
-                  <FormField
-                    id={field.name}
-                    label="Base branch"
-                    errors={field.state.meta.errors}
-                  >
-                    <BranchSelect
+            {(repoPath) =>
+              pickedHubProject !== null && !manualPath ? null : (
+                <form.Field name="baseBranch">
+                  {(field) => (
+                    <FormField
                       id={field.name}
-                      repoPath={manualPath ? '' : repoPath}
-                      value={field.state.value}
-                      onChange={(branch) => field.handleChange(branch)}
-                    />
-                  </FormField>
-                )}
-              </form.Field>
-            )}
+                      label="Base branch"
+                      errors={field.state.meta.errors}
+                    >
+                      <BranchSelect
+                        id={field.name}
+                        repoPath={manualPath ? '' : repoPath}
+                        value={field.state.value}
+                        onChange={(branch) => field.handleChange(branch)}
+                      />
+                    </FormField>
+                  )}
+                </form.Field>
+              )
+            }
           </form.Subscribe>
           {/* Mirrors DEFAULT_STATIONS in @zastava/contracts. */}
           <p className="text-xs text-muted-foreground">
             You get a default line (Research → Approve plan → Build → Validate → Final review).
-            Change it any time in Line. Next, the project&rsquo;s preview settings open, filled
-            in from the repo.
+            Change it any time in Line.{' '}
+            {pickedHubProject !== null && !manualPath
+              ? 'Next, its Repos settings open: base branch and preview per repo.'
+              : 'Next, the project’s preview settings open, filled in from the repo.'}
           </p>
           <DialogFooter>
             <Button type="submit">Create project</Button>

@@ -97,7 +97,7 @@ function SettingsPage() {
             settings.data === undefined && 'pb-12',
           )}
         >
-          <DoctorSection onFixRepos={focusReposRoot} />
+          <DoctorSection />
           {settings.isPending ? (
             <SettingsSkeleton />
           ) : settings.data === undefined ? (

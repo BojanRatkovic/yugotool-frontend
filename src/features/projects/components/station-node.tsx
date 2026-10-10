@@ -21,7 +21,11 @@ export type StationNode = Node<
 /** The one config value that identifies a station at a glance. */
 function identifyingValue(station: Station): string {
   if (station.kind === 'agent') {
-    return `${modelLabel(station.model)}${station.effort === undefined ? '' : ` · ${station.effort}`}`
+    const handoff =
+      station.canEdit && station.handoffAtPct !== undefined
+        ? ` · handoff ${station.handoffAtPct}%`
+        : ''
+    return `${modelLabel(station.model)}${station.effort === undefined ? '' : ` · ${station.effort}`}${handoff}`
   }
   if (station.kind === 'shift') {
     return `${modelLabel(station.model)} · handoff ${station.handoffAtPct}% · ≤${station.maxShifts}`

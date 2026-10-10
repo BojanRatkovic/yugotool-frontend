@@ -27,7 +27,11 @@ export const queryKeys = {
    */
   previewSession: (projectId: string) => ['projects', projectId, 'preview-session'] as const,
   /** Where approved work can go (origin, gh); live check, under the project root. */
-  projectRemote: (projectId: string) => ['projects', projectId, 'remote'] as const,
+  /** `repo`: a hub project's repo (spec 0014); omitted for repo projects. */
+  projectRemote: (projectId: string, repo?: string) =>
+    repo === undefined
+      ? (['projects', projectId, 'remote'] as const)
+      : (['projects', projectId, 'remote', repo] as const),
   /** Route map of a project; under `projects` so SSE `projects` (discovery done) refreshes it. */
   projectRoutes: (projectId: string) => ['projects', projectId, 'routes'] as const,
   /** QA attempts and checks per run; SSE `qa` invalidates the root. */

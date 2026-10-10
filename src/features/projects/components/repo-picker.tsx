@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Check, ChevronsUpDown, FolderGit2, FolderOpen } from 'lucide-react'
+import { Check, ChevronsUpDown, FolderGit2, FolderOpen, Network } from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -39,7 +39,9 @@ export function RepoPicker({
   const picked = repos.data?.find((repo) => repo.path === value)
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    // `modal`: the picker opens inside a Dialog, whose scroll lock swallows wheel
+    // events on this portaled list. A modal popover takes over the lock and lets it scroll.
+    <Popover modal open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           id={id}
@@ -56,7 +58,12 @@ export function RepoPicker({
                 {value === '' ? 'Pick a repository…' : value}
               </span>
             ) : (
-              <span className="truncate">{picked.name}</span>
+              <span className="truncate">
+                {picked.name}
+                {picked.kind === 'hub' ? (
+                  <span className="text-muted-foreground"> · hub</span>
+                ) : null}
+              </span>
             )}
           </span>
           <ChevronsUpDown aria-hidden="true" className="opacity-50" />
@@ -120,8 +127,21 @@ export function RepoPicker({
                       />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="flex items-center justify-between gap-2">
-                          <span className="truncate font-medium">{repo.name}</span>
-                          {repo.currentBranch === null ? null : (
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            {repo.kind === 'hub' ? (
+                              <Network
+                                aria-hidden="true"
+                                className="size-3.5 shrink-0 text-muted-foreground"
+                              />
+                            ) : null}
+                            <span className="truncate font-medium">{repo.name}</span>
+                          </span>
+                          {repo.kind === 'hub' ? (
+                            <span className="shrink-0 text-[0.6875rem] text-muted-foreground">
+                              hub · {repo.repoCount ?? 0}{' '}
+                              {repo.repoCount === 1 ? 'repo' : 'repos'}
+                            </span>
+                          ) : repo.currentBranch === null ? null : (
                             <span className="shrink-0 font-mono text-[0.6875rem] text-muted-foreground">
                               {repo.currentBranch}
                             </span>

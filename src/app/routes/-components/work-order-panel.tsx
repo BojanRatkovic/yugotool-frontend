@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { Maximize2, Minimize2, X } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -10,7 +11,10 @@ import { runQueries, selectRun } from '@/features/runs/api/run-queries'
 import { ActivityFeed } from '@/features/runs/components/activity-feed'
 import { useDeliveredToast } from '@/features/runs/components/delivery-banner'
 import { FindingsView, findingCount } from '@/features/runs/components/findings-view'
-import { GateBanner } from '@/features/runs/components/gate-banner'
+import { GateBanner, type HubPlanGate } from '@/features/runs/components/gate-banner'
+import { latestResearch, suggestedRepo } from '@/features/runs/utils/hub-plan'
+import { useProject } from '@/features/projects/components/project-nav'
+import { useSplitWorkOrder } from '@/features/work-orders/api/work-order-mutations'
 import { PipelineStepper } from '@/features/runs/components/pipeline-stepper'
 import { QaView } from '@/features/runs/components/qa-view'
 import { RunDiff } from '@/features/runs/components/run-diff'
@@ -20,9 +24,9 @@ import { RunUsage } from '@/features/runs/components/run-usage'
 import { ShiftReviewBanner } from '@/features/runs/components/shift-review-banner'
 import { ShiftsView } from '@/features/runs/components/shifts-view'
 import { hasQaStation, qaDiffCount } from '@/features/runs/utils/qa'
-import { hasShiftStation } from '@/features/runs/utils/shifts'
+import { hasShiftStation, worksInShifts } from '@/features/runs/utils/shifts'
 import { stationStates } from '@/features/runs/utils/station-states'
-import { useWorkOrder } from '@/features/work-orders/api/use-work-order'
+import { useWorkOrder, useWorkOrders } from '@/features/work-orders/api/use-work-order'
 import { WorkOrderDetails } from '@/features/work-orders/components/work-order-details'
 import { WorkOrderHeader } from '@/features/work-orders/components/work-order-header'
 import { remoteQueries } from '@/features/projects/api/remote-queries'
@@ -32,6 +36,7 @@ import { RecheckCiButton } from '@/features/work-orders/components/ci-recheck'
 import { OpenPullRequestAction } from '@/features/work-orders/components/open-pull-request'
 import { RunAgainButton } from '@/features/work-orders/components/queue-actions'
 import type { DeliveryMode, Station } from '@/lib/contracts'
+import { errorMessage } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 
 export type PanelTab = 'activity' | 'diff' | 'findings' | 'shifts' | 'qa'
@@ -141,7 +146,48 @@ export function WorkOrderPanel({
       ? 'activity'
       : state.tab
   useDeliveredToast(workOrder?.prUrl ?? null)
-  const remote = useQuery(remoteQueries.detail(projectId))
+  const project = useProject(projectId)
+  const hubProject = project?.kind === 'hub' ? project : undefined
+  // A hub run delivers from its repo (spec 0014); until it has one there is nothing to check.
+  const deliveryRepo = run?.repo ?? workOrder?.repo ?? undefined
+  const remote = useQuery({
+    ...remoteQueries.detail(projectId, hubProject === undefined ? undefined : deliveryRepo),
+    enabled: hubProject === undefined || deliveryRepo !== undefined,
+  })
+  const workOrders = useWorkOrders(projectId)
+  const splitWorkOrder = useSplitWorkOrder()
+  const research = latestResearch(run)
+  const hubPlan: HubPlanGate | undefined =
+    hubProject === undefined ||
+    run === undefined ||
+    run.repo !== null ||
+    workOrder === undefined
+      ? undefined
+      : {
+          repos: hubProject.repos.map((repo) => repo.name),
+          suggested: suggestedRepo(
+            workOrder.repo,
+            research,
+            hubProject.repos.map((repo) => repo.name),
+          ),
+          split: research?.split ?? null,
+          splitDone: workOrders.some((other) => other.followsId === workOrder.id),
+          splitting: splitWorkOrder.isPending,
+          onCreateSplit: () => {
+            const items = research?.split
+            if (items === undefined) return
+            splitWorkOrder.mutate(
+              { workOrderId: workOrder.id, items },
+              {
+                onSuccess: () =>
+                  toast.success(
+                    `Created ${items.length - 1} follow-up work ${items.length === 2 ? 'order' : 'orders'} in the backlog.`,
+                  ),
+                onError: (error) => toast.error(`Couldn't split: ${errorMessage(error)}`),
+              },
+            )
+          },
+        }
   // Unknown (loading, or the check failed) never blocks: the server still says no if it can't.
   const prBlockedReason =
     remote.data?.prPossible === false
@@ -245,8 +291,9 @@ export function WorkOrderPanel({
           ) : null}
           {run === undefined ||
           waiting === undefined ||
-          !isLatestRun ? null : waitingStation?.kind === 'shift' ? (
-            // A shift station waits on a handoff review, not a gate decision.
+          !isLatestRun ? null : waitingStation !== undefined &&
+            worksInShifts(waitingStation) ? (
+            // A station working in shifts waits on a handoff review, not a gate decision.
             <ShiftReviewBanner
               key={waiting.id}
               runId={run.id}
@@ -265,6 +312,7 @@ export function WorkOrderPanel({
               prBlockedReason={prBlockedReason}
               requestChanges={requestChangesCopy(stations, waiting.stationKey)}
               onChangeDefault={onEditDelivery}
+              hub={hubPlan}
               qaReview={
                 qaDiffs === null
                   ? undefined
@@ -399,7 +447,13 @@ export function WorkOrderPanel({
             <WorkOrderDetails
               projectId={projectId}
               workOrder={workOrder}
-              baseBranch={baseBranch}
+              // A hub run starts from its repo's base branch (spec 0014).
+              baseBranch={
+                hubProject === undefined
+                  ? baseBranch
+                  : hubProject.repos.find((repo) => repo.name === deliveryRepo)?.baseBranch
+              }
+              repo={hubProject === undefined ? undefined : (deliveryRepo ?? null)}
               worktreePath={run?.worktreePath ?? null}
             />
           </RailSection>
