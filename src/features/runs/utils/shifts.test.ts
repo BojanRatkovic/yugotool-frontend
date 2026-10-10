@@ -6,6 +6,7 @@ import {
   formatPct,
   gaugeFill,
   handoffToDraft,
+  hasShiftStation,
   linesToList,
   liveShift,
   shiftSummary,
@@ -49,9 +50,18 @@ describe('shiftSummary', () => {
     expect(
       shiftSummary({
         ...base,
-        shift: { number: 1, status: 'done', tasksDone: 0, tasksTotal: 0 },
+        shift: { number: 2, status: 'done', tasksDone: 0, tasksTotal: 0 },
       }),
-    ).toBe('Shift 1')
+    ).toBe('Shift 2')
+  })
+
+  it('is null for a build that finished in one shift (spec 0012)', () => {
+    expect(
+      shiftSummary({
+        ...base,
+        shift: { number: 1, status: 'done', tasksDone: 2, tasksTotal: 2 },
+      }),
+    ).toBeNull()
   })
 
   it('is null for other station kinds', () => {
@@ -127,5 +137,21 @@ describe('liveShift', () => {
   it('picks the running or handing-off shift', () => {
     expect(liveShift([shift(1, 'done'), shift(2, 'handing_off')])?.number).toBe(2)
     expect(liveShift([shift(1, 'done'), shift(2, 'awaiting_review')])).toBeUndefined()
+  })
+})
+
+describe('hasShiftStation', () => {
+  const agent = {
+    key: 'build',
+    kind: 'agent' as const,
+    name: 'Build',
+    role: 'builder',
+    model: 'claude-sonnet-5-5',
+    allowedTools: ['Edit'],
+    prompt: '',
+  }
+  it('counts every editing agent: builders work in shifts (spec 0012)', () => {
+    expect(hasShiftStation([{ ...agent, canEdit: true }])).toBe(true)
+    expect(hasShiftStation([{ ...agent, canEdit: false }])).toBe(false)
   })
 })

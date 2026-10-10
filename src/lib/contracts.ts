@@ -50,7 +50,24 @@ export const agentStationSchema = z.object({
    */
   useKnowledge: z.boolean().optional(),
   prompt: z.string(),
+  /**
+   * Editing stations work in shifts on their own (spec 0012): when a session's
+   * context crosses this percent of the window, it hands off to a fresh one.
+   * Unset = DEFAULT_SHIFT_SETTINGS. Ignored on read-only stations.
+   */
+  handoffAtPct: z.number().int().min(30).max(80).optional(),
+  /** Most sessions an editing station may use before it fails. */
+  maxShifts: z.number().int().min(1).max(30).optional(),
+  /** Pause before each new shift so a human can review and edit the handoff. */
+  reviewHandoff: z.boolean().optional(),
 })
+
+/** Shift settings an editing station uses when it sets none (spec 0012). */
+export const DEFAULT_SHIFT_SETTINGS = {
+  handoffAtPct: 50,
+  maxShifts: 8,
+  reviewHandoff: false,
+} as const
 
 export const gateStationSchema = z.object({
   key: stationKeySchema,
@@ -70,6 +87,8 @@ export const checksStationSchema = z.object({
 /**
  * A long-running station that works in shifts: when a session's context crosses
  * `handoffAtPct`, it writes a structured handoff and a fresh session continues.
+ * Retired as a line step (spec 0012): editing agent stations run on the same
+ * engine. Kept in the union so runs recorded before the change still parse.
  */
 export const shiftStationSchema = z.object({
   key: stationKeySchema,
@@ -173,7 +192,10 @@ export const updateLineSchema = z.object({
     .refine(
       (stations) => stations.every((s) => s.kind !== 'agent' || !s.useKnowledge || !s.canEdit),
       { message: 'only read-only agent stations can read knowledge' },
-    ),
+    )
+    .refine((stations) => !stations.some((s) => s.kind === 'shift'), {
+      message: 'Shifts are built into stations that edit code; use an editing agent station',
+    }),
 })
 export type UpdateLine = z.infer<typeof updateLineSchema>
 
@@ -332,6 +354,11 @@ export const projectSchema = z.object({
   preview: previewSchema.nullable(),
   /** What approving the final gate does unless that approval picks another mode. */
   deliveryDefault: deliveryModeSchema,
+  /**
+   * The work hub the repo lives in (`<hub>/repos/<name>`, spec 0012), else
+   * null. Computed from the path, never stored.
+   */
+  hubPath: z.string().nullable(),
   createdAt: isoDate,
   updatedAt: isoDate,
 })
@@ -507,6 +534,8 @@ export const repoSchema = z.object({
   name: z.string(),
   path: z.string(),
   currentBranch: z.string().nullable(),
+  /** Set for a repo inside a work hub's `repos/` (spec 0012). */
+  hubPath: z.string().nullable(),
 })
 export type Repo = z.infer<typeof repoSchema>
 

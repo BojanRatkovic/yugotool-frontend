@@ -4,7 +4,6 @@ import {
   ArrowRight,
   Bot,
   Plus,
-  Repeat,
   Save,
   ScanEye,
   ShieldCheck,
@@ -249,13 +248,12 @@ export function LineEditor({
 
 const ADD_KINDS: readonly { kind: StationKind; icon: typeof Bot }[] = [
   { kind: 'agent', icon: Bot },
-  { kind: 'shift', icon: Repeat },
   { kind: 'gate', icon: ShieldCheck },
   { kind: 'checks', icon: SquareTerminal },
   { kind: 'qa', icon: ScanEye },
 ]
 
-/** A review line only reads: no gates (triage is the gate) and no shifts. */
+/** A review line only reads: no gates (triage is the gate) and nothing that edits. */
 const REVIEW_KINDS: ReadonlySet<StationKind> = new Set(['agent', 'checks', 'qa'])
 
 function AddStationButtons({

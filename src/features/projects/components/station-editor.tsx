@@ -19,6 +19,7 @@ import {
   toolOrder,
 } from '@/features/projects/utils/line-draft'
 import {
+  DEFAULT_SHIFT_SETTINGS,
   QA_VIEWPORTS,
   qaAlwaysCheckSchema,
   qaThemeSchema,
@@ -125,14 +126,7 @@ export function StationEditor({
   }
 
   if (station.kind === 'shift') {
-    return (
-      <ShiftFields
-        station={station}
-        issues={issues}
-        onChange={onChange}
-        nameField={nameField}
-      />
-    )
+    return <RetiredShiftNotice station={station} onChange={onChange} />
   }
 
   return (
@@ -296,7 +290,11 @@ function AgentFields({
         issues={issues}
         set={set}
         nameField={nameField}
-        budgetLabel="Max budget per session (USD)"
+        budgetLabel={
+          station.canEdit
+            ? 'Max budget for the station, all shifts (USD)'
+            : 'Max budget per session (USD)'
+        }
       />
       <div className="flex flex-col gap-3">
         <div className={cn('flex items-center justify-between gap-3', review && 'hidden')}>
@@ -310,9 +308,23 @@ function AgentFields({
             id={id('canEdit')}
             checked={station.canEdit}
             onCheckedChange={(canEdit) => {
-              // Editors never read knowledge (spec 0007); drop the flag with the switch.
-              const { useKnowledge: _drop, ...rest } = station
-              onChange(canEdit ? { ...rest, canEdit } : { ...station, canEdit })
+              // Editors never read knowledge (spec 0007); readers never work in shifts (0012).
+              const {
+                useKnowledge: _knowledge,
+                handoffAtPct: _pct,
+                maxShifts: _max,
+                reviewHandoff: _review,
+                ...rest
+              } = station
+              onChange(
+                canEdit
+                  ? { ...rest, canEdit }
+                  : {
+                      ...rest,
+                      canEdit,
+                      ...(station.useKnowledge ? { useKnowledge: true } : {}),
+                    },
+              )
             }}
           />
         </div>
@@ -355,69 +367,66 @@ function AgentFields({
           />
         </div>
       </div>
+      {station.canEdit ? (
+        <ShiftSettings station={station} issues={issues} onChange={onChange} />
+      ) : null}
       <PromptField station={station} issues={issues} set={set} />
     </div>
   )
 }
 
-function ShiftFields({
+/**
+ * Context handoff for a station that edits code (spec 0012): every build can
+ * outgrow one session, so it works in shifts on its own. Values equal to the
+ * default are dropped, so an untouched station stays as it was saved.
+ */
+function ShiftSettings({
   station,
   issues,
   onChange,
-  nameField,
 }: {
-  station: ShiftStation
+  station: AgentStation
   issues: Issues
   onChange: (station: Station) => void
-  nameField: React.ReactNode
 }) {
   const id = (field: string) => `station-${station.key}-${field}`
-  const set = (patch: Partial<ShiftStation>) => onChange({ ...station, ...patch })
+  const update = (
+    patch: Partial<Pick<AgentStation, 'handoffAtPct' | 'maxShifts' | 'reviewHandoff'>>,
+  ) => {
+    const { handoffAtPct, maxShifts, reviewHandoff, ...rest } = station
+    const next = { handoffAtPct, maxShifts, reviewHandoff, ...patch }
+    const defaults = DEFAULT_SHIFT_SETTINGS
+    onChange({
+      ...rest,
+      ...(next.handoffAtPct !== undefined && next.handoffAtPct !== defaults.handoffAtPct
+        ? { handoffAtPct: next.handoffAtPct }
+        : {}),
+      ...(next.maxShifts !== undefined && next.maxShifts !== defaults.maxShifts
+        ? { maxShifts: next.maxShifts }
+        : {}),
+      ...(next.reviewHandoff === true ? { reviewHandoff: true } : {}),
+    })
+  }
+  const handoffAtPct = station.handoffAtPct ?? DEFAULT_SHIFT_SETTINGS.handoffAtPct
+  const maxShifts = station.maxShifts ?? DEFAULT_SHIFT_SETTINGS.maxShifts
   const [bandFrom, bandTo] = SHIFT_HANDOFF_RECOMMENDED
-  const inBand = station.handoffAtPct >= bandFrom && station.handoffAtPct <= bandTo
+  const inBand = handoffAtPct >= bandFrom && handoffAtPct <= bandTo
 
   return (
-    <div className="flex flex-col gap-4">
+    <fieldset className="flex flex-col gap-4 rounded-md border border-border p-3">
+      <legend className="px-1 text-sm font-medium">Context handoff</legend>
       <p className="text-xs text-muted-foreground">
-        Works in shifts: when a session&rsquo;s context crosses the handoff threshold, the agent
-        writes a handoff and a fresh session picks up from it. Memory lives in{' '}
-        <span className="font-mono">.zastava/</span> in the worktree.
+        Works in shifts on its own: small changes finish in one session. When a session&rsquo;s
+        context crosses the line, the agent writes a handoff and a fresh session picks up from
+        it. Memory lives in <span className="font-mono">.zastava/</span> in the worktree.
       </p>
-      <FormField id={id('goal')} label="Goal" errors={errorsFor(issues, 'goal')}>
-        <Textarea
-          id={id('goal')}
-          value={station.goal}
-          rows={4}
-          placeholder="What done means, in words — e.g. every operation in the spec is implemented and tested."
-          onChange={(event) => set({ goal: event.target.value })}
-        />
-      </FormField>
-      <FormField
-        id={id('doneCommand')}
-        label="Done command"
-        errors={errorsFor(issues, 'doneCommand')}
-      >
-        <Input
-          id={id('doneCommand')}
-          value={station.doneCommand ?? ''}
-          className="font-mono"
-          placeholder="npm test"
-          aria-describedby={id('doneCommand-hint')}
-          onChange={(event) =>
-            set({ doneCommand: event.target.value.trim() === '' ? null : event.target.value })
-          }
-        />
-        <p id={id('doneCommand-hint')} className="text-xs text-muted-foreground">
-          Exit 0 means the goal is met. Empty: the agent finishing on its own counts as done.
-        </p>
-      </FormField>
       <div className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between gap-3">
           <Label htmlFor={id('handoffAtPct')}>Hand off at</Label>
           <span className="flex items-baseline gap-2 text-xs text-muted-foreground">
             {inBand ? 'recommended' : 'outside the recommended band'}
             <span className="font-mono text-sm text-foreground tabular-nums">
-              {station.handoffAtPct}%
+              {handoffAtPct}%
             </span>
           </span>
         </div>
@@ -437,9 +446,9 @@ function ShiftFields({
             min={SHIFT_HANDOFF_MIN}
             max={SHIFT_HANDOFF_MAX}
             step={1}
-            value={[station.handoffAtPct]}
+            value={[handoffAtPct]}
             onValueChange={([value]) =>
-              value === undefined ? null : set({ handoffAtPct: value })
+              value === undefined ? null : update({ handoffAtPct: value })
             }
           />
         </div>
@@ -471,8 +480,8 @@ function ShiftFields({
           max={30}
           step={1}
           className="tabular w-28"
-          value={Number.isNaN(station.maxShifts) ? '' : station.maxShifts}
-          onChange={(event) => set({ maxShifts: event.target.valueAsNumber })}
+          value={Number.isNaN(maxShifts) ? '' : maxShifts}
+          onChange={(event) => update({ maxShifts: event.target.valueAsNumber })}
         />
       </FormField>
       <div className="flex items-center justify-between gap-3">
@@ -484,18 +493,42 @@ function ShiftFields({
         </Label>
         <Switch
           id={id('reviewHandoff')}
-          checked={station.reviewHandoff}
-          onCheckedChange={(reviewHandoff) => set({ reviewHandoff })}
+          checked={station.reviewHandoff ?? DEFAULT_SHIFT_SETTINGS.reviewHandoff}
+          onCheckedChange={(on) => update({ reviewHandoff: on })}
         />
       </div>
-      <SessionFields
-        station={station}
-        issues={issues}
-        set={set}
-        nameField={nameField}
-        budgetLabel="Max budget for the station (USD)"
-      />
-      <PromptField station={station} issues={issues} set={set} />
+    </fieldset>
+  )
+}
+
+/** A Shifts step saved before spec 0012: one click turns it into the builder it stands for. */
+function RetiredShiftNotice({
+  station,
+  onChange,
+}: {
+  station: ShiftStation
+  onChange: (station: Station) => void
+}) {
+  const convert = () => {
+    const { goal, doneCommand, kind: _kind, ...rest } = station
+    const prompt = [
+      station.prompt.trim(),
+      goal.trim() ? `Goal: ${goal.trim()}` : '',
+      doneCommand ? `Done when \`${doneCommand}\` passes.` : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n')
+    onChange({ ...rest, kind: 'agent', canEdit: true, prompt })
+  }
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm text-muted-foreground">
+        Shifts are no longer a separate step: every station that edits code works in shifts on
+        its own. Convert this step into an editing station; its goal moves into the prompt.
+      </p>
+      <Button type="button" variant="outline" className="self-start" onClick={convert}>
+        Convert to an editing station
+      </Button>
     </div>
   )
 }

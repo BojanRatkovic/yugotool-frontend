@@ -20,7 +20,7 @@ import { RunUsage } from '@/features/runs/components/run-usage'
 import { ShiftReviewBanner } from '@/features/runs/components/shift-review-banner'
 import { ShiftsView } from '@/features/runs/components/shifts-view'
 import { hasQaStation, qaDiffCount } from '@/features/runs/utils/qa'
-import { hasShiftStation } from '@/features/runs/utils/shifts'
+import { hasShiftStation, worksInShifts } from '@/features/runs/utils/shifts'
 import { stationStates } from '@/features/runs/utils/station-states'
 import { useWorkOrder } from '@/features/work-orders/api/use-work-order'
 import { WorkOrderDetails } from '@/features/work-orders/components/work-order-details'
@@ -240,8 +240,9 @@ export function WorkOrderPanel({
           ) : null}
           {run === undefined ||
           waiting === undefined ||
-          !isLatestRun ? null : waitingStation?.kind === 'shift' ? (
-            // A shift station waits on a handoff review, not a gate decision.
+          !isLatestRun ? null : waitingStation !== undefined &&
+            worksInShifts(waitingStation) ? (
+            // A station working in shifts waits on a handoff review, not a gate decision.
             <ShiftReviewBanner
               key={waiting.id}
               runId={run.id}

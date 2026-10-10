@@ -57,8 +57,13 @@ export function liveShift(shifts: readonly Shift[]): Shift | undefined {
   return shifts.findLast(isLive)
 }
 
+/** Stations that run on the shift engine: every editing agent (spec 0012) and legacy Shifts steps. */
+export function worksInShifts(station: Station): boolean {
+  return station.kind === 'shift' || (station.kind === 'agent' && station.canEdit)
+}
+
 export function hasShiftStation(stations: readonly Station[]): boolean {
-  return stations.some((station) => station.kind === 'shift')
+  return stations.some(worksInShifts)
 }
 
 /** `Shift 4 · 7/12 tasks · 38%` for the stepper; null for non-shift station runs. */
@@ -67,6 +72,8 @@ export function shiftSummary(
 ): string | null {
   const shift = stationRun.shift
   if (shift === null) return null
+  // A build that finished in one session is just a run; shifts show once there was a handoff.
+  if (shift.number === 1 && shift.status === 'done') return null
   const parts = [`Shift ${shift.number}`]
   if (shift.tasksTotal > 0) parts.push(`${shift.tasksDone}/${shift.tasksTotal} tasks`)
   if (shift.status === 'running' || shift.status === 'handing_off') {

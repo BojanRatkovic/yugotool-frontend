@@ -47,6 +47,8 @@ export function CreateProjectDialog({
   const open = controlledOpen ?? ownOpen
   const setOpen = onOpenChange ?? setOwnOpen
   const [manualPath, setManualPath] = useState(false)
+  /** The work hub of the picked repo (spec 0012), shown as a hint. */
+  const [pickedHub, setPickedHub] = useState<string | null>(null)
   const navigate = useNavigate()
 
   const form = useForm({
@@ -62,6 +64,7 @@ export function CreateProjectDialog({
         baseBranch: value.baseBranch.trim(),
         preview: null,
         deliveryDefault: 'local',
+        hubPath: null,
         createdAt: now,
         updatedAt: now,
       })
@@ -70,6 +73,7 @@ export function CreateProjectDialog({
       })
       formApi.reset()
       setManualPath(false)
+      setPickedHub(null)
       setOpen(false)
       void navigate({
         to: '/projects/$projectId',
@@ -127,6 +131,7 @@ export function CreateProjectDialog({
                     }
                     onPick={(repo) => {
                       field.handleChange(repo.path)
+                      setPickedHub(repo.hubPath)
                       if (form.getFieldValue('name').trim() === '') {
                         form.setFieldValue('name', repo.name)
                       }
@@ -134,6 +139,13 @@ export function CreateProjectDialog({
                     }}
                   />
                 )}
+                {pickedHub !== null && !manualPath ? (
+                  <p className="text-xs text-muted-foreground">
+                    In the work hub <span className="font-mono">{pickedHub}</span>: runs get
+                    their worktree in its <span className="font-mono">worktrees/</span> and use
+                    its CLAUDE.md, knowledge and skills.
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   className="self-start text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
