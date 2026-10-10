@@ -421,20 +421,33 @@ function ShiftSettings({
         it. Memory lives in <span className="font-mono">.zastava/</span> in the worktree.
       </p>
       <div className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <Label htmlFor={id('handoffAtPct')}>Hand off at</Label>
-          <span className="flex items-baseline gap-2 text-xs text-muted-foreground">
-            {inBand ? 'recommended' : 'outside the recommended band'}
-            <span className="font-mono text-sm text-foreground tabular-nums">
+          <span className="flex items-center gap-2">
+            <span
+              className={cn(
+                'rounded-sm px-1.5 py-0.5 text-[0.6875rem] leading-none',
+                inBand
+                  ? 'bg-status-passed-soft text-status-passed'
+                  : 'bg-muted text-muted-foreground',
+              )}
+            >
+              {inBand ? 'Recommended' : `Outside ${bandFrom}–${bandTo}%`}
+            </span>
+            <span className="w-10 text-right text-sm font-medium tabular-nums">
               {handoffAtPct}%
             </span>
           </span>
         </div>
-        <div className="relative py-1">
-          {/* The recommended band sits under the track, so the thumb stays on top. */}
+        <div className="relative py-1.5">
+          {/* Our own rail under a transparent track: the recommended band sits in it, thumb on top. */}
           <span
             aria-hidden="true"
-            className="absolute top-1/2 h-3 -translate-y-1/2 rounded-sm bg-status-passed-soft ring-1 ring-status-passed/30"
+            className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-foreground/12"
+          />
+          <span
+            aria-hidden="true"
+            className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-status-passed/45"
             style={{
               left: `${handoffTrackPct(bandFrom)}%`,
               width: `${handoffTrackPct(bandTo) - handoffTrackPct(bandFrom)}%`,
@@ -443,6 +456,7 @@ function ShiftSettings({
           <Slider
             id={id('handoffAtPct')}
             aria-label="Hand off at, percent of the context window"
+            className="[&_[data-slot=slider-range]]:bg-transparent [&_[data-slot=slider-track]]:bg-transparent"
             min={SHIFT_HANDOFF_MIN}
             max={SHIFT_HANDOFF_MAX}
             step={1}
@@ -452,19 +466,25 @@ function ShiftSettings({
             }
           />
         </div>
-        <div className="relative h-4 font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
+        <div className="relative h-4 text-[0.6875rem] text-muted-foreground tabular-nums">
           <span className="absolute left-0">{SHIFT_HANDOFF_MIN}%</span>
           <span
-            className="absolute -translate-x-1/2 text-status-passed"
-            style={{ left: `${(handoffTrackPct(bandFrom) + handoffTrackPct(bandTo)) / 2}%` }}
+            className="absolute -translate-x-1/2"
+            style={{ left: `${handoffTrackPct(bandFrom)}%` }}
           >
-            {bandFrom}–{bandTo}% recommended
+            {bandFrom}%
+          </span>
+          <span
+            className="absolute -translate-x-1/2"
+            style={{ left: `${handoffTrackPct(bandTo)}%` }}
+          >
+            {bandTo}%
           </span>
           <span className="absolute right-0">{SHIFT_HANDOFF_MAX}%</span>
         </div>
         <p className="text-xs text-muted-foreground">
-          Percent of the context window. Lower hands off earlier, while the agent is still
-          sharp.
+          Percent of the context window; the green stretch is the recommended band. Lower hands
+          off earlier, while the agent is still sharp.
         </p>
       </div>
       <FormField
