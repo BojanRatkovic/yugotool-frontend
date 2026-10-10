@@ -366,7 +366,10 @@ export const hubRepoSchema = z.object({
 })
 export type HubRepo = z.infer<typeof hubRepoSchema>
 
-export const updateHubRepoSchema = hubRepoSettingsSchema.partial()
+// Spelled out: `.partial()` of the settings schema would apply `preview`'s default.
+export const updateHubRepoSchema = z
+  .object({ baseBranch: z.string().trim().min(1), preview: previewSchema.nullable() })
+  .partial()
 export type UpdateHubRepo = z.infer<typeof updateHubRepoSchema>
 
 export const projectSchema = z.object({
@@ -581,6 +584,10 @@ export const repoSchema = z.object({
   currentBranch: z.string().nullable(),
   /** Set for a repo inside a work hub's `repos/` (spec 0012). */
   hubPath: z.string().nullable(),
+  /** `hub`: the work hub itself, pickable as a hub project (spec 0014). */
+  kind: projectKindSchema,
+  /** Hubs: how many repos its `repos/` holds; null for repos. */
+  repoCount: z.number().int().nullable(),
 })
 export type Repo = z.infer<typeof repoSchema>
 
