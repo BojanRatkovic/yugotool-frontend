@@ -1,7 +1,7 @@
 import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
-import { Maximize2, Minimize2, X } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Maximize2, Minimize2, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
+import { useEffect, useId, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -28,6 +28,11 @@ import { hasQaStation, qaDiffCount } from '@/features/runs/utils/qa'
 import { hasShiftStation, worksInShifts } from '@/features/runs/utils/shifts'
 import { stationStates } from '@/features/runs/utils/station-states'
 import { useWorkOrder, useWorkOrders } from '@/features/work-orders/api/use-work-order'
+import {
+  toggleDetailsRail,
+  useDetailsRailOpen,
+} from '@/features/work-orders/hooks/use-details-rail'
+import { isDetailsRailKey } from '@/features/work-orders/utils/details-rail'
 import { WorkOrderDetails } from '@/features/work-orders/components/work-order-details'
 import { WorkOrderHeader } from '@/features/work-orders/components/work-order-header'
 import { remoteQueries } from '@/features/projects/api/remote-queries'
@@ -38,6 +43,7 @@ import { OpenPullRequestAction } from '@/features/work-orders/components/open-pu
 import { RunAgainButton } from '@/features/work-orders/components/queue-actions'
 import type { DeliveryMode, Station } from '@/lib/contracts'
 import { errorMessage } from '@/lib/api-client'
+import { isTypingTarget } from '@/lib/shortcuts'
 import { cn } from '@/lib/utils'
 import { skillQueries } from '@/lib/skill-queries'
 
@@ -197,6 +203,19 @@ export function WorkOrderPanel({
       ? (remote.data.reason ?? 'Pull requests can’t be opened from this repo.')
       : null
   const isLatestRun = run !== undefined && run.id === selectRun(runs.data ?? [], undefined)?.id
+  const railOpen = useDetailsRailOpen()
+  const railId = useId()
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      // The panel's own sheet (`data-wo-sheet`) isn't an overlay to these shortcuts.
+      if (!isDetailsRailKey(event) || isTypingTarget(event.target, 'data-wo-sheet')) return
+      event.preventDefault()
+      toggleDetailsRail()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   if (workOrder === undefined) {
     if (isLoading) return <PanelSkeleton />
@@ -213,8 +232,33 @@ export function WorkOrderPanel({
     )
   }
 
+  const railLabel = railOpen ? 'Hide details' : 'Show details'
   const controls = (
     <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={railLabel}
+            aria-expanded={railOpen}
+            aria-controls={railId}
+            aria-keyshortcuts="]"
+            // Open is the resting state: don't wear the "menu open" fill ghost buttons get.
+            className="aria-expanded:bg-transparent aria-expanded:hover:bg-muted dark:aria-expanded:hover:bg-muted/50"
+            onClick={toggleDetailsRail}
+          >
+            {railOpen ? (
+              <PanelRightClose aria-hidden="true" />
+            ) : (
+              <PanelRightOpen aria-hidden="true" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {railLabel} <span className="font-mono">]</span>
+        </TooltipContent>
+      </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
@@ -265,7 +309,12 @@ export function WorkOrderPanel({
         </div>
       )}
 
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_18.75rem]">
+      <div
+        className={cn(
+          'grid min-h-0 flex-1',
+          railOpen ? 'grid-cols-[minmax(0,1fr)_18.75rem]' : 'grid-cols-[minmax(0,1fr)]',
+        )}
+      >
         <main className="flex min-h-0 min-w-0 flex-col">
           {run !== undefined && isLatestRun ? (
             <RunOutcomeBanner
@@ -435,6 +484,9 @@ export function WorkOrderPanel({
         </main>
 
         <aside
+          id={railId}
+          // Hidden, not unmounted: the toggle's aria-controls keeps a target.
+          hidden={!railOpen}
           aria-label="Work order details"
           className="relative min-h-0 scrollbar-thin overflow-y-auto border-l bg-card/30"
         >
