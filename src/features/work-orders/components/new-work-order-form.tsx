@@ -123,7 +123,7 @@ export function NewWorkOrderForm({
               onChange={(event) => field.handleChange(event.target.value)}
               rows={10}
               placeholder="What should change, and how will you know it's done?"
-              className="min-h-56 leading-relaxed"
+              className="max-h-[45vh] min-h-56 overflow-y-auto leading-relaxed"
             />
           </FormField>
         )}
