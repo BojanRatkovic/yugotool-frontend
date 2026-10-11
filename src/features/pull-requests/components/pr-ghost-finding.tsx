@@ -2,7 +2,7 @@ import { LoaderCircle, ScanSearch, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { usePostZastavaFindings } from '@/features/pull-requests/api/pr-mutations'
+import { usePostYugoToolFindings } from '@/features/pull-requests/api/pr-mutations'
 import { ReviewText } from '@/features/pull-requests/components/review-text'
 import { errorMessage } from '@/lib/api-client'
 import type { ReviewFinding } from '@/lib/contracts'
@@ -15,7 +15,7 @@ const SEVERITY_TEXT: Record<ReviewFinding['severity'], string> = {
 }
 
 /**
- * A ZASTAVA finding not posted yet, drawn under its line like a comment
+ * A YugoTool finding not posted yet, drawn under its line like a comment
  * (spec 0009): dashed until you add it to your pending review or dismiss it.
  */
 export function PrGhostFinding({
@@ -29,10 +29,10 @@ export function PrGhostFinding({
   finding: ReviewFinding
   onDismiss: () => void
 }) {
-  const post = usePostZastavaFindings(projectId, number)
+  const post = usePostYugoToolFindings(projectId, number)
   return (
     <article
-      aria-label={`ZASTAVA finding: ${finding.title}`}
+      aria-label={`YugoTool finding: ${finding.title}`}
       className="flex flex-col gap-1.5 rounded-md border border-dashed bg-card/60 px-3 py-2 font-sans text-[0.8125rem]"
     >
       <header className="flex items-center gap-2">

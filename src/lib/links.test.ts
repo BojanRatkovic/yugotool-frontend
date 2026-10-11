@@ -50,12 +50,12 @@ describe('parseDelivery', () => {
     })
     expect(
       parseDelivery(
-        'Pushed zastava/x to origin (/tmp/origin.git); not a GitHub remote, so no PR.',
+        'Pushed yugotool/x to origin (/tmp/origin.git); not a GitHub remote, so no PR.',
       ),
-    ).toEqual({ kind: 'pushed', branch: 'zastava/x', remote: '/tmp/origin.git' })
-    expect(parseDelivery('Committed on zastava/x (no origin remote, no PR).')).toEqual({
+    ).toEqual({ kind: 'pushed', branch: 'yugotool/x', remote: '/tmp/origin.git' })
+    expect(parseDelivery('Committed on yugotool/x (no origin remote, no PR).')).toEqual({
       kind: 'committed',
-      branch: 'zastava/x',
+      branch: 'yugotool/x',
     })
     expect(parseDelivery('Session abc · started')).toBeNull()
   })

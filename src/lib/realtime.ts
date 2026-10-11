@@ -21,7 +21,7 @@ const COLLECTION_KEYS: Record<CollectionName, readonly (readonly string[])[]> = 
   shifts: [queryKeys.shifts()],
   qa: [queryKeys.qa()],
   knowledge_sources: [queryKeys.knowledge()],
-  reviews: [queryKeys.zastavaReviews()],
+  reviews: [queryKeys.yugotoolReviews()],
   notifications: [queryKeys.notifications()],
   // An account's plan or login changing moves the usage meter too.
   claude_accounts: [queryKeys.claudeAccounts(), queryKeys.systemUsage()],

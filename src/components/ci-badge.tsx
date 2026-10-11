@@ -30,7 +30,7 @@ export function ciLink(ci: CiStatus, prUrl: string): string {
 export function ciTitle(ci: CiStatus, now = Date.now()): string {
   const newer =
     ci.deliveredSha !== null && ci.headSha !== null && ci.headSha !== ci.deliveredSha
-      ? ` · on ${ci.headSha.slice(0, 7)}, newer than ZASTAVA's push`
+      ? ` · on ${ci.headSha.slice(0, 7)}, newer than YugoTool's push`
       : ''
   return `${LABEL[ci.state]} · ${ci.summary} · checked ${formatRelative(ci.checkedAt, now)}${newer}`
 }

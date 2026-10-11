@@ -29,7 +29,7 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:4810',
         changeOrigin: true,
-        // zastava-api serves its routes at the root, so the `/api` marker the
+        // yugotool-api serves its routes at the root, so the `/api` marker the
         // browser uses to pick the proxy is stripped before forwarding.
         rewrite: (requestPath) => requestPath.replace(/^\/api/, ''),
       },

@@ -12,7 +12,7 @@ import {
   previousCounts,
   type PreviousRow,
   stillOpenReply,
-} from '@/features/pull-requests/utils/zastava'
+} from '@/features/pull-requests/utils/yugotool'
 import { errorMessage } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 

@@ -29,7 +29,7 @@ const METHOD_LABEL: Record<PrMergeMethod, string> = {
   rebase: 'Rebase and merge',
 }
 
-const LAST_METHOD_KEY = 'zastava.pr-merge-method'
+const LAST_METHOD_KEY = 'yugotool.pr-merge-method'
 
 /** The method used last time, when this repo allows it; else the repo's first. */
 export function preferredMethod(methods: PrMergeMethod[]): PrMergeMethod | null {

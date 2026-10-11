@@ -28,7 +28,7 @@ export const shiftQueries = {
       queryFn: () => getShifts(runId),
     }),
   /**
-   * `.zastava/` from the worktree. The agent edits tasks.json between SSE
+   * `.yugotool/` from the worktree. The agent edits tasks.json between SSE
    * nudges, so callers poll it (`refetchInterval`) while a shift is running.
    * 409 `workspace_gone` once the worktree is cleaned up — no point retrying.
    */

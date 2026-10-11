@@ -1,5 +1,5 @@
-/** Bridge the Electron preload (zastava-backend/apps/desktop) exposes; undefined in a browser. */
-interface ZastavaDesktop {
+/** Bridge the Electron preload (yugotool-backend/apps/desktop) exposes; undefined in a browser. */
+interface YugoToolDesktop {
   platform: string
   /** Native folder dialog; resolves to the chosen path, or null when cancelled. */
   pickFolder(current?: string): Promise<string | null>
@@ -8,5 +8,5 @@ interface ZastavaDesktop {
 }
 
 interface Window {
-  zastavaDesktop?: ZastavaDesktop
+  yugotoolDesktop?: YugoToolDesktop
 }

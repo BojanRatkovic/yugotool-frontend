@@ -3,7 +3,7 @@ import { del, get, set } from 'idb-keyval'
 
 /** Query cache → IndexedDB, so TanStack DB collections hydrate offline on boot. */
 export const persister = createAsyncStoragePersister({
-  key: 'zastava-query-cache',
+  key: 'yugotool-query-cache',
   storage: {
     getItem: async (key) => (await get<string>(key)) ?? null,
     setItem: (key, value) => set(key, value),

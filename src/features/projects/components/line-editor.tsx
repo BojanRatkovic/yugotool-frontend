@@ -57,7 +57,7 @@ export function LineEditor({
   kind = 'build',
 }: {
   line: Line
-  /** `review`: the line a ZASTAVA review of a PR runs (spec 0009); it only reads. */
+  /** `review`: the line a YugoTool review of a PR runs (spec 0009); it only reads. */
   kind?: LineKind
   /** The project has no preview config; QA stations warn about it. */
   previewMissing: boolean

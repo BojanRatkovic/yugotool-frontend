@@ -1,4 +1,4 @@
-function isBridge(value: unknown): value is ZastavaDesktop {
+function isBridge(value: unknown): value is YugoToolDesktop {
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -12,11 +12,11 @@ function isBridge(value: unknown): value is ZastavaDesktop {
  * exposes something unexpected). Read it through this, never `window` directly.
  */
 export function desktopBridge(
-  target: { zastavaDesktop?: unknown } | undefined = typeof window === 'undefined'
+  target: { yugotoolDesktop?: unknown } | undefined = typeof window === 'undefined'
     ? undefined
     : window,
-): ZastavaDesktop | null {
-  const bridge = target?.zastavaDesktop
+): YugoToolDesktop | null {
+  const bridge = target?.yugotoolDesktop
   return isBridge(bridge) ? bridge : null
 }
 
@@ -27,7 +27,7 @@ export function desktopBridge(
  */
 export function syncDesktopTheme(
   resolvedTheme: string | undefined,
-  bridge: ZastavaDesktop | null = desktopBridge(),
+  bridge: YugoToolDesktop | null = desktopBridge(),
 ): void {
   if (resolvedTheme !== 'dark' && resolvedTheme !== 'light') return
   if (typeof bridge?.setTheme !== 'function') return

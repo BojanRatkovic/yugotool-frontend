@@ -142,7 +142,7 @@ function CardBody({
           {workOrder.branch === null ? null : (
             <span className="flex min-w-0 flex-1 items-center gap-1" title={workOrder.branch}>
               <GitBranch aria-hidden="true" className="size-3 shrink-0" />
-              <span className="truncate">{workOrder.branch.replace(/^zastava\//, '')}</span>
+              <span className="truncate">{workOrder.branch.replace(/^yugotool\//, '')}</span>
             </span>
           )}
           {workOrder.prUrl == null || workOrder.ci == null ? null : (

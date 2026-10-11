@@ -9,10 +9,10 @@ import {
   type PrScope,
   type PullRequestDetail,
   type PullRequestList,
-  type ZastavaReviewBriefList,
-  type ZastavaReviewResult,
-  zastavaReviewBriefListSchema,
-  zastavaReviewResultSchema,
+  type YugoToolReviewBriefList,
+  type YugoToolReviewResult,
+  yugotoolReviewBriefListSchema,
+  yugotoolReviewResultSchema,
 } from '@/lib/contracts'
 import { queryKeys } from '@/lib/query-keys'
 
@@ -40,19 +40,19 @@ async function getDiff(
   return prDiffSchema.parse(await apiClient.get(`${base(projectId)}/${number}/diff${query}`))
 }
 
-async function getZastavaReview(
+async function getYugoToolReview(
   projectId: string,
   number: number,
   head: string,
-): Promise<ZastavaReviewResult> {
-  return zastavaReviewResultSchema.parse(
-    await apiClient.get(`${base(projectId)}/${number}/zastava-review?head=${head}`),
+): Promise<YugoToolReviewResult> {
+  return yugotoolReviewResultSchema.parse(
+    await apiClient.get(`${base(projectId)}/${number}/yugotool-review?head=${head}`),
   )
 }
 
-async function getZastavaBriefs(projectId: string): Promise<ZastavaReviewBriefList> {
-  return zastavaReviewBriefListSchema.parse(
-    await apiClient.get(`${base(projectId)}/zastava-reviews`),
+async function getYugoToolBriefs(projectId: string): Promise<YugoToolReviewBriefList> {
+  return yugotoolReviewBriefListSchema.parse(
+    await apiClient.get(`${base(projectId)}/yugotool-reviews`),
   )
 }
 
@@ -86,19 +86,19 @@ export const prQueries = {
       refetchOnWindowFocus: true,
       retry: 1,
     }),
-  /** The PR's latest ZASTAVA review (spec 0009); `head` = the PR's current head, for `stale`. */
-  zastavaReview: (projectId: string, number: number, head: string) =>
+  /** The PR's latest YugoTool review (spec 0009); `head` = the PR's current head, for `stale`. */
+  yugotoolReview: (projectId: string, number: number, head: string) =>
     queryOptions({
-      queryKey: queryKeys.zastavaReview(projectId, number, head),
-      queryFn: () => getZastavaReview(projectId, number, head),
+      queryKey: queryKeys.yugotoolReview(projectId, number, head),
+      queryFn: () => getYugoToolReview(projectId, number, head),
       refetchInterval: (query) => whileRunning(query.state.data?.review?.status === 'running'),
       retry: 1,
     }),
-  /** Every PR's latest ZASTAVA review, for the cards. */
-  zastavaBriefs: (projectId: string) =>
+  /** Every PR's latest YugoTool review, for the cards. */
+  yugotoolBriefs: (projectId: string) =>
     queryOptions({
-      queryKey: queryKeys.zastavaReviewBriefs(projectId),
-      queryFn: () => getZastavaBriefs(projectId),
+      queryKey: queryKeys.yugotoolReviewBriefs(projectId),
+      queryFn: () => getYugoToolBriefs(projectId),
       refetchInterval: (query) =>
         whileRunning(query.state.data?.items.some((r) => r.status === 'running') === true),
       retry: 1,

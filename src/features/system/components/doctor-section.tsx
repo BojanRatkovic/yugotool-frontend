@@ -38,7 +38,7 @@ const STATUS: Record<DoctorCheck['status'], { icon: LucideIcon; word: string; to
 
 /**
  * Settings → Doctor: one row per thing the person provides, with the fix and a
- * copyable command, and one row for ZASTAVA's own services.
+ * copyable command, and one row for YugoTool's own services.
  */
 export function DoctorSection() {
   const doctor = useQuery(systemQueries.doctor())
@@ -56,7 +56,7 @@ export function DoctorSection() {
             {report === undefined ? null : <ReadyChip report={report} />}
           </h2>
           <p className="text-[0.8125rem] text-muted-foreground">
-            What ZASTAVA needs from this machine. Node versions and Chromium are fetched when a
+            What YugoTool needs from this machine. Node versions and Chromium are fetched when a
             run needs them.
           </p>
         </div>
@@ -174,7 +174,7 @@ function ReadyChip({ report }: { report: DoctorReport }) {
   )
 }
 
-/** ZASTAVA's own services while they all run: one quiet row. */
+/** YugoTool's own services while they all run: one quiet row. */
 function ServicesRow({ checks }: { checks: DoctorCheck[] }) {
   const status = STATUS.ok
   const Icon = status.icon
@@ -183,7 +183,7 @@ function ServicesRow({ checks }: { checks: DoctorCheck[] }) {
       <Icon aria-hidden="true" className={cn('mt-0.5 size-4 shrink-0', status.tone)} />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <p className="flex flex-wrap items-baseline gap-x-2 text-[0.8125rem]">
-          <span className="font-medium">ZASTAVA services</span>
+          <span className="font-medium">YugoTool services</span>
           <span className="break-words text-muted-foreground">
             {checks.map((check) => `${check.label}: ${check.detail}`).join(' · ')}
           </span>

@@ -4,7 +4,7 @@ import { PrCommitsTab } from '@/features/pull-requests/components/pr-commits-tab
 import { PrFilesTab } from '@/features/pull-requests/components/pr-files-tab'
 import { PrThreadsTab } from '@/features/pull-requests/components/pr-threads-tab'
 import { PrOverviewTab } from '@/features/pull-requests/components/pr-overview-tab'
-import { PrZastavaTab } from '@/features/pull-requests/components/pr-zastava-tab'
+import { PrYugoToolTab } from '@/features/pull-requests/components/pr-yugotool-tab'
 import type { PullRequestDetail } from '@/lib/contracts'
 
 /** The selected tab's content. */
@@ -56,9 +56,9 @@ export function PrTabBody({
       return <PrChecksTab pr={pr} />
     case 'commits':
       return <PrCommitsTab pr={pr} />
-    case 'zastava':
+    case 'yugotool':
       return (
-        <PrZastavaTab
+        <PrYugoToolTab
           projectId={projectId}
           pr={pr}
           onOpenFile={(file) => onChange({ tab: 'files', file })}

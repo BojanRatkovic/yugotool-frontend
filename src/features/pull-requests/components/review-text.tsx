@@ -29,7 +29,7 @@ function Inline({ text }: { text: string }) {
 }
 
 /**
- * Review prose as ZASTAVA's reviewer writes it: paragraphs on blank lines,
+ * Review prose as YugoTool's reviewer writes it: paragraphs on blank lines,
  * `- ` bullets, fenced code, inline `code` and **bold**. Not a full markdown
  * renderer; enough that a summary isn't one wall of text.
  */

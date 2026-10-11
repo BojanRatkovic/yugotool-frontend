@@ -42,10 +42,10 @@ export function useNeedsYou(): { items: NeedsYouItem[]; countByProject: Map<stri
   return { items, countByProject }
 }
 
-/** "(2) ZASTAVA" while anything waits on you, else "<project> · ZASTAVA". */
+/** "(2) YugoTool" while anything waits on you, else "<project> · YugoTool". */
 export function documentTitle(waiting: number, projectName: string | undefined): string {
-  if (waiting > 0) return `(${waiting}) ZASTAVA`
-  return projectName === undefined ? 'ZASTAVA' : `${projectName} · ZASTAVA`
+  if (waiting > 0) return `(${waiting}) YugoTool`
+  return projectName === undefined ? 'YugoTool' : `${projectName} · YugoTool`
 }
 
 export function useDocumentTitle(waiting: number, projectName: string | undefined) {

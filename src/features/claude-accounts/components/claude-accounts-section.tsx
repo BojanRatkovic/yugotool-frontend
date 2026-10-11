@@ -322,7 +322,7 @@ export function ClaudeAccountsSection({ system }: { system: SystemInfo | undefin
               {removing?.kind === 'api_key'
                 ? 'The key is deleted from this Mac; it stays valid in the Anthropic Console.'
                 : removing?.managed
-                  ? 'ZASTAVA signs it out and deletes the folder it created for it.'
+                  ? 'YugoTool signs it out and deletes the folder it created for it.'
                   : `Its folder (${removing?.configDir === null || removing === null ? '' : shortPath(removing.configDir)}) is not touched; you stay signed in there.`}
             </AlertDialogDescription>
           </AlertDialogHeader>

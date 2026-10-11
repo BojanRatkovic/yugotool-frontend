@@ -1,7 +1,7 @@
 import { desktopBridge } from '@/lib/desktop'
 import type { Notification } from '@/lib/contracts'
 
-const STORAGE_KEY = 'zastava:browser-notifications'
+const STORAGE_KEY = 'yugotool:browser-notifications'
 
 export type BrowserPermission = 'default' | 'granted' | 'denied' | 'unsupported'
 

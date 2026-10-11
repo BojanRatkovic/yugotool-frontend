@@ -259,7 +259,7 @@ function ProjectPage() {
               <TabsTrigger
                 value="review"
                 className="px-2.5 text-xs"
-                title="The line a ZASTAVA review of a pull request runs"
+                title="The line a YugoTool review of a pull request runs"
               >
                 Review line
               </TabsTrigger>

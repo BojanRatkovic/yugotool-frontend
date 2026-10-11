@@ -6,7 +6,7 @@ import {
   type PostFindings,
   type PullRequestDetail,
   type ReviewVerdict,
-  type ZastavaReview,
+  type YugoToolReview,
 } from '../src/lib/contracts'
 import { prActor, prDetail, prSummary } from '../src/testing/pull-request-fixtures'
 
@@ -79,7 +79,7 @@ const VERDICT: ReviewVerdict = {
   ],
 }
 
-function reviewOf(patch: Partial<ZastavaReview> = {}): ZastavaReview {
+function reviewOf(patch: Partial<YugoToolReview> = {}): YugoToolReview {
   return {
     workOrderId: '9d1b0c5e-1111-4222-8333-444455556666',
     runId: '9d1b0c5e-2222-4222-8333-444455556666',
@@ -110,8 +110,8 @@ function reviewOf(patch: Partial<ZastavaReview> = {}): ZastavaReview {
 const json = (route: Route, body: unknown, status = 200) =>
   route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
-/** The API with one PR and a ZASTAVA review the test drives. */
-async function mockApi(page: Page, initial: ZastavaReview | null, detail = DETAIL) {
+/** The API with one PR and a YugoTool review the test drives. */
+async function mockApi(page: Page, initial: YugoToolReview | null, detail = DETAIL) {
   const state = {
     review: initial,
     posts: [] as PostFindings[],
@@ -145,7 +145,7 @@ async function mockApi(page: Page, initial: ZastavaReview | null, detail = DETAI
           fetchedAt: new Date().toISOString(),
         })
       }
-      if (path === `${pulls}/zastava-reviews`) {
+      if (path === `${pulls}/yugotool-reviews`) {
         const r = state.review
         return json(route, {
           items:
@@ -166,7 +166,7 @@ async function mockApi(page: Page, initial: ZastavaReview | null, detail = DETAI
       if (path === `${pulls}/21/diff`) {
         return json(route, { patch: PATCH, truncated: false, base: 'b', head: 'a' })
       }
-      if (path === `${pulls}/21/zastava-review`) {
+      if (path === `${pulls}/21/yugotool-review`) {
         if (route.request().method() === 'POST') {
           state.starts += 1
           state.review = reviewOf({ status: 'running', verdict: null, costUsd: 0.12 })
@@ -185,7 +185,7 @@ async function mockApi(page: Page, initial: ZastavaReview | null, detail = DETAI
         state.threadCalls.push(`resolve ${id}`)
         return route.fulfill({ status: 204 })
       }
-      if (path === `${pulls}/21/zastava-review/post`) {
+      if (path === `${pulls}/21/yugotool-review/post`) {
         const body = postFindingsSchema.parse(route.request().postDataJSON())
         state.posts.push(body)
         if (state.review !== null) {
@@ -210,7 +210,7 @@ test('start a review, watch it run, triage and add findings to the pending revie
 }) => {
   const api = await mockApi(page, null)
   await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true`)
-  await page.getByRole('button', { name: 'Review with ZASTAVA' }).click()
+  await page.getByRole('button', { name: 'Review with YugoTool' }).click()
   await expect(page.getByRole('button', { name: /Reviewing…/ })).toBeVisible()
   expect(api.starts).toBe(1)
 
@@ -225,7 +225,7 @@ test('start a review, watch it run, triage and add findings to the pending revie
   await expect(findings.getByRole('checkbox').first()).toBeChecked()
   await expect(findings.getByRole('checkbox').nth(1)).not.toBeChecked()
   await findings.getByRole('textbox', { name: 'Comment title' }).fill('b must stay 2')
-  await page.screenshot({ path: test.info().outputPath('zastava-tab.png') })
+  await page.screenshot({ path: test.info().outputPath('yugotool-tab.png') })
 
   await page.getByRole('button', { name: 'Add 1 to pending review' }).click()
   await expect(findings.getByText('On GitHub')).toBeVisible()
@@ -246,7 +246,7 @@ test('start a review, watch it run, triage and add findings to the pending revie
 test('Z starts a review from the keyboard', async ({ page }) => {
   const api = await mockApi(page, null)
   await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true`)
-  await expect(page.getByRole('button', { name: 'Review with ZASTAVA' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Review with YugoTool' })).toBeVisible()
   await page.keyboard.press('z')
   await expect(page.getByRole('button', { name: /Reviewing…/ })).toBeVisible()
   expect(api.starts).toBe(1)
@@ -257,7 +257,7 @@ test('findings show as ghost comments in Files and go to the review one by one',
 }) => {
   const api = await mockApi(page, reviewOf())
   await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=files`)
-  const ghost = page.getByRole('article', { name: 'ZASTAVA finding: b changed from 2 to 3' })
+  const ghost = page.getByRole('article', { name: 'YugoTool finding: b changed from 2 to 3' })
   await expect(ghost).toBeVisible()
   await expect(ghost).toContainText('Every total is off by one now.')
   await page.screenshot({ path: test.info().outputPath('ghost.png') })
@@ -268,7 +268,7 @@ test('findings show as ghost comments in Files and go to the review one by one',
 
 test('a stale review blocks posting and offers a re-review', async ({ page }) => {
   const api = await mockApi(page, reviewOf({ stale: true }))
-  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
+  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=yugotool`)
   await expect(page.getByRole('button', { name: 'Re-review the new commits' })).toBeVisible()
   await expect(page.getByRole('button', { name: /to pending review/ })).toBeDisabled()
   await page.getByRole('button', { name: 'Re-review', exact: true }).click()
@@ -278,7 +278,7 @@ test('a stale review blocks posting and offers a re-review', async ({ page }) =>
 
 test('a done review on the current head can be re-reviewed from the tab', async ({ page }) => {
   const api = await mockApi(page, reviewOf())
-  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
+  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=yugotool`)
   await page.getByRole('button', { name: 'Re-review', exact: true }).click()
   await expect(page.getByText(/Reviewing/).first()).toBeVisible()
   expect(api.starts).toBe(1)
@@ -286,13 +286,13 @@ test('a done review on the current head can be re-reviewed from the tab', async 
 
 test('a done review without findings offers Review again', async ({ page }) => {
   await mockApi(page, reviewOf({ verdict: { ...VERDICT, findings: [] } }))
-  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
+  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=yugotool`)
   await expect(page.getByRole('button', { name: 'Review again' })).toBeVisible()
 })
 
 test('a stale review without findings offers a plain re-run', async ({ page }) => {
   await mockApi(page, reviewOf({ stale: true, verdict: { ...VERDICT, findings: [] } }))
-  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
+  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=yugotool`)
   await expect(page.getByRole('button', { name: 'Re-run on new head' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Re-review', exact: true })).toBeHidden()
 })
@@ -335,7 +335,7 @@ const reReview = () =>
 
 test('a re-review shows what was fixed since the last review', async ({ page }) => {
   const api = await mockApi(page, reReview())
-  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
+  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=yugotool`)
   const since = page.getByRole('region', { name: 'Since your last review' })
   await expect(since).toContainText('1 fixed · 1 partly · 1 still open')
   await expect(since.getByText('src/app.ts:3 still exports every row')).toBeVisible()
@@ -367,7 +367,7 @@ test('a re-review shows what was fixed since the last review', async ({ page }) 
 
 test('resolve without the reply when the box is unticked', async ({ page }) => {
   const api = await mockApi(page, reReview())
-  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
+  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=yugotool`)
   const since = page.getByRole('region', { name: 'Since your last review' })
   await since.getByRole('checkbox', { name: /Fixed in/ }).uncheck()
   await since.getByRole('button', { name: 'Resolve thread' }).click()
@@ -379,7 +379,7 @@ test('the card shows the review', async ({ page }) => {
   await mockApi(page, reviewOf())
   await page.goto(`/projects/${PROJECT}/pulls/assigned`)
   await expect(page.locator('[data-pr-card="21"]')).toBeVisible()
-  await expect(page.getByTitle('ZASTAVA: 2 findings')).toBeVisible()
+  await expect(page.getByTitle('YugoTool: 2 findings')).toBeVisible()
 })
 
 test('the card asks for a re-review when new commits came after findings', async ({ page }) => {
@@ -389,7 +389,7 @@ test('the card asks for a re-review when new commits came after findings', async
   )
   await page.goto(`/projects/${PROJECT}/pulls/assigned`)
   await expect(
-    page.getByTitle('ZASTAVA: re-review (2 findings on an older commit)'),
+    page.getByTitle('YugoTool: re-review (2 findings on an older commit)'),
   ).toBeVisible()
 })
 
@@ -427,7 +427,7 @@ test('the review dialog fits long pending comments', async ({ page }) => {
       ],
     }),
   )
-  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=zastava`)
+  await page.goto(`/projects/${PROJECT}/pulls/assigned?pr=21&prFull=true&prTab=yugotool`)
   await page.getByRole('button', { name: 'Submit review' }).click()
   const dialog = page.getByRole('dialog', { name: 'Review #21' })
   await expect(dialog.getByText(`${longPath}:283`)).toBeVisible()

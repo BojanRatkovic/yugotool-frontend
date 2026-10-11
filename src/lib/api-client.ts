@@ -53,7 +53,7 @@ async function toApiError(response: Response): Promise<ApiError> {
   const message =
     body?.message ??
     (response.status >= 500
-      ? 'The ZASTAVA API is unreachable or failed.'
+      ? 'The YugoTool API is unreachable or failed.'
       : `Request failed (${response.status}).`)
   return new ApiError(message, response.status, {
     code: body?.code ?? null,

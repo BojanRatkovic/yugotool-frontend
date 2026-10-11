@@ -7,7 +7,7 @@ afterEach(() => localStorage.clear())
 describe('preferredMethod', () => {
   it('remembers the last method when the repo allows it', () => {
     expect(preferredMethod(['merge', 'squash'])).toBe('merge')
-    localStorage.setItem('zastava.pr-merge-method', 'squash')
+    localStorage.setItem('yugotool.pr-merge-method', 'squash')
     expect(preferredMethod(['merge', 'squash'])).toBe('squash')
     expect(preferredMethod(['rebase'])).toBe('rebase')
     expect(preferredMethod([])).toBeNull()
