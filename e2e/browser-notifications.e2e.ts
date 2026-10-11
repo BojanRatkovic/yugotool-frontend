@@ -88,7 +88,7 @@ test('a new notification shows in the browser while the tab is hidden', async ({
     .toContainEqual({ title: arrived.title, body: arrived.body, tag: arrived.id })
 
   await page.evaluate(() => window.lastNotification?.dispatchEvent(new Event('click')))
-  await expect(page).toHaveURL(/\/settings$/)
+  await expect(page).toHaveURL(/\/settings\/general$/)
 })
 
 test('nothing shows in the browser without the opt-in', async ({ page }) => {

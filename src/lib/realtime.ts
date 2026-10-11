@@ -25,6 +25,7 @@ const COLLECTION_KEYS: Record<CollectionName, readonly (readonly string[])[]> = 
   notifications: [queryKeys.notifications()],
   // An account's plan or login changing moves the usage meter too.
   claude_accounts: [queryKeys.claudeAccounts(), queryKeys.systemUsage()],
+  integrations: [queryKeys.integrations()],
 }
 
 /**

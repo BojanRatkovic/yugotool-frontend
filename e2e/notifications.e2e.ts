@@ -121,7 +121,7 @@ test('opening a notification marks it read and goes to its page', async ({ page 
   await page.goto(`/projects/${PROJECT}`)
   await page.getByRole('button', { name: /^Notifications/ }).click()
   await page.getByRole('button', { name: /Fix login failed/ }).click()
-  await expect(page).toHaveURL(/\/settings$/)
+  await expect(page).toHaveURL(/\/settings\/general$/)
   await expect(page.getByRole('button', { name: 'Notifications, 1 unread' })).toBeVisible()
   expect(reads).toEqual([{ ids: [ITEMS[1]?.id] }])
 })

@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 import {
   Dialog,
   DialogContent,
@@ -15,12 +17,15 @@ export function NewWorkOrderDialog({
   open,
   onOpenChange,
   repos,
+  headerAction,
 }: {
   projectId: string
   open: boolean
   onOpenChange: (open: boolean) => void
   /** A hub project's repos (spec 0014). */
   repos?: string[]
+  /** Beside the title, e.g. "Import from Productive" (composed by the route). */
+  headerAction?: ReactNode
 }) {
   const workOrders = useWorkOrders(projectId)
   const last = workOrders
@@ -33,9 +38,12 @@ export function NewWorkOrderDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>New work order</DialogTitle>
-          <DialogDescription>It waits in the backlog until you start it.</DialogDescription>
+        <DialogHeader className="flex-row items-start gap-3 pr-8">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <DialogTitle>New work order</DialogTitle>
+            <DialogDescription>It waits in the backlog until you start it.</DialogDescription>
+          </div>
+          {headerAction}
         </DialogHeader>
         <NewWorkOrderForm
           projectId={projectId}

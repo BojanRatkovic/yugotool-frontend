@@ -12,12 +12,8 @@ import {
   type NotificationChannel,
 } from '@/features/settings/api/settings-queries'
 import { SettingsSaveBar } from '@/features/settings/components/settings-save-bar'
-import {
-  invalidProps,
-  Row,
-  SecretInput,
-  Section,
-} from '@/features/settings/components/settings-section'
+import { SecretInput } from '@/components/secret-input'
+import { invalidProps, Row, Section } from '@/features/settings/components/settings-section'
 import { UnsavedChangesGuard } from '@/features/settings/components/unsaved-changes-guard'
 import {
   CHANNEL_KEYS,

@@ -31,6 +31,7 @@ import {
   DeleteWorkOrderDialog,
 } from '@/features/work-orders/components/delete-work-order-dialog'
 import { PrLink } from '@/components/pr-link'
+import { SourceLink } from '@/components/source-link'
 import { QueueButtons, QueuedChip } from '@/features/work-orders/components/queue-actions'
 import { errorMessage } from '@/lib/api-client'
 import type { WorkOrder } from '@/lib/contracts'
@@ -148,6 +149,9 @@ export function WorkOrderHeader({
         {/* Remount on server changes so the field shows the saved title. */}
         <TitleField key={workOrder.title} projectId={projectId} workOrder={workOrder} />
         <div className="flex shrink-0 items-center gap-1.5">
+          {workOrder.source == null ? null : (
+            <SourceLink source={workOrder.source} variant="button" />
+          )}
           {workOrder.prUrl == null ? null : (
             <PrLink url={workOrder.prUrl} variant="button" className="mr-1" />
           )}
