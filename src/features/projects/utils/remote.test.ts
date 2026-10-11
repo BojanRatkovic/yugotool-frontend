@@ -7,9 +7,7 @@ describe('originLabel', () => {
     expect(originLabel('https://github.com/acme/storefront.git')).toBe(
       'github.com/acme/storefront',
     )
-    expect(originLabel('git@github.com:acme/frontend.git')).toBe(
-      'github.com/acme/frontend',
-    )
+    expect(originLabel('git@github.com:acme/frontend.git')).toBe('github.com/acme/frontend')
     expect(originLabel('ssh://git@gitlab.com/team/app')).toBe('gitlab.com/team/app')
   })
 

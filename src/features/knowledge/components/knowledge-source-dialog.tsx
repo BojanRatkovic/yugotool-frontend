@@ -37,7 +37,7 @@ const KIND_OPTIONS: Record<
   git_local: {
     label: 'Local Git repo',
     hint: 'Only files Git tracks are read, so gitignored secrets stay out.',
-    placeholder: '~/Desktop/Developer/Acme/work',
+    placeholder: '~/code/team-work',
   },
   git_remote: {
     label: 'Git URL',

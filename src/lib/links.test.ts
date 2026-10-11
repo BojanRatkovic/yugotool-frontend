@@ -4,9 +4,7 @@ import { parseDelivery, parsePullRequest, pullRequestLabel, splitLinks } from '@
 
 describe('parsePullRequest', () => {
   it('reads number and repo from a GitHub URL', () => {
-    const pr = parsePullRequest(
-      'https://github.com/acme/storefront/pull/1145',
-    )
+    const pr = parsePullRequest('https://github.com/acme/storefront/pull/1145')
     expect(pr).toMatchObject({ number: 1145, repo: 'acme/storefront' })
     expect(pullRequestLabel(pr)).toBe('PR #1145')
     expect(pullRequestLabel(pr, 'Pull request')).toBe('Pull request #1145')
