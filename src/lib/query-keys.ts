@@ -32,6 +32,8 @@ export const queryKeys = {
     repo === undefined
       ? (['projects', projectId, 'remote'] as const)
       : (['projects', projectId, 'remote', repo] as const),
+  /** Skills a project's agents can load (spec 0015); read from disk, under the project root. */
+  projectSkills: (projectId: string) => ['projects', projectId, 'skills'] as const,
   /** Route map of a project; under `projects` so SSE `projects` (discovery done) refreshes it. */
   projectRoutes: (projectId: string) => ['projects', projectId, 'routes'] as const,
   /** QA attempts and checks per run; SSE `qa` invalidates the root. */

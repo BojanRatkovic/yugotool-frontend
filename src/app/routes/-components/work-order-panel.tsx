@@ -38,6 +38,7 @@ import { RunAgainButton } from '@/features/work-orders/components/queue-actions'
 import type { DeliveryMode, Station } from '@/lib/contracts'
 import { errorMessage } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
+import { skillQueries } from '@/lib/skill-queries'
 
 export type PanelTab = 'activity' | 'diff' | 'findings' | 'shifts' | 'qa'
 
@@ -155,6 +156,7 @@ export function WorkOrderPanel({
     enabled: hubProject === undefined || deliveryRepo !== undefined,
   })
   const workOrders = useWorkOrders(projectId)
+  const skills = useQuery(skillQueries.list(projectId))
   const splitWorkOrder = useSplitWorkOrder()
   const research = latestResearch(run)
   const hubPlan: HubPlanGate | undefined =
@@ -313,6 +315,7 @@ export function WorkOrderPanel({
               requestChanges={requestChangesCopy(stations, waiting.stationKey)}
               onChangeDefault={onEditDelivery}
               hub={hubPlan}
+              skills={skills.data}
               qaReview={
                 qaDiffs === null
                   ? undefined

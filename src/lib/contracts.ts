@@ -49,6 +49,8 @@ export const agentStationSchema = z.object({
    * a station that edits code never gets it (see updateLineSchema).
    */
   useKnowledge: z.boolean().optional(),
+  /** Skills every session of this station loads first (`plugin:skill` or `skill`). */
+  skills: z.array(z.string().min(1)).optional(),
   prompt: z.string(),
   /**
    * Editing stations work in shifts on their own (spec 0012): when a session's
@@ -432,6 +434,32 @@ export const previewDetectionSchema = z.object({
 export type PreviewDetection = z.infer<typeof previewDetectionSchema>
 
 /** Where approved work can go: checked live from the repo and gh. */
+/** A skill an agent of this project can load, for `/` autocomplete. */
+export const projectSkillSchema = z.object({
+  /** What the Skill tool takes and what `/` inserts: `plugin:skill` or `skill`. */
+  invocation: z.string(),
+  description: z.string(),
+  /** hub = the hub's own plugins (every repo); repo = one repo's `.claude/skills`. */
+  source: z.enum(['hub', 'repo']),
+  /** For a repo skill in a hub: whose. Null otherwise. */
+  repo: z.string().nullable(),
+})
+export type ProjectSkill = z.infer<typeof projectSkillSchema>
+
+/**
+ * The known skills a text names as `/skill` (at the start or after
+ * whitespace, so paths like `src/app` never count), each once, in order. Pure.
+ */
+export function skillMentions(text: string, known: readonly string[]): string[] {
+  const names = new Set(known)
+  const found: string[] = []
+  for (const match of text.matchAll(/(?:^|\s)\/([\w.-]+(?::[\w.-]+)?)(?![\w/:-])/g)) {
+    const name = match[1]
+    if (name !== undefined && names.has(name) && !found.includes(name)) found.push(name)
+  }
+  return found
+}
+
 export const projectRemoteSchema = z.object({
   /** `origin` URL; null when the repo has none. */
   origin: z.string().nullable(),

@@ -31,14 +31,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
+import { SkillTextarea } from '@/components/skill-textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useGateDecision } from '@/features/runs/api/run-queries'
 import { effectiveDelivery } from '@/features/runs/utils/delivery'
 import { splitRoute } from '@/features/runs/utils/hub-plan'
 import type { RequestChangesCopy } from '@/features/runs/utils/request-changes'
 import { errorMessage } from '@/lib/api-client'
-import type { DeliveryMode, GateDecision, SplitItem } from '@/lib/contracts'
+import type { DeliveryMode, GateDecision, ProjectSkill, SplitItem } from '@/lib/contracts'
 import { DELIVERY_MODES, DELIVERY_OPTIONS, isPrMode } from '@/lib/delivery'
 import { IS_MAC } from '@/lib/shortcuts'
 
@@ -83,6 +83,7 @@ export function GateBanner({
   onChangeDefault,
   requestChanges,
   hub,
+  skills,
 }: {
   runId: string
   stationKey: string
@@ -104,6 +105,8 @@ export function GateBanner({
   requestChanges: RequestChangesCopy | null
   /** A hub run's plan gate: pick the repo, accept a split. */
   hub?: HubPlanGate
+  /** The project's skills: `/` in the comment offers them (spec 0015). */
+  skills?: readonly ProjectSkill[]
 }) {
   // A PR default that can't work falls back to a local commit, and says so below the buttons.
   const effective =
@@ -236,14 +239,14 @@ export function GateBanner({
           <Label htmlFor={commentId} className="sr-only">
             Comment
           </Label>
-          <Textarea
+          <SkillTextarea
             ref={commentRef}
             id={commentId}
             value={comment}
-            onChange={(event) => {
-              setComment(event.target.value)
-              if (commentError !== null && event.target.value.trim() !== '')
-                setCommentError(null)
+            skills={skills}
+            onValueChange={(next) => {
+              setComment(next)
+              if (commentError !== null && next.trim() !== '') setCommentError(null)
             }}
             aria-invalid={commentError === null ? undefined : true}
             aria-describedby={commentError === null ? undefined : `${commentId}-error`}

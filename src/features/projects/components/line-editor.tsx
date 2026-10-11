@@ -1,4 +1,5 @@
 import { useForm, useStore } from '@tanstack/react-form'
+import { useQuery } from '@tanstack/react-query'
 import {
   ArrowLeft,
   ArrowRight,
@@ -40,6 +41,7 @@ import {
 } from '@/features/projects/utils/line-draft'
 import { errorIssues, errorMessage } from '@/lib/api-client'
 import type { Line, LineKind, Station } from '@/lib/contracts'
+import { skillQueries } from '@/lib/skill-queries'
 
 const EMPTY_ISSUES: ReadonlyMap<string, string> = new Map()
 
@@ -63,6 +65,7 @@ export function LineEditor({
 }) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const save = useSaveLine(line.projectId, kind)
+  const skills = useQuery(skillQueries.list(line.projectId)).data
 
   const form = useForm({
     defaultValues: { stations: line.stations },
@@ -196,6 +199,7 @@ export function LineEditor({
                   onChange={(station) => setStations(replaceStation(stations, station))}
                   previewMissing={previewMissing}
                   lineKind={kind}
+                  skills={skills}
                   onSetupPreview={() => {
                     // One sheet at a time: the draft stays, the settings sheet takes over.
                     setSelectedKey(null)

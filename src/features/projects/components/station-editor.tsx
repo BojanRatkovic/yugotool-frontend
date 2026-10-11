@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { SkillTextarea } from '@/components/skill-textarea'
 import { Textarea } from '@/components/ui/textarea'
 import { Slider } from '@/components/ui/slider'
 import { Toggle } from '@/components/ui/toggle'
@@ -18,6 +19,7 @@ import {
   handoffTrackPct,
   toolOrder,
 } from '@/features/projects/utils/line-draft'
+import { StationSkills } from '@/features/projects/components/station-skills'
 import {
   DEFAULT_SHIFT_SETTINGS,
   QA_VIEWPORTS,
@@ -26,6 +28,7 @@ import {
   qaViewportSchema,
   type AgentStation,
   type LineKind,
+  type ProjectSkill,
   type QaStation,
   type ShiftStation,
   type Station,
@@ -50,6 +53,7 @@ export function StationEditor({
   previewMissing = false,
   onSetupPreview,
   lineKind = 'build',
+  skills,
 }: {
   station: Station
   issues: Issues
@@ -59,6 +63,8 @@ export function StationEditor({
   /** The project has no preview config (QA stations can't run). */
   previewMissing?: boolean
   onSetupPreview?: () => void
+  /** The project's skills (spec 0015); undefined while loading. */
+  skills?: readonly ProjectSkill[]
 }) {
   const id = (field: string) => `station-${station.key}-${field}`
 
@@ -136,6 +142,7 @@ export function StationEditor({
       onChange={onChange}
       nameField={nameField}
       lineKind={lineKind}
+      skills={skills}
     />
   )
 }
@@ -246,20 +253,23 @@ function PromptField({
   station,
   issues,
   set,
+  skills,
 }: {
   station: AgentStation | ShiftStation
   issues: Issues
   set: (patch: SessionPatch) => void
+  skills?: readonly ProjectSkill[]
 }) {
   const id = `station-${station.key}-prompt`
   return (
     <FormField id={id} label="Prompt" errors={errorsFor(issues, 'prompt')}>
-      <Textarea
+      <SkillTextarea
         id={id}
         value={station.prompt}
         rows={16}
         className="min-h-72 font-mono text-xs leading-relaxed"
-        onChange={(event) => set({ prompt: event.target.value })}
+        skills={skills}
+        onValueChange={(prompt) => set({ prompt })}
       />
     </FormField>
   )
@@ -271,12 +281,14 @@ function AgentFields({
   onChange,
   nameField,
   lineKind,
+  skills,
 }: {
   station: AgentStation
   issues: Issues
   onChange: (station: Station) => void
   nameField: React.ReactNode
   lineKind: LineKind
+  skills: readonly ProjectSkill[] | undefined
 }) {
   const review = lineKind === 'review'
   const verdictValue = review ? 'review' : true
@@ -370,7 +382,19 @@ function AgentFields({
       {station.canEdit ? (
         <ShiftSettings station={station} issues={issues} onChange={onChange} />
       ) : null}
-      <PromptField station={station} issues={issues} set={set} />
+      {skills ? (
+        <StationSkills
+          id={id('skills')}
+          value={station.skills ?? []}
+          skills={skills}
+          onChange={(next) => {
+            // Empty and absent mean the same; dropping it keeps the dirty check honest.
+            const { skills: _drop, ...rest } = station
+            onChange(next.length ? { ...rest, skills: next } : rest)
+          }}
+        />
+      ) : null}
+      <PromptField station={station} issues={issues} set={set} skills={skills} />
     </div>
   )
 }
@@ -424,16 +448,11 @@ function ShiftSettings({
         <div className="flex items-center justify-between gap-3">
           <Label htmlFor={id('handoffAtPct')}>Hand off at</Label>
           <span className="flex items-center gap-2">
-            <span
-              className={cn(
-                'rounded-sm px-1.5 py-0.5 text-[0.6875rem] leading-none',
-                inBand
-                  ? 'bg-status-passed-soft text-status-passed'
-                  : 'bg-muted text-muted-foreground',
-              )}
-            >
-              {inBand ? 'Recommended' : `Outside ${bandFrom}–${bandTo}%`}
-            </span>
+            {inBand ? null : (
+              <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[0.6875rem] leading-none text-muted-foreground">
+                Outside {bandFrom}–{bandTo}%
+              </span>
+            )}
             <span className="w-10 text-right text-sm font-medium tabular-nums">
               {handoffAtPct}%
             </span>
@@ -481,6 +500,16 @@ function ShiftSettings({
             {bandTo}%
           </span>
           <span className="absolute right-0">{SHIFT_HANDOFF_MAX}%</span>
+          {/* Centred under the green stretch it names. */}
+          <span
+            className={cn(
+              'absolute -translate-x-1/2 rounded-sm px-1.5 leading-4',
+              inBand ? 'bg-status-passed-soft text-status-passed' : 'text-status-passed/80',
+            )}
+            style={{ left: `${(handoffTrackPct(bandFrom) + handoffTrackPct(bandTo)) / 2}%` }}
+          >
+            Recommended
+          </span>
         </div>
         <p className="text-xs text-muted-foreground">
           Percent of the context window; the green stretch is the recommended band. Lower hands

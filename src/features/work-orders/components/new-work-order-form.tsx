@@ -1,4 +1,5 @@
 import { useForm } from '@tanstack/react-form'
+import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { FormField } from '@/components/form-field'
@@ -11,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
+import { SkillTextarea } from '@/components/skill-textarea'
 import { workOrdersCollection } from '@/features/work-orders/api/work-orders-collection'
 import { OverrideFields } from '@/features/work-orders/components/override-fields'
 import {
@@ -22,6 +23,7 @@ import {
 import { errorMessage } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { createWorkOrderSchema, effortSchema } from '@/lib/contracts'
+import { skillQueries } from '@/lib/skill-queries'
 import { z } from 'zod'
 
 /** The Repo field's value for "Research picks". */
@@ -51,6 +53,7 @@ export function NewWorkOrderForm({
   /** A hub project's repos (spec 0014): a Repo select, Auto by default. */
   repos?: string[]
 }) {
+  const skills = useQuery(skillQueries.list(projectId)).data
   const form = useForm({
     defaultValues: { title: '', description: '', repo: AUTO, ...toOverrideValues({}) },
     validators: { onSubmit: formSchema },
@@ -116,11 +119,12 @@ export function NewWorkOrderForm({
             label="Description"
             errors={field.state.meta.errors}
           >
-            <Textarea
+            <SkillTextarea
               id="new-wo-description"
               value={field.state.value}
               onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
+              onValueChange={field.handleChange}
+              skills={skills}
               rows={10}
               placeholder="What should change, and how will you know it's done?"
               className="max-h-[45vh] min-h-56 overflow-y-auto leading-relaxed"
