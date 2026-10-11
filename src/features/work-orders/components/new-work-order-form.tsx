@@ -75,6 +75,7 @@ export function NewWorkOrderForm({
         currentRunId: null,
         queueMode: null,
         queuedAt: null,
+        source: null,
         ...fromOverrideValues(value),
         prUrl: null,
         ci: null,

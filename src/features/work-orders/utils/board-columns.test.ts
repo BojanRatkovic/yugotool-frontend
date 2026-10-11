@@ -39,6 +39,7 @@ function wo(patch: Partial<WorkOrder>): WorkOrder {
     currentRunId: null,
     queueMode: null,
     queuedAt: null,
+    source: null,
     modelOverride: null,
     effortOverride: null,
     maxBudgetUsd: null,

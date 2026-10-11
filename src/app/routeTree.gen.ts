@@ -10,7 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SettingsRouteRouteImport } from './routes/settings/route'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as SettingsAccountsRouteImport } from './routes/settings/accounts'
+import { Route as SettingsDoctorRouteImport } from './routes/settings/doctor'
+import { Route as SettingsGeneralRouteImport } from './routes/settings/general'
+import { Route as SettingsIntegrationsRouteImport } from './routes/settings/integrations'
+import { Route as SettingsKnowledgeRouteImport } from './routes/settings/knowledge'
+import { Route as SettingsNotificationsRouteImport } from './routes/settings/notifications'
 import { Route as ProjectsProjectIdIndexRouteImport } from './routes/projects/$projectId/index'
 import { Route as ProjectsProjectIdPullsScopeRouteImport } from './routes/projects/$projectId/pulls/$scope'
 
@@ -19,10 +26,45 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SettingsRoute = SettingsRouteImport.update({
+const SettingsRouteRoute = SettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRouteRoute,
+} as any)
+const SettingsAccountsRoute = SettingsAccountsRouteImport.update({
+  id: '/accounts',
+  path: '/accounts',
+  getParentRoute: () => SettingsRouteRoute,
+} as any)
+const SettingsDoctorRoute = SettingsDoctorRouteImport.update({
+  id: '/doctor',
+  path: '/doctor',
+  getParentRoute: () => SettingsRouteRoute,
+} as any)
+const SettingsGeneralRoute = SettingsGeneralRouteImport.update({
+  id: '/general',
+  path: '/general',
+  getParentRoute: () => SettingsRouteRoute,
+} as any)
+const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => SettingsRouteRoute,
+} as any)
+const SettingsKnowledgeRoute = SettingsKnowledgeRouteImport.update({
+  id: '/knowledge',
+  path: '/knowledge',
+  getParentRoute: () => SettingsRouteRoute,
+} as any)
+const SettingsNotificationsRoute = SettingsNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => SettingsRouteRoute,
 } as any)
 const ProjectsProjectIdIndexRoute = ProjectsProjectIdIndexRouteImport.update({
   id: '/projects/$projectId/',
@@ -38,20 +80,40 @@ const ProjectsProjectIdPullsScopeRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
+  '/settings': typeof SettingsRouteRouteWithChildren
+  '/settings/accounts': typeof SettingsAccountsRoute
+  '/settings/doctor': typeof SettingsDoctorRoute
+  '/settings/general': typeof SettingsGeneralRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/knowledge': typeof SettingsKnowledgeRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/settings/': typeof SettingsIndexRoute
   '/projects/$projectId/': typeof ProjectsProjectIdIndexRoute
   '/projects/$projectId/pulls/$scope': typeof ProjectsProjectIdPullsScopeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
+  '/settings/accounts': typeof SettingsAccountsRoute
+  '/settings/doctor': typeof SettingsDoctorRoute
+  '/settings/general': typeof SettingsGeneralRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/knowledge': typeof SettingsKnowledgeRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/settings': typeof SettingsIndexRoute
   '/projects/$projectId': typeof ProjectsProjectIdIndexRoute
   '/projects/$projectId/pulls/$scope': typeof ProjectsProjectIdPullsScopeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
+  '/settings': typeof SettingsRouteRouteWithChildren
+  '/settings/accounts': typeof SettingsAccountsRoute
+  '/settings/doctor': typeof SettingsDoctorRoute
+  '/settings/general': typeof SettingsGeneralRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/knowledge': typeof SettingsKnowledgeRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/settings/': typeof SettingsIndexRoute
   '/projects/$projectId/': typeof ProjectsProjectIdIndexRoute
   '/projects/$projectId/pulls/$scope': typeof ProjectsProjectIdPullsScopeRoute
 }
@@ -60,11 +122,24 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/settings'
+    | '/settings/accounts'
+    | '/settings/doctor'
+    | '/settings/general'
+    | '/settings/integrations'
+    | '/settings/knowledge'
+    | '/settings/notifications'
+    | '/settings/'
     | '/projects/$projectId/'
     | '/projects/$projectId/pulls/$scope'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/settings/accounts'
+    | '/settings/doctor'
+    | '/settings/general'
+    | '/settings/integrations'
+    | '/settings/knowledge'
+    | '/settings/notifications'
     | '/settings'
     | '/projects/$projectId'
     | '/projects/$projectId/pulls/$scope'
@@ -72,13 +147,20 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/settings'
+    | '/settings/accounts'
+    | '/settings/doctor'
+    | '/settings/general'
+    | '/settings/integrations'
+    | '/settings/knowledge'
+    | '/settings/notifications'
+    | '/settings/'
     | '/projects/$projectId/'
     | '/projects/$projectId/pulls/$scope'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  SettingsRoute: typeof SettingsRoute
+  SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   ProjectsProjectIdIndexRoute: typeof ProjectsProjectIdIndexRoute
   ProjectsProjectIdPullsScopeRoute: typeof ProjectsProjectIdPullsScopeRoute
 }
@@ -96,8 +178,57 @@ declare module '@tanstack/react-router' {
       id: '/settings'
       path: '/settings'
       fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
+      preLoaderRoute: typeof SettingsRouteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRouteRoute
+    }
+    '/settings/accounts': {
+      id: '/settings/accounts'
+      path: '/accounts'
+      fullPath: '/settings/accounts'
+      preLoaderRoute: typeof SettingsAccountsRouteImport
+      parentRoute: typeof SettingsRouteRoute
+    }
+    '/settings/doctor': {
+      id: '/settings/doctor'
+      path: '/doctor'
+      fullPath: '/settings/doctor'
+      preLoaderRoute: typeof SettingsDoctorRouteImport
+      parentRoute: typeof SettingsRouteRoute
+    }
+    '/settings/general': {
+      id: '/settings/general'
+      path: '/general'
+      fullPath: '/settings/general'
+      preLoaderRoute: typeof SettingsGeneralRouteImport
+      parentRoute: typeof SettingsRouteRoute
+    }
+    '/settings/integrations': {
+      id: '/settings/integrations'
+      path: '/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof SettingsIntegrationsRouteImport
+      parentRoute: typeof SettingsRouteRoute
+    }
+    '/settings/knowledge': {
+      id: '/settings/knowledge'
+      path: '/knowledge'
+      fullPath: '/settings/knowledge'
+      preLoaderRoute: typeof SettingsKnowledgeRouteImport
+      parentRoute: typeof SettingsRouteRoute
+    }
+    '/settings/notifications': {
+      id: '/settings/notifications'
+      path: '/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof SettingsNotificationsRouteImport
+      parentRoute: typeof SettingsRouteRoute
     }
     '/projects/$projectId/': {
       id: '/projects/$projectId/'
@@ -116,9 +247,33 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SettingsRouteRouteChildren {
+  SettingsAccountsRoute: typeof SettingsAccountsRoute
+  SettingsDoctorRoute: typeof SettingsDoctorRoute
+  SettingsGeneralRoute: typeof SettingsGeneralRoute
+  SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
+  SettingsKnowledgeRoute: typeof SettingsKnowledgeRoute
+  SettingsNotificationsRoute: typeof SettingsNotificationsRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
+}
+
+const SettingsRouteRouteChildren: SettingsRouteRouteChildren = {
+  SettingsAccountsRoute: SettingsAccountsRoute,
+  SettingsDoctorRoute: SettingsDoctorRoute,
+  SettingsGeneralRoute: SettingsGeneralRoute,
+  SettingsIntegrationsRoute: SettingsIntegrationsRoute,
+  SettingsKnowledgeRoute: SettingsKnowledgeRoute,
+  SettingsNotificationsRoute: SettingsNotificationsRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
+}
+
+const SettingsRouteRouteWithChildren = SettingsRouteRoute._addFileChildren(
+  SettingsRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  SettingsRoute: SettingsRoute,
+  SettingsRouteRoute: SettingsRouteRouteWithChildren,
   ProjectsProjectIdIndexRoute: ProjectsProjectIdIndexRoute,
   ProjectsProjectIdPullsScopeRoute: ProjectsProjectIdPullsScopeRoute,
 }

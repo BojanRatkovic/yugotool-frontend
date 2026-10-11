@@ -49,6 +49,18 @@ export const queryKeys = {
   /** Settings → Claude accounts (spec 0016); SSE `claude_accounts` invalidates the root. */
   claudeAccounts: () => ['claude-accounts'] as const,
   dispatcher: () => ['dispatcher'] as const,
+  /** Settings → Integrations (spec 0019); SSE `integrations` invalidates the root. */
+  integrations: () => ['integrations'] as const,
+  productive: () => ['integrations', 'productive'] as const,
+  /** Productive projects and tasks: live reads through the API, under the connection. */
+  productiveProjects: (query: string) =>
+    ['integrations', 'productive', 'projects', query] as const,
+  productiveTasks: (filter: {
+    projectId: string
+    productiveProjectId: string | null
+    query: string
+    mine: boolean
+  }) => ['integrations', 'productive', 'tasks', filter] as const,
   /** The library and each project's choice from it; SSE `knowledge_sources` invalidates the root. */
   knowledge: () => ['knowledge'] as const,
   knowledgeSources: () => ['knowledge', 'sources'] as const,

@@ -58,7 +58,7 @@ export function NotificationKindsSection({
         const pending =
           update.isPending && update.variables.notificationExternal?.[kind] !== undefined
         return (
-          <Row key={kind} id={id} label={label} help={help} labelIcon={icon?.(kind)}>
+          <Row key={kind} id={id} label={label} help={help} labelIcon={icon?.(kind)} inline>
             <Switch
               id={id}
               checked={

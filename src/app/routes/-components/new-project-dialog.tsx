@@ -17,7 +17,7 @@ export function NewProjectDialog(props: {
       reposRoot={system.data?.reposRoot}
       onOpenSettings={() =>
         void navigate({
-          to: '/settings',
+          to: '/settings/general',
           hash: 'settings-repos-root',
           // The settings page scrolls its own column to the field.
           hashScrollIntoView: false,

@@ -26,7 +26,7 @@ export function KnowledgeLibrary() {
 
   return (
     <section aria-labelledby="knowledge-heading" className="flex flex-col gap-2.5">
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div className="flex flex-col gap-0.5">
           <h2 id="knowledge-heading" className="text-sm font-semibold">
             Knowledge

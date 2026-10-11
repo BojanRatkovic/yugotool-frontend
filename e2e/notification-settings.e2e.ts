@@ -16,6 +16,7 @@ const settings: Settings = {
   reposRoot: null,
   anthropicApiKeyHint: null,
   anthropicApiKeySource: null,
+  defaultClaudeAccountId: null,
   notificationExternal: {
     gate_waiting: true,
     run_failed: true,
@@ -69,7 +70,7 @@ test('a notification kind can be sent outside the app or kept in the bell', asyn
       return json(route, { error: { code: 'not_mocked', message: path } }, 404)
     },
   )
-  await page.goto('/settings')
+  await page.goto('/settings/notifications')
   const section = page.getByRole('region', { name: 'Notification kinds' })
   await expect(section).toBeVisible()
 

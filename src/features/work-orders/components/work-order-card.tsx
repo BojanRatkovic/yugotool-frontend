@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/context-menu'
 import { CiBadge } from '@/components/ci-badge'
 import { PrLink } from '@/components/pr-link'
+import { SourceLink } from '@/components/source-link'
 import {
   canDeleteWorkOrder,
   DeleteWorkOrderDialog,
@@ -135,6 +136,7 @@ function CardBody({
       ) : (
         <StatusChip status={workOrder.status} label={stopped ?? undefined} />
       )}
+      {workOrder.source == null ? null : <SourceLink source={workOrder.source} />}
       {hub === null ? null : <HubChips workOrder={workOrder} hub={hub} />}
       <PipelineStrip workOrder={workOrder} stations={stations} />
       {workOrder.branch === null && workOrder.prUrl == null && !committedLocally ? null : (

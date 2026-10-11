@@ -140,7 +140,7 @@ export function ClaudeAccountsSection({ system }: { system: SystemInfo | undefin
 
   return (
     <section aria-label="Claude accounts" className="flex flex-col gap-2.5">
-      <div className="flex items-end gap-3">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-end">
         <div className="flex flex-col gap-0.5">
           <h2 className="text-sm font-semibold">Claude accounts</h2>
           <p className="text-[0.8125rem] text-muted-foreground">
@@ -151,7 +151,7 @@ export function ClaudeAccountsSection({ system }: { system: SystemInfo | undefin
           type="button"
           size="sm"
           variant="outline"
-          className="ml-auto"
+          className="sm:ml-auto"
           onClick={() => setDialog({ kind: 'add' })}
         >
           <Plus aria-hidden="true" />

@@ -32,6 +32,9 @@ import {
 } from '@/features/claude-accounts/components/project-account'
 import { systemQueries } from '@/features/system/api/system-queries'
 import { NewWorkOrderDialog } from '@/features/work-orders/components/new-work-order-dialog'
+import { productiveQueries } from '@/features/integrations/api/productive-queries'
+import { ProductiveImportDialog } from '@/features/integrations/components/productive-import-dialog'
+import { ProductiveMark } from '@/components/productive-mark'
 import { WorkOrderBoard } from '@/features/work-orders/components/work-order-board'
 import { isTypingTarget } from '@/lib/shortcuts'
 
@@ -57,6 +60,8 @@ const searchSchema = z.object({
   run: z.string().optional().catch(undefined),
   /** "New work order" dialog open. */
   new: z.boolean().optional().catch(undefined),
+  /** "Import from Productive" dialog open (spec 0019). */
+  import: z.literal('productive').optional().catch(undefined),
 })
 
 export const Route = createFileRoute('/projects/$projectId/')({
@@ -103,6 +108,12 @@ function ProjectPage() {
 
   const setNew = (open: boolean) =>
     void navigate({ search: (prev) => ({ ...prev, new: open ? true : undefined }) })
+  const setImport = (open: boolean) =>
+    void navigate({
+      search: (prev) => ({ ...prev, new: undefined, import: open ? 'productive' : undefined }),
+    })
+  const productive = useQuery(productiveQueries.status())
+  const productiveConnected = productive.data?.connection != null
   const openWorkOrder = (id: string | undefined) =>
     void navigate({
       search: (prev) => ({
@@ -393,7 +404,7 @@ function ProjectPage() {
         knowledge={
           <ProjectKnowledgeSettings
             projectId={projectId}
-            onManage={() => void navigate({ to: '/settings', hash: 'knowledge-heading' })}
+            onManage={() => void navigate({ to: '/settings/knowledge' })}
           />
         }
         onAutoDetected={() =>
@@ -406,6 +417,26 @@ function ProjectPage() {
         open={search.new === true}
         onOpenChange={setNew}
         repos={hubRepos}
+        headerAction={
+          productiveConnected ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+              onClick={() => setImport(true)}
+            >
+              <ProductiveMark className="size-3.5" />
+              <span className="hidden sm:inline">Import from Productive</span>
+              <span className="sm:hidden">Import</span>
+            </Button>
+          ) : null
+        }
+      />
+      <ProductiveImportDialog
+        projectId={projectId}
+        open={search.import === 'productive'}
+        onOpenChange={setImport}
       />
     </div>
   )
