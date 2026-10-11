@@ -3,11 +3,9 @@ import { z } from 'zod'
 
 import { apiClient } from '@/lib/api-client'
 import {
-  accountPlanUsageSchema,
   claudeAccountLoginSchema,
   claudeAccountSchema,
   discoveredAccountSchema,
-  type AccountPlanUsage,
   type ClaudeAccount,
   type ClaudeAccountLogin,
   type CreateClaudeAccount,
@@ -28,10 +26,6 @@ async function getDiscovered(): Promise<DiscoveredAccount[]> {
 
 async function getLogin(id: string): Promise<ClaudeAccountLogin> {
   return claudeAccountLoginSchema.parse(await apiClient.get(`/claude-accounts/logins/${id}`))
-}
-
-async function getUsageByAccount(): Promise<AccountPlanUsage[]> {
-  return z.array(accountPlanUsageSchema).parse(await apiClient.get('/system/usage/accounts'))
 }
 
 export const claudeAccountQueries = {
@@ -56,15 +50,6 @@ export const claudeAccountQueries = {
       queryKey: [...queryKeys.claudeAccounts(), 'login', id] as const,
       queryFn: () => getLogin(id),
       refetchInterval: (query) => (query.state.data?.state === 'pending' ? 1_000 : false),
-      retry: 1,
-    }),
-  /** Plan usage per account, for the meter's popover (spec 0016). */
-  usage: () =>
-    queryOptions({
-      queryKey: [...queryKeys.systemUsage(), 'accounts'] as const,
-      queryFn: getUsageByAccount,
-      staleTime: 30_000,
-      refetchInterval: 60_000,
       retry: 1,
     }),
 }
@@ -136,5 +121,16 @@ export function useSubmitLoginCode() {
 export function useCancelLogin() {
   return useMutation({
     mutationFn: (id: string) => apiClient.delete(`/claude-accounts/logins/${id}`),
+  })
+}
+
+/** The account a project's sessions run on; null = the default (spec 0016). */
+export function useSetProjectAccount(projectId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (claudeAccountId: string | null) =>
+      apiClient.patch(`/projects/${projectId}`, { claudeAccountId }),
+    // The projects collection is backed by this key.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.projects() }),
   })
 }

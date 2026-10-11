@@ -1,11 +1,14 @@
 import { queryOptions } from '@tanstack/react-query'
+import { z } from 'zod'
 
 import { apiClient } from '@/lib/api-client'
 import {
+  accountPlanUsageSchema,
   dispatcherStateSchema,
   doctorReportSchema,
   planUsageSchema,
   systemInfoSchema,
+  type AccountPlanUsage,
   type DispatcherState,
   type DoctorReport,
   type PlanUsage,
@@ -21,6 +24,10 @@ async function getSystemInfo(): Promise<SystemInfo> {
 async function getPlanUsage(): Promise<PlanUsage> {
   const data = await apiClient.get('/system/usage')
   return planUsageSchema.parse(data)
+}
+
+async function getUsageByAccount(): Promise<AccountPlanUsage[]> {
+  return z.array(accountPlanUsageSchema).parse(await apiClient.get('/system/usage/accounts'))
 }
 
 async function getDoctorReport(): Promise<DoctorReport> {
@@ -58,6 +65,14 @@ export const systemQueries = {
       queryKey: queryKeys.system(),
       queryFn: getSystemInfo,
       staleTime: 5 * 60_000,
+      retry: 1,
+    }),
+  /** Every Claude account's plan, for the meter's popover (spec 0016). Fetched when opened. */
+  usageByAccount: () =>
+    queryOptions({
+      queryKey: [...queryKeys.systemUsage(), 'accounts'] as const,
+      queryFn: getUsageByAccount,
+      staleTime: 30_000,
       retry: 1,
     }),
   /** claude.ai plan limits. The API caches for 60s, so polling faster is pointless. */

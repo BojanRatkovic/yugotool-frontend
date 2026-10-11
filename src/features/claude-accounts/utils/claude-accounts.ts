@@ -32,3 +32,23 @@ export function shortPath(dir: string): string {
 export function addableDirs(found: DiscoveredAccount[]): DiscoveredAccount[] {
   return found.filter((dir) => dir.loggedIn && dir.accountId === null)
 }
+
+/** "ana@acme.io" → "ana@acme": short enough for a chip. */
+export function shortEmail(email: string): string {
+  const [user, domain] = email.split('@')
+  if (user === undefined || domain === undefined) return email
+  return `${user}@${domain.split('.')[0] ?? domain}`
+}
+
+/**
+ * The account a project shows a chip for: its own, unless that is the default
+ * anyway (the chip marks the exception). Null: no chip.
+ */
+export function projectAccount(
+  accounts: ClaudeAccount[],
+  accountId: string | null,
+): ClaudeAccount | null {
+  if (accountId === null) return null
+  const account = accounts.find((a) => a.id === accountId)
+  return account === undefined || account.isDefault ? null : account
+}

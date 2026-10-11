@@ -109,6 +109,7 @@ export function ProjectSettingsSheet({
   onAutoDetected,
   onDeleted,
   knowledge,
+  account,
 }: {
   project: Project | undefined
   /** Open on this section; undefined = closed. */
@@ -123,6 +124,8 @@ export function ProjectSettingsSheet({
   onDeleted: () => Promise<void>
   /** The Knowledge tab's content (composed by the route: it lives in the knowledge feature). */
   knowledge?: ReactNode
+  /** General → Claude account control (composed by the route: the claude-accounts feature). */
+  account?: ReactNode
 }) {
   const open = section !== undefined
   const kind = project?.kind ?? 'repo'
@@ -202,7 +205,7 @@ export function ProjectSettingsSheet({
                 {knowledge}
               </TabsContent>
               <TabsContent value="general" className="flex min-h-0 flex-1 flex-col">
-                <GeneralSettings project={project} onDeleted={onDeleted} />
+                <GeneralSettings project={project} onDeleted={onDeleted} account={account} />
               </TabsContent>
             </>
           )}
@@ -257,9 +260,11 @@ export function PreviewStatusChip({
 function GeneralSettings({
   project,
   onDeleted,
+  account,
 }: {
   project: Project
   onDeleted: () => Promise<void>
+  account?: ReactNode
 }) {
   const [deleting, setDeleting] = useState(false)
   return (
@@ -294,6 +299,14 @@ function GeneralSettings({
             <>
               <dt className="text-muted-foreground">Base branch</dt>
               <dd className="font-mono text-xs">{project.baseBranch}</dd>
+            </>
+          )}
+          {account === undefined ? null : (
+            <>
+              <dt className="text-muted-foreground">
+                <label htmlFor="project-claude-account">Claude account</label>
+              </dt>
+              <dd className="min-w-0">{account}</dd>
             </>
           )}
         </dl>

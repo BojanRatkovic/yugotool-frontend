@@ -26,6 +26,10 @@ import {
 } from '@/features/projects/components/project-settings-sheet'
 import { ProjectKnowledgeSettings } from '@/features/knowledge/components/project-knowledge-settings'
 import { ProjectStats } from '@/features/projects/components/project-stats'
+import {
+  ProjectAccountChip,
+  ProjectAccountSelect,
+} from '@/features/claude-accounts/components/project-account'
 import { systemQueries } from '@/features/system/api/system-queries'
 import { NewWorkOrderDialog } from '@/features/work-orders/components/new-work-order-dialog'
 import { WorkOrderBoard } from '@/features/work-orders/components/work-order-board'
@@ -226,6 +230,7 @@ function ProjectPage() {
               ) : (
                 <BranchChip branch={project.baseBranch} />
               )}
+              <ProjectAccountChip accountId={project.claudeAccountId} />
             </>
           )}
         </div>
@@ -376,6 +381,15 @@ function ProjectPage() {
         onOpenChange={(open) => setSettings(open)}
         autoDetect={search.detect === true}
         onDeleted={() => navigate({ to: '/' })}
+        account={
+          project === undefined ? undefined : (
+            <ProjectAccountSelect
+              projectId={projectId}
+              accountId={project.claudeAccountId}
+              machineEmail={system.data?.claudeLogin?.email ?? null}
+            />
+          )
+        }
         knowledge={
           <ProjectKnowledgeSettings
             projectId={projectId}

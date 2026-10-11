@@ -4,6 +4,8 @@ import {
   accountDetail,
   addableDirs,
   planLabel,
+  projectAccount,
+  shortEmail,
   shortPath,
 } from '@/features/claude-accounts/utils/claude-accounts'
 import type { ClaudeAccount } from '@/lib/contracts'
@@ -75,5 +77,21 @@ describe('claude account rows (spec 0016)', () => {
       },
     ]
     expect(addableDirs(found).map((d) => d.configDir)).toEqual(['/u/.claude-p'])
+  })
+})
+
+describe('project account chip (spec 0016)', () => {
+  it('shortens an email to user@domain', () => {
+    expect(shortEmail('ana@acme.io')).toBe('ana@acme')
+    expect(shortEmail('nobody')).toBe('nobody')
+  })
+
+  it('shows only an account that is not the default', () => {
+    const own = account({ id: 'a' })
+    const fallback = account({ id: 'b', isDefault: true })
+    expect(projectAccount([own, fallback], 'a')).toBe(own)
+    expect(projectAccount([own, fallback], 'b')).toBeNull()
+    expect(projectAccount([own, fallback], null)).toBeNull()
+    expect(projectAccount([own, fallback], 'gone')).toBeNull()
   })
 })
