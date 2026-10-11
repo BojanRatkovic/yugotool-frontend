@@ -489,7 +489,12 @@ export type ProjectRemote = z.infer<typeof projectRemoteSchema>
 export const previewSessionSchema = z.object({
   savedAt: isoDate,
   cookieCount: z.number().int(),
-  /** Cookie domains and localStorage origins, for "signed in to …". */
+  /** localStorage entries; apps that keep their token there have no cookies at all. */
+  storageKeys: z.number().int(),
+  /**
+   * Cookie domains and localStorage hosts, for "signed in to …". Without
+   * ports: the worker moves the session to each preview's ports.
+   */
   domains: z.array(z.string()),
 })
 export type PreviewSession = z.infer<typeof previewSessionSchema>
