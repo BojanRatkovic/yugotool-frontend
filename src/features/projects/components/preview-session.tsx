@@ -337,7 +337,6 @@ function SessionCard({ session }: { session: PreviewSession | null }) {
     )
   }
   const domains = session.domains.join(', ')
-  const cookies = `${session.cookieCount} ${session.cookieCount === 1 ? 'cookie' : 'cookies'}`
   return (
     <StateCard
       tone="neutral"
@@ -346,7 +345,7 @@ function SessionCard({ session }: { session: PreviewSession | null }) {
         <span title={domains || undefined}>
           <span className="font-medium">Signed in</span>
           <span className="text-muted-foreground">
-            {` · saved ${formatRelative(session.savedAt)} · ${cookies}`}
+            {` · saved ${formatRelative(session.savedAt)} · ${storedSummary(session)}`}
             {domains === '' ? null : ' · '}
           </span>
           {domains === '' ? null : <span className="font-mono text-xs">{domains}</span>}
@@ -355,6 +354,17 @@ function SessionCard({ session }: { session: PreviewSession | null }) {
       detail="Test preview, QA screenshots and the QA browser start with this session. If it expires, sign in again."
     />
   )
+}
+
+/** "2 cookies, 4 local storage keys": only what the session actually holds. */
+function storedSummary({ cookieCount, storageKeys }: PreviewSession): string {
+  const parts = [
+    cookieCount > 0 ? `${cookieCount} ${cookieCount === 1 ? 'cookie' : 'cookies'}` : null,
+    storageKeys > 0
+      ? `${storageKeys} local storage ${storageKeys === 1 ? 'key' : 'keys'}`
+      : null,
+  ].filter((part) => part !== null)
+  return parts.length === 0 ? 'nothing stored' : parts.join(', ')
 }
 
 function ActiveSignIn({ signIn }: { signIn: PreviewSignIn }) {

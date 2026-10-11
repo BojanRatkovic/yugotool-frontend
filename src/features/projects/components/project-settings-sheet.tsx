@@ -678,7 +678,8 @@ function PreviewSettings({
                   (also as the <code className="rounded-sm bg-muted px-1 font-mono">PORT</code>{' '}
                   env var) — serve the app on it.{' '}
                   <code className="rounded-sm bg-muted px-1 font-mono">$PORT2</code> is a second
-                  free port, e.g. for a mock API; both are also replaced in env values.
+                  free port for a mock API: the QA browser reaches only these two. Both are also
+                  replaced in env values.
                 </p>
               </FormField>
             )}
