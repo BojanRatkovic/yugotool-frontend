@@ -4,7 +4,7 @@
 
 # YugoTool · frontend
 
-**The UI of [YugoTool](https://github.com/cherry-it/yugotool-backend), a local software factory for Claude Code.**<br />
+**The UI of [YugoTool](https://github.com/BojanRatkovic/yugotool-backend), a local software factory for Claude Code.**<br />
 A board of work orders moving down an assembly line of agents, a canvas for the line, and a live run panel with activity, diffs, QA screenshots and gate approvals.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-D7262E?style=flat-square)](LICENSE)
@@ -15,7 +15,7 @@ A board of work orders moving down an assembly line of agents, a canvas for the 
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![React Flow](https://img.shields.io/badge/React%20Flow-12-FF0072?style=flat-square)](https://reactflow.dev)
 
-[Backend & desktop app](https://github.com/cherry-it/yugotool-backend) · [Run it](#run-it) · [Map](#map) · [Contributing](#contributing)
+[Backend & desktop app](https://github.com/BojanRatkovic/yugotool-backend) · [Run it](#run-it) · [Map](#map) · [Contributing](#contributing)
 
 <br />
 
@@ -49,7 +49,7 @@ A board of work orders moving down an assembly line of agents, a canvas for the 
 
 ## Run it
 
-The UI needs the YugoTool API. Start it from [yugotool-backend](https://github.com/cherry-it/yugotool-backend#development) first, then:
+The UI needs the YugoTool API. Start it from [yugotool-backend](https://github.com/BojanRatkovic/yugotool-backend#development) first, then:
 
 ```bash
 pnpm install
