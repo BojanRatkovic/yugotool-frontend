@@ -13,7 +13,7 @@ import {
 } from '@/features/pull-requests/api/pr-mutations'
 import { prQueries } from '@/features/pull-requests/api/pr-queries'
 import { PrPreviousFindings } from '@/features/pull-requests/components/pr-previous-findings'
-import { ReviewText } from '@/features/pull-requests/components/review-text'
+import { ReviewText } from '@/components/review-text'
 import {
   defaultSelection,
   findingPlace,

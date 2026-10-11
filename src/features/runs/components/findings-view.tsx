@@ -7,6 +7,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
+import { Inline, leadSentence, ReviewText } from '@/components/review-text'
 import { StationIcon } from '@/components/station-icon'
 import type { Finding, Run, Station } from '@/lib/contracts'
 import { cn } from '@/lib/utils'
@@ -26,6 +27,36 @@ const SEVERITIES: {
   },
   { key: 'minor', label: 'Minor', icon: Info, iconClass: 'text-muted-foreground' },
 ]
+
+/** The verdict's first sentence as its headline, the evidence under it. */
+function VerdictSummary({ summary }: { summary: string }) {
+  const [lead, rest] = leadSentence(summary)
+  return (
+    <div className="flex max-w-[72ch] flex-col gap-1 text-[0.8125rem] leading-relaxed">
+      <p className="font-medium">
+        <Inline text={lead} />
+      </p>
+      {rest === '' ? null : <ReviewText text={rest} className="text-foreground/80" />}
+    </div>
+  )
+}
+
+/** The claim as a headline, the reasoning muted under it. */
+function FindingMessage({ message }: { message: string }) {
+  const [lead, rest] = leadSentence(message)
+  return (
+    <>
+      <p className="text-[0.8125rem] leading-5 font-medium">
+        <Inline text={lead} />
+      </p>
+      {rest === '' ? null : (
+        <p className="max-w-[80ch] text-[0.8125rem] leading-relaxed text-muted-foreground">
+          <Inline text={rest} />
+        </p>
+      )}
+    </>
+  )
+}
 
 /** Validator verdicts of the run: summary first, then findings grouped by severity. */
 export function FindingsView({ run, stations }: { run: Run; stations: Station[] }) {
@@ -75,9 +106,7 @@ export function FindingsView({ run, stations }: { run: Run; stations: Station[] 
                   {passed ? 'Passed' : 'Failed'}
                 </span>
               </div>
-              <p className="max-w-[72ch] text-[0.8125rem] leading-relaxed text-foreground/90">
-                {verdict.summary}
-              </p>
+              <VerdictSummary summary={verdict.summary} />
             </header>
             {SEVERITIES.map((severity) => {
               const findings = verdict.findings.filter(
@@ -106,7 +135,7 @@ export function FindingsView({ run, stations }: { run: Run; stations: Station[] 
                           className={cn('mt-0.5 size-3.5', severity.iconClass)}
                         />
                         <div className="flex min-w-0 flex-col gap-0.5">
-                          <p className="text-[0.8125rem]">{finding.message}</p>
+                          <FindingMessage message={finding.message} />
                           {finding.file === null ? null : (
                             <p className="truncate font-mono text-[0.6875rem] text-muted-foreground">
                               {finding.file}

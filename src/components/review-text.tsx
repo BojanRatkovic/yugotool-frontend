@@ -3,14 +3,17 @@ import { Fragment } from 'react'
 import { cn } from '@/lib/utils'
 
 /** `code` and **bold** inside a line; everything else stays plain text. */
-function Inline({ text }: { text: string }) {
+export function Inline({ text }: { text: string }) {
   const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g)
   return (
     <>
       {parts.map((part, index) => {
         if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
           return (
-            <code key={index} className="rounded-sm bg-muted px-1 font-mono text-[0.75rem]">
+            <code
+              key={index}
+              className="rounded-sm border border-border/60 bg-muted px-1 py-px font-mono text-[0.75rem] text-foreground"
+            >
               {part.slice(1, -1)}
             </code>
           )
@@ -91,4 +94,22 @@ export function ReviewText({ text, className }: { text: string; className?: stri
   }
   flush()
   return <div className={cn('flex flex-col gap-2 leading-5', className)}>{blocks}</div>
+}
+
+/**
+ * The first sentence of a finding and the rest, so the claim reads as a
+ * headline. Pure. Never splits inside `code` (`e.g. foo.ts`); one sentence
+ * comes back whole.
+ */
+export function leadSentence(text: string): [string, string] {
+  const trimmed = text.trim()
+  let inCode = false
+  for (let i = 0; i < trimmed.length - 1; i++) {
+    const char = trimmed.charAt(i)
+    if (char === '`') inCode = !inCode
+    else if (!inCode && '.!?'.includes(char) && /\s/.test(trimmed.charAt(i + 1))) {
+      return [trimmed.slice(0, i + 1), trimmed.slice(i + 1).trim()]
+    }
+  }
+  return [trimmed, '']
 }

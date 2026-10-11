@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { usePostYugoToolFindings } from '@/features/pull-requests/api/pr-mutations'
-import { ReviewText } from '@/features/pull-requests/components/review-text'
+import { ReviewText } from '@/components/review-text'
 import { errorMessage } from '@/lib/api-client'
 import type { ReviewFinding } from '@/lib/contracts'
 import { cn } from '@/lib/utils'
