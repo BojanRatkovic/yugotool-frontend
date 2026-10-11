@@ -69,6 +69,11 @@ describe('/ skill autocomplete (spec 0015)', () => {
     expect(removeMention(text, 'work:development')).toBe(
       'Follow and /copy, not src/copy or /gone:skill or /health.',
     )
+    expect(skillMentions('Follow /copy. Then /work:development, and /copy.md', known)).toEqual([
+      'copy',
+      'work:development',
+    ])
+    expect(unknownMentions('See /gone:skill.', known)).toEqual(['gone:skill'])
     expect(skillGroup(skills[0])).toBe('Hub')
     expect(skillGroup(skills[2])).toBe('Repo · frontend')
     expect(skillGroup(skill('copy'))).toBe('This repo')

@@ -62,7 +62,10 @@ export function insertSkill(
 /** Removes every `/invocation` mention (and one space after it). */
 export function removeMention(text: string, invocation: string): string {
   const escaped = invocation.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
-  return text.replaceAll(new RegExp(String.raw`(^|\s)/${escaped}(?![\w/:-]) ?`, 'g'), '$1')
+  return text.replaceAll(
+    new RegExp(String.raw`(^|\s)/${escaped}(?![\w/:-]|\.[\w-]) ?`, 'g'),
+    '$1',
+  )
 }
 
 /**
@@ -73,7 +76,9 @@ export function removeMention(text: string, invocation: string): string {
 export function unknownMentions(text: string, known: readonly string[]): string[] {
   const names = new Set(known)
   const found: string[] = []
-  for (const match of text.matchAll(/(?:^|\s)\/([\w.-]+:[\w.-]+)(?![\w/:-])/g)) {
+  for (const match of text.matchAll(
+    /(?:^|\s)\/([\w-]+(?:\.[\w-]+)*:[\w-]+(?:\.[\w-]+)*)(?![\w/:-]|\.[\w-])/g,
+  )) {
     const name = match[1]
     if (name !== undefined && !names.has(name) && !found.includes(name)) found.push(name)
   }

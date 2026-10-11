@@ -453,7 +453,9 @@ export type ProjectSkill = z.infer<typeof projectSkillSchema>
 export function skillMentions(text: string, known: readonly string[]): string[] {
   const names = new Set(known)
   const found: string[] = []
-  for (const match of text.matchAll(/(?:^|\s)\/([\w.-]+(?::[\w.-]+)?)(?![\w/:-])/g)) {
+  for (const match of text.matchAll(
+    /(?:^|\s)\/([\w-]+(?:\.[\w-]+)*(?::[\w-]+(?:\.[\w-]+)*)?)(?![\w/:-]|\.[\w-])/g,
+  )) {
     const name = match[1]
     if (name !== undefined && names.has(name) && !found.includes(name)) found.push(name)
   }

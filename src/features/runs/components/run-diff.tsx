@@ -101,12 +101,24 @@ function FilePatch({ file }: { file: DiffFile }) {
 
 /** Worktree diff against the base branch: file list + unified patch with line numbers. */
 export function RunDiff({ run }: { run: Run }) {
-  const diff = useQuery(runQueries.diff(run.id))
+  // A hub run plans in the hub first; its repo's worktree comes after the plan gate (spec 0014).
+  const noWorktreeYet =
+    run.worktreePath === null &&
+    (run.status === 'running' || run.status === 'awaiting_approval')
+  const diff = useQuery({ ...runQueries.diff(run.id), enabled: !noWorktreeYet })
   const files = useMemo(
     () => (diff.data === undefined ? [] : parsePatch(diff.data.patch)),
     [diff.data],
   )
 
+  if (noWorktreeYet) {
+    return (
+      <p className="p-4 text-sm text-muted-foreground">
+        No changes yet. The worktree is created when work on the code starts: in a hub, after
+        you approve the plan.
+      </p>
+    )
+  }
   if (diff.isPending) {
     return (
       <div className="grid grid-cols-[15rem_1fr] gap-0" aria-busy="true">
