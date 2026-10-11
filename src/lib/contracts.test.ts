@@ -86,11 +86,11 @@ describe('claude account contracts (spec 0016)', () => {
     expect(account).not.toHaveProperty('apiKey')
   })
 
-  it('needs a label to sign in and a key for an API key account', () => {
+  it('needs a dir for a config dir account and a key for an API key account', () => {
     expect(createClaudeAccountSchema.safeParse({ kind: 'login', label: 'Work' }).success).toBe(
-      true,
+      false,
     )
-    expect(createClaudeAccountSchema.safeParse({ kind: 'login' }).success).toBe(false)
+    expect(createClaudeAccountSchema.safeParse({ kind: 'config_dir' }).success).toBe(false)
     expect(createClaudeAccountSchema.safeParse({ kind: 'api_key', label: 'Key' }).success).toBe(
       false,
     )
