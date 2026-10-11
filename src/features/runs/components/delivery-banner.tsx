@@ -93,12 +93,14 @@ export function DeliveryBanner({
 
 /**
  * Toasts once when the open work order gets its PR (the run delivered while
- * you watched). Not on mount: an order that already had a PR stays quiet.
+ * you watched). Not on mount, and not when the order finishes loading:
+ * `undefined` while it loads, so only a loaded order without a PR (`null`)
+ * that then gets one toasts.
  */
-export function useDeliveredToast(prUrl: string | null) {
+export function useDeliveredToast(prUrl: string | null | undefined) {
   const previous = useRef(prUrl)
   useEffect(() => {
-    if (previous.current === null && prUrl !== null) {
+    if (previous.current === null && typeof prUrl === 'string') {
       const pr = parsePullRequest(prUrl)
       toast.success(`Delivered · ${pullRequestLabel(pr, 'Pull request')} opened`, {
         action: { label: 'Open PR', onClick: () => window.open(prUrl, '_blank', 'noopener') },

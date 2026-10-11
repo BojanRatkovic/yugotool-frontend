@@ -21,7 +21,7 @@ import { AppShell } from '@/components/layout/app-shell'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Kbd } from '@/components/ui/kbd'
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
-import { Toaster } from '@/components/ui/sonner'
+import { AppToaster } from '@/components/app-toaster'
 import { env } from '@/config/env'
 import { NewProjectDialog } from '@/app/routes/-components/new-project-dialog'
 import { ProjectNav, useProject } from '@/features/projects/components/project-nav'
@@ -114,7 +114,7 @@ function RootLayout() {
         <Outlet />
         <CommandPalette needsYou={items} />
       </AppShell>
-      <Toaster position="bottom-right" />
+      <AppToaster position="bottom-right" />
       {env.DEVTOOLS ? <TanStackRouterDevtools position="bottom-left" /> : null}
     </>
   )

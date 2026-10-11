@@ -147,7 +147,7 @@ export function WorkOrderPanel({
     (state.tab === 'shifts' && !showShifts) || (state.tab === 'qa' && !showQa)
       ? 'activity'
       : state.tab
-  useDeliveredToast(workOrder?.prUrl ?? null)
+  useDeliveredToast(workOrder === undefined ? undefined : workOrder.prUrl)
   const project = useProject(projectId)
   const hubProject = project?.kind === 'hub' ? project : undefined
   // A hub run delivers from its repo (spec 0014); until it has one there is nothing to check.
