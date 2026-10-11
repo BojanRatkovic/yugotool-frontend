@@ -5,6 +5,7 @@ import {
   Blocks,
   BookOpen,
   type LucideIcon,
+  Palette,
   SlidersHorizontal,
   Stethoscope,
   UserRound,
@@ -24,6 +25,7 @@ interface NavItem {
 /** Settings pages, in nav order. Every page is its own route (`/settings/<page>`). */
 export const SETTINGS_NAV = [
   { to: '/settings/general', label: 'General', icon: SlidersHorizontal },
+  { to: '/settings/appearance', label: 'Appearance', icon: Palette },
   { to: '/settings/accounts', label: 'Claude accounts', icon: UserRound },
   { to: '/settings/notifications', label: 'Notifications', icon: Bell },
   { to: '/settings/knowledge', label: 'Knowledge', icon: BookOpen },

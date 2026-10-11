@@ -18,9 +18,9 @@ import {
   useRunningByProject,
 } from '@/app/routes/-components/use-needs-you'
 import { AppShell } from '@/components/layout/app-shell'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { AppToaster } from '@/components/app-toaster'
 import { env } from '@/config/env'
 import { NewProjectDialog } from '@/app/routes/-components/new-project-dialog'
@@ -43,8 +43,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootLayout,
 })
 
-/** Sidebar link to /settings; `⌘,` opens it from anywhere. */
-function SettingsLink() {
+/** Gear in the sidebar's bottom row, opening /settings; `⌘,` opens it from anywhere. */
+function SettingsButton() {
   const navigate = useNavigate()
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -57,17 +57,23 @@ function SettingsLink() {
   }, [navigate])
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <SidebarMenuButton asChild className="h-8">
-          <Link to="/settings" activeProps={{ 'data-active': true }}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          asChild
+          variant="ghost"
+          size="icon-xs"
+          className="text-muted-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-foreground"
+        >
+          <Link to="/settings" aria-label="Settings" activeProps={{ 'aria-current': 'page' }}>
             <Settings aria-hidden="true" />
-            <span className="flex-1">Settings</span>
-            <Kbd className="h-4">{IS_MAC ? '⌘,' : 'Ctrl+,'}</Kbd>
           </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    </SidebarMenu>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="flex items-center gap-2">
+        Settings <Kbd className="h-4">{IS_MAC ? '⌘,' : 'Ctrl+,'}</Kbd>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -101,12 +107,11 @@ function RootLayout() {
         headerActions={<NotificationBell onOpen={openPath} />}
         footer={
           <>
-            <SettingsLink />
             <DispatcherCard />
             <PlanUsageCard />
             <div className="flex items-center justify-between">
               <AuthChip />
-              <ThemeToggle />
+              <SettingsButton />
             </div>
           </>
         }

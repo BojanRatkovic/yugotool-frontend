@@ -92,7 +92,12 @@ export function ProjectNav({
     <SidebarMenu>
       {projects.map((project) => (
         <SidebarMenuItem key={project.id}>
-          <SidebarMenuButton asChild tooltip={project.repoPath} className="group/project h-8">
+          {/* pr-8 on every row: branch badges line up whether or not a row has a chevron. */}
+          <SidebarMenuButton
+            asChild
+            tooltip={project.repoPath}
+            className="group/project h-8 pr-8"
+          >
             <Link
               to="/projects/$projectId"
               params={{ projectId: project.id }}
