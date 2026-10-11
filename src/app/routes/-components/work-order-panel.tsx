@@ -13,6 +13,7 @@ import { useDeliveredToast } from '@/features/runs/components/delivery-banner'
 import { FindingsView, findingCount } from '@/features/runs/components/findings-view'
 import { GateBanner, type HubPlanGate } from '@/features/runs/components/gate-banner'
 import { latestResearch, suggestedRepo } from '@/features/runs/utils/hub-plan'
+import { ProjectAccountChip } from '@/features/claude-accounts/components/project-account'
 import { useProject } from '@/features/projects/components/project-nav'
 import { useSplitWorkOrder } from '@/features/work-orders/api/work-order-mutations'
 import { PipelineStepper } from '@/features/runs/components/pipeline-stepper'
@@ -459,6 +460,9 @@ export function WorkOrderPanel({
               repo={hubProject === undefined ? undefined : (deliveryRepo ?? null)}
               worktreePath={run?.worktreePath ?? null}
             />
+            <div className="mt-2 empty:hidden">
+              <ProjectAccountChip accountId={project?.claudeAccountId ?? null} />
+            </div>
           </RailSection>
           {run === undefined ? null : (
             <RailSection title="Cost & context">

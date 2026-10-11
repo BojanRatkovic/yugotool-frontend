@@ -70,6 +70,7 @@ export function CreateProjectDialog({
         deliveryDefault: 'local',
         hubPath: hub ? value.repoPath.trim() : null,
         repos: [],
+        claudeAccountId: null,
         createdAt: now,
         updatedAt: now,
       })

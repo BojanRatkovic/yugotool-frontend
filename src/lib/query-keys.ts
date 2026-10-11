@@ -46,6 +46,8 @@ export const queryKeys = {
   /** Under `system` so saving the repos folder refreshes the repos check too. */
   systemDoctor: () => ['system', 'doctor'] as const,
   settings: () => ['settings'] as const,
+  /** Settings → Claude accounts (spec 0016); SSE `claude_accounts` invalidates the root. */
+  claudeAccounts: () => ['claude-accounts'] as const,
   dispatcher: () => ['dispatcher'] as const,
   /** The library and each project's choice from it; SSE `knowledge_sources` invalidates the root. */
   knowledge: () => ['knowledge'] as const,
