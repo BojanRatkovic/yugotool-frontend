@@ -1,6 +1,15 @@
 import { useLiveQuery } from '@tanstack/react-db'
-import { useNavigate, useParams } from '@tanstack/react-router'
-import { Columns3, FolderGit2, Moon, Plus, Settings, Workflow } from 'lucide-react'
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
+import {
+  Columns3,
+  FolderGit2,
+  Moon,
+  PanelRightClose,
+  PanelRightOpen,
+  Plus,
+  Settings,
+  Workflow,
+} from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 
@@ -19,6 +28,10 @@ import {
 import { projectsCollection } from '@/features/projects/api/projects-collection'
 import { NewProjectDialog } from '@/app/routes/-components/new-project-dialog'
 import { useWorkOrders } from '@/features/work-orders/api/use-work-order'
+import {
+  toggleDetailsRail,
+  useDetailsRailOpen,
+} from '@/features/work-orders/hooks/use-details-rail'
 import { IS_MAC } from '@/lib/shortcuts'
 import type { NeedsYouItem } from '@/app/routes/-components/use-needs-you'
 
@@ -57,6 +70,9 @@ export function CommandPalette({ needsYou = [] }: { needsYou?: readonly NeedsYou
   const { resolvedTheme, setTheme } = useTheme()
   const params = useParams({ strict: false })
   const projectId = 'projectId' in params ? params.projectId : undefined
+  const search = useSearch({ strict: false })
+  const workOrderOpen = projectId !== undefined && 'wo' in search && search.wo !== undefined
+  const railOpen = useDetailsRailOpen()
   const { data: projects } = useLiveQuery((q) =>
     q.from({ project: projectsCollection }).orderBy(({ project }) => project.name, 'asc'),
   )
@@ -164,6 +180,17 @@ export function CommandPalette({ needsYou = [] }: { needsYou?: readonly NeedsYou
                   <Workflow aria-hidden="true" />
                   Edit line
                 </CommandItem>
+                {workOrderOpen ? (
+                  <CommandItem onSelect={() => run(toggleDetailsRail)}>
+                    {railOpen ? (
+                      <PanelRightClose aria-hidden="true" />
+                    ) : (
+                      <PanelRightOpen aria-hidden="true" />
+                    )}
+                    {railOpen ? 'Hide work order details' : 'Show work order details'}
+                    <CommandShortcut>]</CommandShortcut>
+                  </CommandItem>
+                ) : null}
               </CommandGroup>
             )}
             <CommandGroup heading={projectId === undefined ? 'Actions' : undefined}>

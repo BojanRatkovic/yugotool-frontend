@@ -370,6 +370,8 @@ function ProjectPage() {
       >
         <SheetContent
           showCloseButton={false}
+          // The work order panel's shortcuts work inside its own sheet.
+          data-wo-sheet
           // Land focus on the panel itself, not the title field, so typing doesn't rename.
           onOpenAutoFocus={(event) => {
             event.preventDefault()
