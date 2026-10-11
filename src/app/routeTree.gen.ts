@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsRouteRouteImport } from './routes/settings/route'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsAccountsRouteImport } from './routes/settings/accounts'
+import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
 import { Route as SettingsDoctorRouteImport } from './routes/settings/doctor'
 import { Route as SettingsGeneralRouteImport } from './routes/settings/general'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings/integrations'
@@ -39,6 +40,11 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
 const SettingsAccountsRoute = SettingsAccountsRouteImport.update({
   id: '/accounts',
   path: '/accounts',
+  getParentRoute: () => SettingsRouteRoute,
+} as any)
+const SettingsAppearanceRoute = SettingsAppearanceRouteImport.update({
+  id: '/appearance',
+  path: '/appearance',
   getParentRoute: () => SettingsRouteRoute,
 } as any)
 const SettingsDoctorRoute = SettingsDoctorRouteImport.update({
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRouteRouteWithChildren
   '/settings/accounts': typeof SettingsAccountsRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/doctor': typeof SettingsDoctorRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/settings/accounts': typeof SettingsAccountsRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/doctor': typeof SettingsDoctorRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRouteRouteWithChildren
   '/settings/accounts': typeof SettingsAccountsRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/doctor': typeof SettingsDoctorRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/'
     | '/settings'
     | '/settings/accounts'
+    | '/settings/appearance'
     | '/settings/doctor'
     | '/settings/general'
     | '/settings/integrations'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/settings/accounts'
+    | '/settings/appearance'
     | '/settings/doctor'
     | '/settings/general'
     | '/settings/integrations'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '/'
     | '/settings'
     | '/settings/accounts'
+    | '/settings/appearance'
     | '/settings/doctor'
     | '/settings/general'
     | '/settings/integrations'
@@ -193,6 +205,13 @@ declare module '@tanstack/react-router' {
       path: '/accounts'
       fullPath: '/settings/accounts'
       preLoaderRoute: typeof SettingsAccountsRouteImport
+      parentRoute: typeof SettingsRouteRoute
+    }
+    '/settings/appearance': {
+      id: '/settings/appearance'
+      path: '/appearance'
+      fullPath: '/settings/appearance'
+      preLoaderRoute: typeof SettingsAppearanceRouteImport
       parentRoute: typeof SettingsRouteRoute
     }
     '/settings/doctor': {
@@ -249,6 +268,7 @@ declare module '@tanstack/react-router' {
 
 interface SettingsRouteRouteChildren {
   SettingsAccountsRoute: typeof SettingsAccountsRoute
+  SettingsAppearanceRoute: typeof SettingsAppearanceRoute
   SettingsDoctorRoute: typeof SettingsDoctorRoute
   SettingsGeneralRoute: typeof SettingsGeneralRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
@@ -259,6 +279,7 @@ interface SettingsRouteRouteChildren {
 
 const SettingsRouteRouteChildren: SettingsRouteRouteChildren = {
   SettingsAccountsRoute: SettingsAccountsRoute,
+  SettingsAppearanceRoute: SettingsAppearanceRoute,
   SettingsDoctorRoute: SettingsDoctorRoute,
   SettingsGeneralRoute: SettingsGeneralRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,

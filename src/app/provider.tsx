@@ -45,7 +45,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <ThemeProvider
       attribute="class"
       defaultTheme="dark"
-      enableSystem={false}
+      enableSystem
       // next-themes renders an inline anti-flash <script> meant for SSR; in this
       // client-only app it never runs and React 19 warns about it. A data-block
       // type keeps it inert and silences the warning.

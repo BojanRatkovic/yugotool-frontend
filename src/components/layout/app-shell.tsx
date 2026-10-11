@@ -35,7 +35,7 @@ export function BrandMark({ className }: { className?: string }) {
 }
 
 const SIDEBAR_STYLE: CSSProperties & Record<'--sidebar-width', string> = {
-  '--sidebar-width': '15rem',
+  '--sidebar-width': '16rem',
 }
 
 /** Sidebar + main area. Feature slots are composed at the app layer. */
@@ -49,7 +49,7 @@ export function AppShell({
   projects: ReactNode
   /** Small icon action next to the "Projects" label. */
   projectActions: ReactNode
-  /** Plan usage, auth, settings — pinned to the bottom. */
+  /** Dispatcher, plan usage, auth and settings — pinned to the bottom. */
   footer?: ReactNode
   /** App-wide actions top-right of the main area; pages place them via `<HeaderActions />`. */
   headerActions?: ReactNode
