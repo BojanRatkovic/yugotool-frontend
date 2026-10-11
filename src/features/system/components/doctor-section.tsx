@@ -49,7 +49,7 @@ export function DoctorSection() {
       aria-labelledby="doctor-heading"
       className="flex scroll-mt-4 flex-col gap-2.5"
     >
-      <div className="flex items-end gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex min-w-0 flex-col gap-0.5">
           <h2 id="doctor-heading" className="flex items-center gap-2 text-sm font-semibold">
             Doctor
@@ -60,7 +60,7 @@ export function DoctorSection() {
             run needs them.
           </p>
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3 sm:ml-auto">
           {report === undefined ? null : (
             <span
               className="text-xs text-muted-foreground tabular-nums"

@@ -4,7 +4,6 @@ import { CircleX, Stethoscope } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { systemQueries } from '@/features/system/api/system-queries'
-import { DOCTOR_ANCHOR } from '@/features/system/components/doctor-section'
 import { notReadyMessage } from '@/features/system/utils/doctor'
 
 /**
@@ -21,7 +20,7 @@ export function DoctorBanner() {
       <CircleX aria-hidden="true" className="size-4 shrink-0 text-status-failed" />
       <p className="min-w-0 flex-1 text-[0.8125rem] text-foreground">{message}</p>
       <Button asChild variant="outline" size="sm" className="shrink-0">
-        <Link to="/settings" hash={DOCTOR_ANCHOR} hashScrollIntoView={false}>
+        <Link to="/settings/doctor">
           <Stethoscope aria-hidden="true" />
           Open Doctor
         </Link>

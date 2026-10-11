@@ -33,15 +33,6 @@ export function toSettingsValues(settings: Settings): SettingsValues {
   }
 }
 
-/**
- * Remount key for the settings form: changes only when a field the form edits
- * changes on the server. Saving the API key bumps `updatedAt` but not these,
- * so it leaves an unsaved draft alone.
- */
-export function settingsFormKey(settings: Settings): string {
-  return JSON.stringify(toSettingsValues(settings))
-}
-
 const KEYS = [
   'maxConcurrentRuns',
   'pauseAtFiveHourPct',
@@ -56,6 +47,41 @@ const KEYS = [
   'reposRoot',
 ] as const satisfies readonly (keyof SettingsValues)[]
 
+export type SettingsKey = (typeof KEYS)[number]
+
+/** Settings → General's form: where repos live, the dispatcher, the night shift. */
+export const GENERAL_KEYS = [
+  'reposRoot',
+  'maxConcurrentRuns',
+  'pauseAtFiveHourPct',
+  'pauseAtWeeklyPct',
+  'nightShiftStart',
+  'nightShiftEnd',
+] as const satisfies readonly SettingsKey[]
+
+/** Settings → Notifications' form: where notices go. */
+export const CHANNEL_KEYS = [
+  'appUrl',
+  'desktopNotifications',
+  'slackWebhookUrl',
+  'telegramBotToken',
+  'telegramChatId',
+] as const satisfies readonly SettingsKey[]
+
+/**
+ * Remount key for a settings form: changes only when a field that form edits
+ * (`keys`) changes on the server. Saving another page's fields, the API key or
+ * a notification kind bumps `updatedAt` but not these, so it leaves an unsaved
+ * draft alone.
+ */
+export function settingsFormKey(
+  settings: Settings,
+  keys: readonly SettingsKey[] = KEYS,
+): string {
+  const values = toSettingsValues(settings)
+  return JSON.stringify(keys.map((key) => values[key]))
+}
+
 const NULLABLE = new Set<keyof SettingsValues>([
   'slackWebhookUrl',
   'telegramBotToken',
@@ -69,22 +95,37 @@ function normalize(key: keyof SettingsValues, value: SettingsValues[keyof Settin
   return trimmed === '' ? null : trimmed
 }
 
-/** Fields whose (normalized) value differs from the saved settings. */
-export function changedKeys(values: SettingsValues, saved: Settings): (keyof SettingsValues)[] {
+/** Fields (of `keys`) whose normalized value differs from the saved settings. */
+export function changedKeys(
+  values: SettingsValues,
+  saved: Settings,
+  keys: readonly SettingsKey[] = KEYS,
+): SettingsKey[] {
   const base = toSettingsValues(saved)
-  return KEYS.filter((key) => normalize(key, values[key]) !== normalize(key, base[key]))
+  return keys.filter((key) => normalize(key, values[key]) !== normalize(key, base[key]))
 }
 
-export function isSettingsDirty(values: SettingsValues, saved: Settings): boolean {
-  return changedKeys(values, saved).length > 0
+export function isSettingsDirty(
+  values: SettingsValues,
+  saved: Settings,
+  keys: readonly SettingsKey[] = KEYS,
+): boolean {
+  return changedKeys(values, saved, keys).length > 0
 }
 
 /**
  * Only the fields that differ from the saved settings, with '' sent as null.
  * Throws on invalid values — call it after the form validated.
  */
-export function settingsPatch(values: SettingsValues, saved: Settings): UpdateSettings {
-  const entries = changedKeys(values, saved).map((key) => [key, normalize(key, values[key])])
+export function settingsPatch(
+  values: SettingsValues,
+  saved: Settings,
+  keys: readonly SettingsKey[] = KEYS,
+): UpdateSettings {
+  const entries = changedKeys(values, saved, keys).map((key) => [
+    key,
+    normalize(key, values[key]),
+  ])
   return updateSettingsSchema.parse(Object.fromEntries(entries))
 }
 

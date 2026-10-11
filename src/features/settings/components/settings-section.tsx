@@ -8,6 +8,7 @@ import {
   InputGroupInput,
 } from '@/components/ui/input-group'
 import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 
 function firstError(errors: readonly unknown[]): string | null {
   const first = errors[0]
@@ -16,6 +17,29 @@ function firstError(errors: readonly unknown[]): string | null {
     return String(first.message)
   }
   return null
+}
+
+/**
+ * A settings page's column. `flush` drops the bottom padding for pages that end
+ * in a sticky Save bar, which must sit on the scroll column's bottom edge.
+ */
+export function SettingsPage({
+  flush = false,
+  children,
+}: {
+  flush?: boolean
+  children: ReactNode
+}) {
+  return (
+    <div
+      className={cn(
+        'mx-auto flex min-h-full w-full max-w-3xl flex-col gap-8 px-4 pt-6 sm:px-6',
+        !flush && 'pb-12',
+      )}
+    >
+      {children}
+    </div>
+  )
 }
 
 export function Section({
@@ -38,7 +62,11 @@ export function Section({
   )
 }
 
-/** One setting: label + help on the left, control on the right, error under the control. */
+/**
+ * One setting: label + help on the left, control on the right, error under the
+ * control. Under 640px the control drops below the label at full width, unless
+ * `inline` (a switch) keeps it beside the label.
+ */
 export function Row({
   id,
   label,
@@ -47,6 +75,7 @@ export function Row({
   children,
   after,
   labelIcon,
+  inline = false,
 }: {
   id: string
   label: string
@@ -57,18 +86,32 @@ export function Row({
   after?: ReactNode
   /** Small icon before the label. */
   labelIcon?: ReactNode
+  /** A compact control (switch) that stays beside the label on narrow screens. */
+  inline?: boolean
 }) {
   const error = firstError(errors)
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,20rem)] items-start gap-6 px-4 py-3">
-      <div className="flex min-w-0 flex-col gap-0.5 pt-1">
+    <div
+      className={cn(
+        'grid items-start px-4 py-3',
+        inline
+          ? 'grid-cols-[minmax(0,1fr)_auto] gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] sm:gap-6'
+          : 'grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] sm:gap-6',
+      )}
+    >
+      <div className="flex min-w-0 flex-col gap-0.5 sm:pt-1">
         <Label htmlFor={id} className="text-[0.8125rem]">
           {labelIcon}
           {label}
         </Label>
         {help === undefined ? null : <p className="text-xs text-muted-foreground">{help}</p>}
       </div>
-      <div className="flex min-w-0 flex-col items-end gap-1">
+      <div
+        className={cn(
+          'flex min-w-0 flex-col gap-1',
+          inline ? 'items-end pt-1 sm:pt-0' : 'items-start sm:items-end',
+        )}
+      >
         {children}
         {error === null ? null : (
           <p id={`${id}-error`} className="text-xs text-destructive">

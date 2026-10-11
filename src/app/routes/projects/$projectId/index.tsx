@@ -393,7 +393,7 @@ function ProjectPage() {
         knowledge={
           <ProjectKnowledgeSettings
             projectId={projectId}
-            onManage={() => void navigate({ to: '/settings', hash: 'knowledge-heading' })}
+            onManage={() => void navigate({ to: '/settings/knowledge' })}
           />
         }
         onAutoDetected={() =>
