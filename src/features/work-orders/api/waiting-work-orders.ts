@@ -1,7 +1,7 @@
 import { queryOptions, useQueries } from '@tanstack/react-query'
 
 import { getWorkOrders } from '@/features/work-orders/api/work-orders-collection'
-import type { WorkOrder } from '@/lib/contracts'
+import type { WorkOrder, WorkOrderStatus } from '@/lib/contracts'
 import { queryKeys } from '@/lib/query-keys'
 
 /**
@@ -14,13 +14,25 @@ const projectWorkOrders = (projectId: string) =>
     queryFn: () => getWorkOrders(projectId),
   })
 
-/** Work orders waiting on a person (gate or handoff review), across the given projects. */
-export function useWaitingWorkOrders(projectIds: readonly string[]): WorkOrder[] {
+function useWorkOrdersWithStatus(
+  projectIds: readonly string[],
+  status: WorkOrderStatus,
+): WorkOrder[] {
   return useQueries({
     queries: projectIds.map(projectWorkOrders),
     combine: (results) =>
       results.flatMap((result) =>
-        (result.data ?? []).filter((workOrder) => workOrder.status === 'awaiting_approval'),
+        (result.data ?? []).filter((workOrder) => workOrder.status === status),
       ),
   })
+}
+
+/** Work orders waiting on a person (gate or handoff review), across the given projects. */
+export function useWaitingWorkOrders(projectIds: readonly string[]): WorkOrder[] {
+  return useWorkOrdersWithStatus(projectIds, 'awaiting_approval')
+}
+
+/** Work orders with a run in flight (not `queued` — those wait for a slot), across projects. */
+export function useRunningWorkOrders(projectIds: readonly string[]): WorkOrder[] {
+  return useWorkOrdersWithStatus(projectIds, 'running')
 }

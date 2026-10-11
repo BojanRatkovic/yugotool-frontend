@@ -12,7 +12,11 @@ import { useEffect } from 'react'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
 import { CommandPalette } from '@/app/routes/-components/command-palette'
-import { useDocumentTitle, useNeedsYou } from '@/app/routes/-components/use-needs-you'
+import {
+  useDocumentTitle,
+  useNeedsYou,
+  useRunningByProject,
+} from '@/app/routes/-components/use-needs-you'
 import { AppShell } from '@/components/layout/app-shell'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Kbd } from '@/components/ui/kbd'
@@ -78,6 +82,7 @@ function RootLayout() {
     },
   })
   const { items, countByProject } = useNeedsYou()
+  const runningByProject = useRunningByProject()
   const params = useParams({ strict: false })
   const projectId = 'projectId' in params ? params.projectId : undefined
   const project = useProject(projectId ?? '')
@@ -88,6 +93,7 @@ function RootLayout() {
         projects={
           <ProjectNav
             needsYou={countByProject}
+            running={runningByProject}
             renderSub={(id) => <ProjectPrNav projectId={id} />}
           />
         }

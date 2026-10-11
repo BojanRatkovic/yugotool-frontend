@@ -4,7 +4,11 @@ import { useEffect, useMemo } from 'react'
 
 import { lineQueries } from '@/features/projects/api/line-queries'
 import { projectsCollection } from '@/features/projects/api/projects-collection'
-import { useWaitingWorkOrders } from '@/features/work-orders/api/waiting-work-orders'
+import { countByProject } from '@/features/projects/utils/project-activity'
+import {
+  useRunningWorkOrders,
+  useWaitingWorkOrders,
+} from '@/features/work-orders/api/waiting-work-orders'
 import type { Project, WorkOrder } from '@/lib/contracts'
 
 export interface NeedsYouItem {
@@ -35,11 +39,17 @@ export function useNeedsYou(): { items: NeedsYouItem[]; countByProject: Map<stri
     return [{ workOrder, project, stationName: station?.name ?? workOrder.stationKey }]
   })
   items.sort((a, b) => a.workOrder.updatedAt.localeCompare(b.workOrder.updatedAt))
-  const countByProject = new Map<string, number>()
-  for (const { project } of items) {
-    countByProject.set(project.id, (countByProject.get(project.id) ?? 0) + 1)
-  }
-  return { items, countByProject }
+  return { items, countByProject: countByProject(items.map(({ workOrder }) => workOrder)) }
+}
+
+/**
+ * Work orders with a run in flight, per project id — the sidebar spins for
+ * these. Same per-project queries as `useNeedsYou`, so SSE `work_orders` keeps it live.
+ */
+export function useRunningByProject(): Map<string, number> {
+  const { data: projects } = useLiveQuery((q) => q.from({ project: projectsCollection }))
+  const projectIds = useMemo(() => projects.map((project) => project.id), [projects])
+  return countByProject(useRunningWorkOrders(projectIds))
 }
 
 /** "(2) YugoTool" while anything waits on you, else "<project> · YugoTool". */
