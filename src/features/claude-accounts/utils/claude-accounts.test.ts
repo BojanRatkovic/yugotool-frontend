@@ -44,7 +44,7 @@ describe('claude account rows (spec 0016)', () => {
   })
 
   it('shortens home paths only', () => {
-    expect(shortPath('/Users/me/.zastava/accounts/a')).toBe('~/.zastava/accounts/a')
+    expect(shortPath('/Users/me/.yugotool/accounts/a')).toBe('~/.yugotool/accounts/a')
     expect(shortPath('/home/me')).toBe('~')
     expect(shortPath('/opt/claude')).toBe('/opt/claude')
   })

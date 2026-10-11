@@ -20,7 +20,7 @@ import { ApiError, errorMessage } from '@/lib/api-client'
 import type { Project } from '@/lib/contracts'
 
 export const DELETE_CONSEQUENCES =
-  'Deletes the line, work orders and run history, plus ZASTAVA’s worktrees for it. Your repository and its branches stay.'
+  'Deletes the line, work orders and run history, plus YugoTool’s worktrees for it. Your repository and its branches stay.'
 
 /**
  * "Delete <name>?" with type-the-name confirmation. A 409 (active work) stays

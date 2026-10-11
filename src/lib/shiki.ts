@@ -11,7 +11,7 @@ import {
 } from 'shiki/core'
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript'
 
-export const THEME = 'zastava'
+export const THEME = 'yugotool'
 
 export function createHighlighter(): Promise<HighlighterCore> {
   return createHighlighterCore({

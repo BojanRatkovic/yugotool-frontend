@@ -7,7 +7,7 @@ import {
   type PrMergeMethod,
   type PrSubmitReviewInput,
   type PullRequestDetail,
-  zastavaReviewSchema,
+  yugotoolReviewSchema,
 } from '@/lib/contracts'
 import { queryKeys } from '@/lib/query-keys'
 
@@ -155,19 +155,19 @@ export function useMergePr(projectId: string, number: number) {
   })
 }
 
-/** Every ZASTAVA review change also changes the cards' chips. */
+/** Every YugoTool review change also changes the cards' chips. */
 function useInvalidateReviews() {
   const queryClient = useQueryClient()
-  return () => queryClient.invalidateQueries({ queryKey: queryKeys.zastavaReviews() })
+  return () => queryClient.invalidateQueries({ queryKey: queryKeys.yugotoolReviews() })
 }
 
-/** Starts a ZASTAVA review of the PR's current head (spec 0009). */
-export function useStartZastavaReview(projectId: string, number: number) {
+/** Starts a YugoTool review of the PR's current head (spec 0009). */
+export function useStartYugoToolReview(projectId: string, number: number) {
   const invalidate = useInvalidateReviews()
   return useMutation({
     mutationFn: async () =>
-      zastavaReviewSchema.parse(
-        await apiClient.post(`${base(projectId, number)}/zastava-review`, {
+      yugotoolReviewSchema.parse(
+        await apiClient.post(`${base(projectId, number)}/yugotool-review`, {
           id: crypto.randomUUID(),
         }),
       ),
@@ -176,12 +176,12 @@ export function useStartZastavaReview(projectId: string, number: number) {
 }
 
 /** The kept findings (as edited) into my pending review on GitHub; never submits. */
-export function usePostZastavaFindings(projectId: string, number: number) {
+export function usePostYugoToolFindings(projectId: string, number: number) {
   const invalidateReviews = useInvalidateReviews()
   const invalidatePr = useInvalidatePr(projectId)
   return useMutation({
     mutationFn: (input: PostFindings) =>
-      apiClient.post(`${base(projectId, number)}/zastava-review/post`, input),
+      apiClient.post(`${base(projectId, number)}/yugotool-review/post`, input),
     // A refusal halfway still posted some: refresh either way.
     onSettled: () => Promise.all([invalidateReviews(), invalidatePr()]),
   })

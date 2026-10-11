@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 /** A result older than this is checked again when the panel opens. */
 const STALE_MS = 2 * 60_000
 
-/** Whether opening the panel should look at CI again (reruns happen outside ZASTAVA). */
+/** Whether opening the panel should look at CI again (reruns happen outside YugoTool). */
 export function ciNeedsRefresh(workOrder: WorkOrder, now = Date.now()): boolean {
   if (workOrder.prUrl === null) return false
   const { ci } = workOrder

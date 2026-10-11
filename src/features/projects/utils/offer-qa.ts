@@ -28,7 +28,7 @@ export function shouldOfferQa({
   return previewOk && !dismissed && stations !== undefined && qaOffer(stations) !== null
 }
 
-const dismissKey = (projectId: string) => `zastava:offer-qa-dismissed:${projectId}`
+const dismissKey = (projectId: string) => `yugotool:offer-qa-dismissed:${projectId}`
 
 /** "Not now" is remembered per project in this browser; storage errors mean "not dismissed". */
 export function isQaOfferDismissed(projectId: string): boolean {

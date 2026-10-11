@@ -29,7 +29,7 @@ const TOUR: readonly TourStep[] = [
   {
     focus: 'project',
     term: 'Project',
-    title: 'Point ZASTAVA at a repo',
+    title: 'Point YugoTool at a repo',
     description:
       'A project is a local Git repository. Every run gets its own branch and worktree, so your checkout stays yours.',
   },
@@ -58,7 +58,7 @@ const TOUR: readonly TourStep[] = [
 
 function TourTabs({ step, onPick }: { step: number; onPick: (index: number) => void }) {
   return (
-    <div role="tablist" aria-label="How ZASTAVA works" className="flex items-center gap-1">
+    <div role="tablist" aria-label="How YugoTool works" className="flex items-center gap-1">
       {TOUR.map((item, index) => (
         <button
           key={item.term}

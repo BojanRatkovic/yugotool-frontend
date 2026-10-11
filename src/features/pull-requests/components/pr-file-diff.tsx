@@ -190,7 +190,7 @@ export function PrFileDiff({
   diff: DiffFile | null
   /** Threads on this file that aren't outdated. */
   threads: Thread[]
-  /** ZASTAVA findings on this file not posted yet (spec 0009). */
+  /** YugoTool findings on this file not posted yet (spec 0009). */
   ghosts?: ReviewFinding[]
   onDismissGhost?: (id: string) => void
   focusedThread: string | undefined

@@ -23,14 +23,21 @@ import {
   type ReviewEvent,
 } from '@/features/pull-requests/components/pr-review-dialog'
 import { PrTabBody } from '@/features/pull-requests/components/pr-tab-body'
-import { ZastavaReviewButton } from '@/features/pull-requests/components/zastava-review-button'
-import { useStartZastavaReview } from '@/features/pull-requests/api/pr-mutations'
+import { YugoToolReviewButton } from '@/features/pull-requests/components/yugotool-review-button'
+import { useStartYugoToolReview } from '@/features/pull-requests/api/pr-mutations'
 import { ApiError } from '@/lib/api-client'
 import type { PullRequestDetail } from '@/lib/contracts'
 import { isPanelTypingTarget } from '@/features/pull-requests/utils/keys'
-import { fromReview, type ZastavaState } from '@/features/pull-requests/utils/zastava'
+import { fromReview, type YugoToolState } from '@/features/pull-requests/utils/yugotool'
 
-export const PR_TABS = ['overview', 'files', 'threads', 'checks', 'commits', 'zastava'] as const
+export const PR_TABS = [
+  'overview',
+  'files',
+  'threads',
+  'checks',
+  'commits',
+  'yugotool',
+] as const
 export type PrTab = (typeof PR_TABS)[number]
 
 /** The panel's URL state (the route owns it). */
@@ -51,10 +58,10 @@ const TAB_LABEL: Record<PrTab, string> = {
   threads: 'Threads',
   checks: 'Checks',
   commits: 'Commits',
-  zastava: 'ZASTAVA',
+  yugotool: 'YugoTool',
 }
 
-function tabCount(pr: PullRequestDetail, tab: PrTab, zastava: ZastavaState): number | null {
+function tabCount(pr: PullRequestDetail, tab: PrTab, yugotool: YugoToolState): number | null {
   switch (tab) {
     case 'files':
       return pr.changedFiles
@@ -62,8 +69,8 @@ function tabCount(pr: PullRequestDetail, tab: PrTab, zastava: ZastavaState): num
       return pr.threads.unresolved
     case 'commits':
       return pr.commits.length
-    case 'zastava':
-      return zastava.kind === 'done' ? zastava.open : null
+    case 'yugotool':
+      return yugotool.kind === 'done' ? yugotool.open : null
     default:
       return null
   }
@@ -109,12 +116,12 @@ export function PrPanel({
   onClose: () => void
 }) {
   const detail = useQuery(prQueries.detail(projectId, number))
-  const zastavaQuery = useQuery({
-    ...prQueries.zastavaReview(projectId, number, detail.data?.headOid ?? ''),
+  const yugotoolQuery = useQuery({
+    ...prQueries.yugotoolReview(projectId, number, detail.data?.headOid ?? ''),
     enabled: detail.data !== undefined,
   })
-  const zastava = fromReview(zastavaQuery.data?.review ?? null)
-  const startZastava = useStartZastavaReview(projectId, number)
+  const yugotool = fromReview(yugotoolQuery.data?.review ?? null)
+  const startYugoTool = useStartYugoToolReview(projectId, number)
   /** The review dialog, open with this event preselected. */
   const [review, setReview] = useState<ReviewEvent | null>(null)
 
@@ -125,19 +132,19 @@ export function PrPanel({
       if (
         event.key === 'z' &&
         detail.data?.state === 'open' &&
-        zastavaQuery.data !== undefined
+        yugotoolQuery.data !== undefined
       ) {
         event.preventDefault()
         // Z: open the review when there is one, else start it.
-        if (zastava.kind === 'none' || zastava.kind === 'failed') {
-          if (!startZastava.isPending) {
-            startZastava.mutate(undefined, {
-              onSuccess: () => onChange({ tab: 'zastava' }),
+        if (yugotool.kind === 'none' || yugotool.kind === 'failed') {
+          if (!startYugoTool.isPending) {
+            startYugoTool.mutate(undefined, {
+              onSuccess: () => onChange({ tab: 'yugotool' }),
               onError: (error) => toast.error(error.message),
             })
           }
         } else {
-          onChange({ tab: 'zastava' })
+          onChange({ tab: 'yugotool' })
         }
         return
       }
@@ -177,11 +184,11 @@ export function PrPanel({
   }
 
   const isAuthor = pr.author.login === viewer
-  const zastavaButton = (
-    <ZastavaReviewButton
+  const yugotoolButton = (
+    <YugoToolReviewButton
       projectId={projectId}
       pr={pr}
-      onOpen={() => onChange({ tab: 'zastava' })}
+      onOpen={() => onChange({ tab: 'yugotool' })}
     />
   )
   const reviewActions = isAuthor ? (
@@ -205,7 +212,7 @@ export function PrPanel({
   )
   const actions = (
     <>
-      {zastavaButton}
+      {yugotoolButton}
       {reviewActions}
     </>
   )
@@ -230,7 +237,7 @@ export function PrPanel({
         <div className="flex h-10 items-center gap-3 border-b px-4">
           <TabsList variant="line" className="h-10 gap-4 p-0">
             {PR_TABS.map((tab, index) => {
-              const count = tabCount(pr, tab, zastava)
+              const count = tabCount(pr, tab, yugotool)
               return (
                 <TabsTrigger
                   key={tab}
@@ -260,7 +267,7 @@ export function PrPanel({
           onChange={onChange}
         />
       </div>
-      {state.tab === 'files' || state.tab === 'threads' || state.tab === 'zastava' ? (
+      {state.tab === 'files' || state.tab === 'threads' || state.tab === 'yugotool' ? (
         <PrReviewBar projectId={projectId} pr={pr} onSubmit={() => setReview('COMMENT')} />
       ) : null}
       <PrReviewDialog

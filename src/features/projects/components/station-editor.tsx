@@ -442,7 +442,7 @@ function ShiftSettings({
       <p className="text-xs text-muted-foreground">
         Works in shifts on its own: small changes finish in one session. When a session&rsquo;s
         context crosses the line, the agent writes a handoff and a fresh session picks up from
-        it. Memory lives in <span className="font-mono">.zastava/</span> in the worktree.
+        it. Memory lives in <span className="font-mono">.yugotool/</span> in the worktree.
       </p>
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-3">

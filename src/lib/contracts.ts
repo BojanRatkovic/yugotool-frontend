@@ -1,5 +1,5 @@
 /**
- * Mirrors `@zastava/contracts` (zastava-backend/packages/contracts/src/index.ts).
+ * Mirrors `@yugotool/contracts` (yugotool-backend/packages/contracts/src/index.ts).
  * The frontend is a separate repo, so the schemas are copied, not imported —
  * when the backend contract changes, update this file to match. Server-only
  * constants (Temporal queue, NOTIFY channel, verdict JSON schema, default line)
@@ -342,7 +342,7 @@ export const previewSchema = z.object({
 export type Preview = z.infer<typeof previewSchema>
 
 /**
- * How approved work leaves ZASTAVA: a commit on its branch only, or pushed
+ * How approved work leaves YugoTool: a commit on its branch only, or pushed
  * with a draft / ready pull request.
  */
 export const deliveryModeSchema = z.enum(['local', 'draft_pr', 'pr'])
@@ -658,7 +658,7 @@ export type SystemInfo = z.infer<typeof systemInfoSchema>
 // ── Doctor (first-run checks) ───────────────────────────────────────────────
 
 /**
- * Spec 0013: only what the person has to provide, plus ZASTAVA's own services.
+ * Spec 0013: only what the person has to provide, plus YugoTool's own services.
  * Node versions and Chromium are fetched on demand; the repos folder is a setting.
  */
 export const doctorCheckKeySchema = z.enum([
@@ -686,7 +686,7 @@ export const doctorCheckSchema = z.object({
   fix: z.string().nullable(),
   /** A shell command that fixes it, shown with a copy button; null when none. */
   fixCommand: z.string().nullable(),
-  /** machine: something the person provides · service: a part of ZASTAVA itself. */
+  /** machine: something the person provides · service: a part of YugoTool itself. */
   group: z.enum(['machine', 'service']),
   /** A "claude" check of one Claude account (spec 0016); null for every other check. */
   accountId: z.uuid().nullable(),
@@ -748,7 +748,7 @@ export const claudeAccountSchema = z.object({
   orgName: z.string().nullable(),
   /** 'team', 'max', 'pro'…; null for API keys. */
   subscriptionType: z.string().nullable(),
-  /** ZASTAVA created the config dir, so removing the account deletes it. */
+  /** YugoTool created the config dir, so removing the account deletes it. */
   managed: z.boolean(),
   isDefault: z.boolean(),
   status: claudeAccountStatusSchema,
@@ -781,7 +781,7 @@ export const createClaudeAccountSchema = z
 export type CreateClaudeAccount = z.infer<typeof createClaudeAccountSchema>
 
 /**
- * Starts `claude auth login`: in a new dir ZASTAVA creates (the account is added
+ * Starts `claude auth login`: in a new dir YugoTool creates (the account is added
  * when it succeeds), or again in an existing account's dir (`accountId`).
  */
 export const startClaudeLoginSchema = z.object({
@@ -873,7 +873,7 @@ export type CiCheck = z.infer<typeof ciCheckSchema>
 export const ciStateSchema = z.enum(['pending', 'passed', 'failed', 'no_ci', 'timed_out'])
 export type CiState = z.infer<typeof ciStateSchema>
 
-/** The repo's CI on a work order's pull request, as last seen by ZASTAVA. */
+/** The repo's CI on a work order's pull request, as last seen by YugoTool. */
 export const ciStatusSchema = z.object({
   state: ciStateSchema,
   /** One line, e.g. "3/4 passed · 1 failed". */
@@ -881,7 +881,7 @@ export const ciStatusSchema = z.object({
   prState: z.enum(['open', 'closed', 'merged']),
   /** The PR head the checks ran on. */
   headSha: z.string().nullable(),
-  /** The head when ZASTAVA delivered; differs from headSha once someone pushed. */
+  /** The head when YugoTool delivered; differs from headSha once someone pushed. */
   deliveredSha: z.string().nullable(),
   checks: z.array(ciCheckSchema),
   /** When the current watch started (delivery, or a refresh that found work pending). */
@@ -920,7 +920,7 @@ export const reviewPullRequestSchema = z.object({
   headOid: z.string(),
   baseRefName: z.string(),
   baseOid: z.string(),
-  /** Head of the previous ZASTAVA review: a re-review focuses on what came after. */
+  /** Head of the previous YugoTool review: a re-review focuses on what came after. */
   sinceOid: z.string().nullable(),
   /** Unresolved threads at start, so the review does not repeat them. */
   openThreads: z
@@ -967,7 +967,7 @@ export const workOrderSchema = z.object({
   /** Run-level cap: the line stops before a station once spend reaches it. */
   maxBudgetUsd: z.number().nullable(),
   prUrl: z.string().nullable(),
-  /** CI on the pull request; null until ZASTAVA has looked. */
+  /** CI on the pull request; null until YugoTool has looked. */
   ci: ciStatusSchema.nullable(),
   queueMode: queueModeSchema.nullable(),
   queuedAt: isoDate.nullable(),
@@ -1283,7 +1283,7 @@ export const shiftTaskSchema = z.object({
 })
 export type ShiftTask = z.infer<typeof shiftTaskSchema>
 
-/** The run's durable memory, read from `.zastava/` in the worktree. */
+/** The run's durable memory, read from `.yugotool/` in the worktree. */
 export const runMemorySchema = z.object({
   goal: z.string().nullable(),
   tasks: z.array(shiftTaskSchema),
@@ -1782,15 +1782,15 @@ export const reviewVerdictSchema = z.object({
 })
 export type ReviewVerdict = z.infer<typeof reviewVerdictSchema>
 
-/** Starts a ZASTAVA review of the PR's current head. */
+/** Starts a YugoTool review of the PR's current head. */
 export const startReviewSchema = z.object({
   /** Client-generated work order id makes the start idempotent. */
   id: z.uuid().optional(),
 })
 export type StartReview = z.infer<typeof startReviewSchema>
 
-/** The latest ZASTAVA review of a PR. */
-export const zastavaReviewSchema = z.object({
+/** The latest YugoTool review of a PR. */
+export const yugotoolReviewSchema = z.object({
   workOrderId: z.uuid(),
   runId: z.uuid().nullable(),
   status: runStatusSchema,
@@ -1803,12 +1803,12 @@ export const zastavaReviewSchema = z.object({
   startedAt: isoDate,
   finishedAt: isoDate.nullable(),
 })
-export type ZastavaReview = z.infer<typeof zastavaReviewSchema>
+export type YugoToolReview = z.infer<typeof yugotoolReviewSchema>
 
-export const zastavaReviewResultSchema = z.object({ review: zastavaReviewSchema.nullable() })
+export const yugotoolReviewResultSchema = z.object({ review: yugotoolReviewSchema.nullable() })
 
-/** A PR's latest ZASTAVA review in brief, for the board's cards. */
-export const zastavaReviewBriefSchema = z.object({
+/** A PR's latest YugoTool review in brief, for the board's cards. */
+export const yugotoolReviewBriefSchema = z.object({
   number: z.number().int(),
   status: runStatusSchema,
   headOid: z.string(),
@@ -1816,16 +1816,18 @@ export const zastavaReviewBriefSchema = z.object({
   findings: z.number().int().nullable(),
   posted: z.number().int(),
 })
-export type ZastavaReviewBrief = z.infer<typeof zastavaReviewBriefSchema>
+export type YugoToolReviewBrief = z.infer<typeof yugotoolReviewBriefSchema>
 
-export const zastavaReviewBriefListSchema = z.object({
-  items: z.array(zastavaReviewBriefSchema),
+export const yugotoolReviewBriefListSchema = z.object({
+  items: z.array(yugotoolReviewBriefSchema),
 })
-export type ZastavaReviewBriefList = z.infer<typeof zastavaReviewBriefListSchema>
+export type YugoToolReviewBriefList = z.infer<typeof yugotoolReviewBriefListSchema>
 
 /** `head`: the PR's current head commit, so the answer can say the review is stale. */
-export const zastavaReviewQuerySchema = z.object({ head: z.string().min(7).max(64).optional() })
-export type ZastavaReviewResult = z.infer<typeof zastavaReviewResultSchema>
+export const yugotoolReviewQuerySchema = z.object({
+  head: z.string().min(7).max(64).optional(),
+})
+export type YugoToolReviewResult = z.infer<typeof yugotoolReviewResultSchema>
 
 /** Findings the human kept, as edited; they go to the pending review. */
 export const postFindingsSchema = z.object({
@@ -1976,7 +1978,7 @@ export const collectionNameSchema = z.enum([
   'shifts',
   'qa',
   'knowledge_sources',
-  /** ZASTAVA reviews of pull requests (spec 0009). */
+  /** YugoTool reviews of pull requests (spec 0009). */
   'reviews',
   /** The bell (spec 0011): read state changed. New ones arrive as `notification`. */
   'notifications',

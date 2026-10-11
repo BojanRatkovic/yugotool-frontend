@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { PrAvatar } from '@/features/pull-requests/components/pr-avatar'
 import { shortAge, type PrPlacement } from '@/features/pull-requests/utils/columns'
 import { prSize, sizeLabel } from '@/features/pull-requests/utils/size'
-import { findingsLabel, type ZastavaState } from '@/features/pull-requests/utils/zastava'
+import { findingsLabel, type YugoToolState } from '@/features/pull-requests/utils/yugotool'
 import type { PrCiState, PrReviewer, PullRequestSummary } from '@/lib/contracts'
 import { cn } from '@/lib/utils'
 
@@ -101,17 +101,17 @@ function ReviewerStack({ reviewers }: { reviewers: PrReviewer[] }) {
   )
 }
 
-/** The PR's ZASTAVA review on its card: running, findings to triage, or stale. */
-function ZastavaChip({ state }: { state: ZastavaState }) {
+/** The PR's YugoTool review on its card: running, findings to triage, or stale. */
+function YugoToolChip({ state }: { state: YugoToolState }) {
   if (state.kind === 'none') return null
   if (state.kind === 'running') {
     return (
       <span
         className="flex items-center gap-0.5 text-status-running"
-        title="ZASTAVA is reviewing"
+        title="YugoTool is reviewing"
       >
         <LoaderCircle aria-hidden="true" className="size-3 animate-spin" />
-        <span className="sr-only">ZASTAVA is reviewing</span>
+        <span className="sr-only">YugoTool is reviewing</span>
       </span>
     )
   }
@@ -119,10 +119,10 @@ function ZastavaChip({ state }: { state: ZastavaState }) {
     return (
       <span
         className="flex items-center gap-0.5 text-status-failed"
-        title="ZASTAVA review failed"
+        title="YugoTool review failed"
       >
         <ScanSearch aria-hidden="true" className="size-3" />
-        <span className="sr-only">ZASTAVA review failed</span>
+        <span className="sr-only">YugoTool review failed</span>
       </span>
     )
   }
@@ -130,14 +130,14 @@ function ZastavaChip({ state }: { state: ZastavaState }) {
     return (
       <span
         className="flex items-center gap-0.5 text-foreground"
-        title={`ZASTAVA: re-review (${state.findings} finding${state.findings === 1 ? '' : 's'} on an older commit)`}
+        title={`YugoTool: re-review (${state.findings} finding${state.findings === 1 ? '' : 's'} on an older commit)`}
       >
         <ScanSearch aria-hidden="true" className="size-3" />
         <span>Re-review</span>
       </span>
     )
   }
-  const label = `ZASTAVA: ${findingsLabel(state)}${state.stale ? ' (older commit)' : ''}`
+  const label = `YugoTool: ${findingsLabel(state)}${state.stale ? ' (older commit)' : ''}`
   return (
     <span
       className={cn(
@@ -162,7 +162,7 @@ export function PrCard({
   showAuthor,
   onOpen,
   now,
-  zastava = { kind: 'none' },
+  yugotool = { kind: 'none' },
 }: {
   pr: PullRequestSummary
   placement: PrPlacement
@@ -170,8 +170,8 @@ export function PrCard({
   showAuthor: boolean
   onOpen: (number: number) => void
   now: number
-  /** Its latest ZASTAVA review (spec 0009). */
-  zastava?: ZastavaState
+  /** Its latest YugoTool review (spec 0009). */
+  yugotool?: YugoToolState
 }) {
   const size = prSize(pr.additions, pr.deletions)
   const ci = CI_DOT[pr.ci]
@@ -234,7 +234,7 @@ export function PrCard({
               </span>
             )}
             <span className="ml-auto flex items-center gap-2">
-              <ZastavaChip state={zastava} />
+              <YugoToolChip state={yugotool} />
               <ReviewerStack reviewers={pr.reviewers} />
               {pr.threads.unresolved === 0 ? null : (
                 <span

@@ -44,13 +44,13 @@ describe('runFailure', () => {
     )
     const last = event(
       'error',
-      'Delivery failed (work is safe on zastava/add-a-footer-note-0845df5e): Command failed: git commit -m x',
+      'Delivery failed (work is safe on yugotool/add-a-footer-note-0845df5e): Command failed: git commit -m x',
     )
     expect(runFailure(run('failed'), [log, last])).toMatchObject({
       kind: 'failed',
       title: 'Delivery failed',
       reason: '✖ commit-msg: subject must follow Conventional Commits',
-      safeBranch: 'zastava/add-a-footer-note-0845df5e',
+      safeBranch: 'yugotool/add-a-footer-note-0845df5e',
       eventId: last.id,
     })
   })
@@ -80,7 +80,7 @@ describe('runFailure', () => {
   it('leaves a delivered run alone', () => {
     const events = [
       event('error', 'Delivery failed: boom'),
-      event('system', 'Committed on zastava/x'),
+      event('system', 'Committed on yugotool/x'),
     ]
     expect(runFailure(run('succeeded'), events)).toBeNull()
     expect(runFailure(run('succeeded'), [])).toBeNull()
@@ -129,7 +129,7 @@ describe('friendlyFailure', () => {
   })
 
   it('keeps delivery failures and plain messages as they are', () => {
-    const delivery = 'Delivery failed (work is safe on zastava/x): ✖ commit-msg: bad subject'
+    const delivery = 'Delivery failed (work is safe on yugotool/x): ✖ commit-msg: bad subject'
     expect(friendlyFailure(delivery)).toBe(delivery)
     expect(friendlyFailure('Budget exhausted: $0.04 of $0.01 spent before Build')).toBe(
       'Budget exhausted: $0.04 of $0.01 spent before Build',

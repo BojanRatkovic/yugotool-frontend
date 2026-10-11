@@ -27,7 +27,7 @@ describe('delivery', () => {
   })
 
   it('opens a PR only for done work on a branch without one', () => {
-    const done = { status: 'done', branch: 'zastava/x', prUrl: null }
+    const done = { status: 'done', branch: 'yugotool/x', prUrl: null }
     expect(canOpenPullRequest(done)).toBe(true)
     expect(canOpenPullRequest({ ...done, prUrl: 'https://github.com/o/r/pull/1' })).toBe(false)
     expect(canOpenPullRequest({ ...done, branch: null })).toBe(false)

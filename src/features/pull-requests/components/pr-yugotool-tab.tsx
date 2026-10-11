@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
-  usePostZastavaFindings,
-  useStartZastavaReview,
+  usePostYugoToolFindings,
+  useStartYugoToolReview,
 } from '@/features/pull-requests/api/pr-mutations'
 import { prQueries } from '@/features/pull-requests/api/pr-queries'
 import { PrPreviousFindings } from '@/features/pull-requests/components/pr-previous-findings'
@@ -20,13 +20,13 @@ import {
   type FindingEdit,
   postPayload,
   previousRows,
-} from '@/features/pull-requests/utils/zastava'
+} from '@/features/pull-requests/utils/yugotool'
 import { errorMessage } from '@/lib/api-client'
 import type {
   PullRequestDetail,
   ReviewFinding,
   ReviewVerdict,
-  ZastavaReview,
+  YugoToolReview,
 } from '@/lib/contracts'
 import { formatUsd } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -54,7 +54,7 @@ function StartReview({
   label: string
   note: React.ReactNode
 }) {
-  const start = useStartZastavaReview(projectId, pr.number)
+  const start = useStartYugoToolReview(projectId, pr.number)
   return (
     <div className="flex flex-col items-start gap-3 p-6">
       <div className="text-[0.8125rem] text-muted-foreground">{note}</div>
@@ -216,15 +216,15 @@ function Findings({
 }: {
   projectId: string
   pr: PullRequestDetail
-  review: ZastavaReview
+  review: YugoToolReview
   verdict: ReviewVerdict
   onOpenFile: (file: string) => void
 }) {
   const posted = review.pullRequest.posted
   const [selected, setSelected] = useState(() => defaultSelection(verdict.findings, posted))
   const [edits, setEdits] = useState<Record<string, FindingEdit>>({})
-  const post = usePostZastavaFindings(projectId, pr.number)
-  const rerun = useStartZastavaReview(projectId, pr.number)
+  const post = usePostYugoToolFindings(projectId, pr.number)
+  const rerun = useStartYugoToolReview(projectId, pr.number)
   const payload = postPayload(verdict.findings, selected, posted, edits)
   const recommendation = RECOMMENDATION[verdict.recommendation]
   const previous = previousRows(review.pullRequest.previousFindings, verdict.previous)
@@ -374,8 +374,8 @@ function Findings({
   )
 }
 
-/** The PR's ZASTAVA review (spec 0009): summary and findings to triage. */
-export function PrZastavaTab({
+/** The PR's YugoTool review (spec 0009): summary and findings to triage. */
+export function PrYugoToolTab({
   projectId,
   pr,
   onOpenFile,
@@ -384,7 +384,7 @@ export function PrZastavaTab({
   pr: PullRequestDetail
   onOpenFile: (file: string) => void
 }) {
-  const query = useQuery(prQueries.zastavaReview(projectId, pr.number, pr.headOid))
+  const query = useQuery(prQueries.yugotoolReview(projectId, pr.number, pr.headOid))
   if (query.data === undefined) {
     return query.error === null ? null : (
       <p className="p-4 text-[0.8125rem] text-status-failed">{errorMessage(query.error)}</p>
@@ -396,10 +396,10 @@ export function PrZastavaTab({
       <StartReview
         projectId={projectId}
         pr={pr}
-        label="Review with ZASTAVA"
+        label="Review with YugoTool"
         note={
           <>
-            ZASTAVA reviews this PR&apos;s head commit with the project&apos;s review line.
+            YugoTool reviews this PR&apos;s head commit with the project&apos;s review line.
             Findings land here first: you pick and edit what goes to GitHub.{' '}
             <span className="font-mono">Z</span>
           </>

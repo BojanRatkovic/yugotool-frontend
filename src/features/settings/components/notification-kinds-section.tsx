@@ -14,7 +14,10 @@ const KIND_COPY: Record<NotificationKind, { label: string; help: string }> = {
     label: 'Review requested',
     help: 'Someone asked you to review a pull request on GitHub.',
   },
-  review_ready: { label: 'Review ready', help: 'A ZASTAVA review of a pull request finished.' },
+  review_ready: {
+    label: 'Review ready',
+    help: 'A YugoTool review of a pull request finished.',
+  },
   shift_handoff_ready: {
     label: 'Handoff ready',
     help: 'A shift handed off and waits for your review.',

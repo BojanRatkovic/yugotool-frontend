@@ -3,12 +3,12 @@ import type {
   PreviousFinding,
   PreviousStatus,
   ReviewFinding,
-  ZastavaReview,
-  ZastavaReviewBrief,
+  YugoToolReview,
+  YugoToolReviewBrief,
 } from '@/lib/contracts'
 
-/** What the PR's ZASTAVA review looks like at a glance (header button and card chip). */
-export type ZastavaState =
+/** What the PR's YugoTool review looks like at a glance (header button and card chip). */
+export type YugoToolState =
   | { kind: 'none' }
   | { kind: 'running' }
   | { kind: 'failed' }
@@ -21,13 +21,13 @@ export type ZastavaState =
       reReview: boolean
     }
 
-export function zastavaState(
-  review: Pick<ZastavaReview, 'status'> & {
+export function yugotoolState(
+  review: Pick<YugoToolReview, 'status'> & {
     findings: number | null
     posted: number
     stale: boolean
   },
-): ZastavaState {
+): YugoToolState {
   switch (review.status) {
     case 'running':
     case 'awaiting_approval':
@@ -50,9 +50,9 @@ export function zastavaState(
   }
 }
 
-export function fromReview(review: ZastavaReview | null): ZastavaState {
+export function fromReview(review: YugoToolReview | null): YugoToolState {
   if (review === null) return { kind: 'none' }
-  return zastavaState({
+  return yugotoolState({
     status: review.status,
     findings: review.verdict?.findings.length ?? null,
     posted: review.pullRequest.posted.length,
@@ -62,14 +62,14 @@ export function fromReview(review: ZastavaReview | null): ZastavaState {
 
 /** A card's chip: stale when the PR's head moved past the reviewed commit. */
 export function fromBrief(
-  brief: ZastavaReviewBrief | undefined,
+  brief: YugoToolReviewBrief | undefined,
   headOid: string,
-): ZastavaState {
+): YugoToolState {
   if (brief === undefined) return { kind: 'none' }
-  return zastavaState({ ...brief, stale: brief.headOid !== headOid })
+  return yugotoolState({ ...brief, stale: brief.headOid !== headOid })
 }
 
-export function findingsLabel(state: Extract<ZastavaState, { kind: 'done' }>): string {
+export function findingsLabel(state: Extract<YugoToolState, { kind: 'done' }>): string {
   if (state.findings === 0) return 'No findings'
   if (state.open === 0) return `${state.findings} posted`
   return `${state.open} finding${state.open === 1 ? '' : 's'}`

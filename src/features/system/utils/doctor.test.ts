@@ -49,7 +49,7 @@ describe('doctor', () => {
       check({ key: 'temporal', label: 'Temporal', status: 'fail' }),
       check({ key: 'worker', label: 'Worker', status: 'fail' }),
     ])
-    expect(notReadyMessage(r)).toBe('ZASTAVA can’t run work yet: Claude, Temporal and Worker.')
+    expect(notReadyMessage(r)).toBe('YugoTool can’t run work yet: Claude, Temporal and Worker.')
   })
 
   it('stays quiet when only optional checks warn', () => {

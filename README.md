@@ -1,6 +1,6 @@
-# zastava-frontend
+# yugotool-frontend
 
-The UI of **ZASTAVA**, a local software factory: a board of work orders moving
+The UI of **YugoTool**, a local software factory: a board of work orders moving
 down an assembly line of Claude Code agents, a canvas editor for the line, and a
 live run panel with activity, diffs, QA screenshots and gate approvals.
 
@@ -11,12 +11,12 @@ dnd-kit · shadcn/ui · Tailwind v4.
 
 ```bash
 pnpm install
-pnpm dev          # http://localhost:4800 — proxies /api → the API on :4810 (zastava-backend)
+pnpm dev          # http://localhost:4800 — proxies /api → the API on :4810 (yugotool-backend)
 ```
 
 In production the API serves `dist/` itself (`pnpm build`), from the supervisor
-or the desktop app in `zastava-backend`. Inside the desktop app the page also
-gets `window.zastavaDesktop` (native folder picker); in a browser it is absent.
+or the desktop app in `yugotool-backend`. Inside the desktop app the page also
+gets `window.yugotoolDesktop` (native folder picker); in a browser it is absent.
 
 ## Map
 
@@ -32,7 +32,7 @@ gets `window.zastavaDesktop` (native folder picker); in a browser it is absent.
 | Offline cache (Query → IndexedDB)                                          | `src/lib/persister.ts`, `src/app/provider.tsx` |
 | API contract mirror                                                        | `src/lib/contracts.ts`                         |
 
-Design rules: `zastava-work/knowledge/design-system.md`. Conventions: [`CLAUDE.md`](CLAUDE.md).
+Design rules: `yugotool-work/knowledge/design-system.md`. Conventions: [`CLAUDE.md`](CLAUDE.md).
 
 ## Quality gate
 

@@ -88,9 +88,9 @@ export function parseToolCall(message: string, worktreePath: string | null): Too
   return { tool, summary }
 }
 
-/** `/…/.zastava/artifacts/<runId>/qa/1/a.png` → `qa/1/a.png`. */
+/** `/…/.yugotool/artifacts/<runId>/qa/1/a.png` → `qa/1/a.png`. */
 export function stripArtifactRoot(text: string): string {
-  return text.replaceAll(/\S*\/\.zastava\/artifacts\/[0-9a-f-]{36}\//g, '')
+  return text.replaceAll(/\S*\/\.yugotool\/artifacts\/[0-9a-f-]{36}\//g, '')
 }
 
 /** `success · 8 turns · $0.0757` → 8. */

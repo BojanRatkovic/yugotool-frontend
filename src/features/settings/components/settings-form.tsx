@@ -174,7 +174,7 @@ export function SettingsForm({
         void form.handleSubmit()
       }}
     >
-      <Section title="Repos" description="Where ZASTAVA looks for projects on this machine.">
+      <Section title="Repos" description="Where YugoTool looks for projects on this machine.">
         <form.Field name="reposRoot">
           {(field) => (
             <Row
@@ -330,7 +330,7 @@ export function SettingsForm({
 
       <Section
         title="Notifications"
-        description="Where ZASTAVA tells you a gate needs you or a run finished. Links open the work order."
+        description="Where YugoTool tells you a gate needs you or a run finished. Links open the work order."
       >
         <form.Field name="appUrl" validators={{ onChange: settingsFieldSchemas.appUrl }}>
           {(field) => (

@@ -2,11 +2,11 @@ import type { DoctorCheck, DoctorReport } from '@/lib/contracts'
 
 export type DoctorRow =
   | { kind: 'check'; check: DoctorCheck }
-  /** ZASTAVA's own services, folded into one row while they all run. */
+  /** YugoTool's own services, folded into one row while they all run. */
   | { kind: 'services'; checks: DoctorCheck[] }
 
 /**
- * What the person provides, one row each; ZASTAVA's services as one row while
+ * What the person provides, one row each; YugoTool's services as one row while
  * they are all OK, and one row each as soon as one is not (spec 0013).
  */
 export function doctorRows(report: DoctorReport): DoctorRow[] {
@@ -36,8 +36,8 @@ export function notReadyMessage(report: DoctorReport): string | null {
   if (report.ready) return null
   const labels = blockingChecks(report).map((check) => check.label)
   return labels.length === 0
-    ? 'ZASTAVA can’t run work yet.'
-    : `ZASTAVA can’t run work yet: ${joinLabels(labels)}.`
+    ? 'YugoTool can’t run work yet.'
+    : `YugoTool can’t run work yet: ${joinLabels(labels)}.`
 }
 
 /**

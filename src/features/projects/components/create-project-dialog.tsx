@@ -105,7 +105,7 @@ export function CreateProjectDialog({
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>New project</DialogTitle>
-          <DialogDescription>Point ZASTAVA at a local Git repository.</DialogDescription>
+          <DialogDescription>Point YugoTool at a local Git repository.</DialogDescription>
         </DialogHeader>
         <form
           className="flex flex-col gap-4"
@@ -211,7 +211,7 @@ export function CreateProjectDialog({
               )
             }
           </form.Subscribe>
-          {/* Mirrors DEFAULT_STATIONS in @zastava/contracts. */}
+          {/* Mirrors DEFAULT_STATIONS in @yugotool/contracts. */}
           <p className="text-xs text-muted-foreground">
             You get a default line (Research → Approve plan → Build → Validate → Final review).
             Change it any time in Line.{' '}

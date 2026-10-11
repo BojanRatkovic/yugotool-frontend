@@ -4,19 +4,19 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { useStartZastavaReview } from '@/features/pull-requests/api/pr-mutations'
+import { useStartYugoToolReview } from '@/features/pull-requests/api/pr-mutations'
 import { prQueries } from '@/features/pull-requests/api/pr-queries'
-import { findingsLabel, fromReview } from '@/features/pull-requests/utils/zastava'
+import { findingsLabel, fromReview } from '@/features/pull-requests/utils/yugotool'
 import type { PullRequestDetail } from '@/lib/contracts'
 import { formatUsd } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 /**
- * "Review with ZASTAVA" in the PR header (spec 0009). While a review runs it
+ * "Review with YugoTool" in the PR header (spec 0009). While a review runs it
  * is a progress pill; when it is done, the count of findings left to triage.
- * Either opens the ZASTAVA tab.
+ * Either opens the YugoTool tab.
  */
-export function ZastavaReviewButton({
+export function YugoToolReviewButton({
   projectId,
   pr,
   onOpen,
@@ -25,8 +25,8 @@ export function ZastavaReviewButton({
   pr: PullRequestDetail
   onOpen: () => void
 }) {
-  const query = useQuery(prQueries.zastavaReview(projectId, pr.number, pr.headOid))
-  const start = useStartZastavaReview(projectId, pr.number)
+  const query = useQuery(prQueries.yugotoolReview(projectId, pr.number, pr.headOid))
+  const start = useStartYugoToolReview(projectId, pr.number)
   if (pr.state !== 'open' || query.data === undefined) return null
   const review = query.data.review
   const state = fromReview(review)
@@ -90,7 +90,7 @@ export function ZastavaReviewButton({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          ZASTAVA review{state.stale ? ' of an older commit' : ''}{' '}
+          YugoTool review{state.stale ? ' of an older commit' : ''}{' '}
           <span className="font-mono">Z</span>
         </TooltipContent>
       </Tooltip>
@@ -112,7 +112,7 @@ export function ZastavaReviewButton({
           }
         >
           <ScanSearch aria-hidden="true" />
-          {state.kind === 'failed' ? 'Review again' : 'Review with ZASTAVA'}
+          {state.kind === 'failed' ? 'Review again' : 'Review with YugoTool'}
         </Button>
       </TooltipTrigger>
       <TooltipContent>

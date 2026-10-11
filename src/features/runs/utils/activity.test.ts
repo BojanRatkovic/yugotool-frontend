@@ -15,7 +15,7 @@ import {
 } from '@/features/runs/utils/activity'
 import type { RunEvent } from '@/lib/contracts'
 
-const WT = '/Users/me/.zastava/worktrees/abc'
+const WT = '/Users/me/.yugotool/worktrees/abc'
 
 describe('parseToolCall', () => {
   it('relativizes file paths', () => {
@@ -175,7 +175,7 @@ describe('QA rows', () => {
   it('shortens artifact paths', () => {
     expect(
       parseToolCall(
-        'Read {"file_path":"/Users/me/.zastava/artifacts/387b6ede-fce3-446a-b4eb-df6cc3aae64c/qa/1/home-pr.png"}',
+        'Read {"file_path":"/Users/me/.yugotool/artifacts/387b6ede-fce3-446a-b4eb-df6cc3aae64c/qa/1/home-pr.png"}',
         WT,
       ).summary,
     ).toBe('qa/1/home-pr.png')

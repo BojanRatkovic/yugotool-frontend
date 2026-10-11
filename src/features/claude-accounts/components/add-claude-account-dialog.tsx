@@ -32,7 +32,7 @@ export type AccountDialogMode =
   | { kind: 'sign_in_again'; accountId: string; label: string }
 
 /**
- * Add account: a Claude plan (`claude auth login` in a dir ZASTAVA creates) or
+ * Add account: a Claude plan (`claude auth login` in a dir YugoTool creates) or
  * an API key. "Sign in again" reuses the plan flow on the account's own dir.
  */
 export function AddClaudeAccountDialog({
@@ -129,7 +129,7 @@ export function AddClaudeAccountDialog({
             />
           </FormField>
           <p className="text-xs text-muted-foreground">
-            ZASTAVA runs <span className="font-mono">claude auth login</span> and opens the
+            YugoTool runs <span className="font-mono">claude auth login</span> and opens the
             sign-in page in your browser.
           </p>
         </>

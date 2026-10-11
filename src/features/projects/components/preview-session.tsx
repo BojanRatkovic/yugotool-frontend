@@ -220,7 +220,7 @@ export function PreviewSessionSettings({
           <SessionCard session={session} />
         )}
         <p className="-mt-1.5 text-xs text-muted-foreground">
-          Kept only on this Mac (<code className="font-mono">~/.zastava</code>), as cookies and
+          Kept only on this Mac (<code className="font-mono">~/.yugotool</code>), as cookies and
           local storage.
         </p>
         {outcome === null || active ? null : (

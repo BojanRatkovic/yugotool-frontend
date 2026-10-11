@@ -10,12 +10,12 @@ import {
   previousCounts,
   previousRows,
   stillOpenReply,
-  zastavaState,
-} from '@/features/pull-requests/utils/zastava'
+  yugotoolState,
+} from '@/features/pull-requests/utils/yugotool'
 
-describe('zastavaState', () => {
+describe('yugotoolState', () => {
   it('counts the findings not posted yet', () => {
-    const state = zastavaState({ status: 'succeeded', findings: 4, posted: 1, stale: false })
+    const state = yugotoolState({ status: 'succeeded', findings: 4, posted: 1, stale: false })
     expect(state).toEqual({ kind: 'done', findings: 4, open: 3, stale: false, reReview: false })
     if (state.kind === 'done') expect(findingsLabel(state)).toBe('3 findings')
   })
@@ -31,10 +31,10 @@ describe('zastavaState', () => {
 
   it('treats a cancelled review as none and a failed one as failed', () => {
     expect(
-      zastavaState({ status: 'cancelled', findings: null, posted: 0, stale: false }),
+      yugotoolState({ status: 'cancelled', findings: null, posted: 0, stale: false }),
     ).toEqual({ kind: 'none' })
     expect(
-      zastavaState({ status: 'failed', findings: null, posted: 0, stale: false }).kind,
+      yugotoolState({ status: 'failed', findings: null, posted: 0, stale: false }).kind,
     ).toBe('failed')
   })
 
