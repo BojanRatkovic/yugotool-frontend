@@ -22,6 +22,7 @@ const saved: Settings = {
   reposRoot: null,
   anthropicApiKeyHint: null,
   anthropicApiKeySource: null,
+  defaultClaudeAccountId: null,
   notificationExternal: {
     gate_waiting: true,
     run_failed: true,

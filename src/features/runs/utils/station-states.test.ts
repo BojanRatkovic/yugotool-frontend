@@ -22,6 +22,7 @@ function stationRun(partial: Partial<StationRun>): StationRun {
     sessionId: null,
     model: null,
     authSource: null,
+    accountLabel: null,
     output: null,
     verdict: null,
     error: null,
