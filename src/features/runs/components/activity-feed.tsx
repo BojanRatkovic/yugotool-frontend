@@ -19,7 +19,7 @@ import {
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { memo, useState, type ReactNode } from 'react'
 
 import { useStickToBottom } from '@/hooks/use-stick-to-bottom'
 
@@ -158,7 +158,8 @@ function Row({
   return (
     <li
       id={activityEventId(event.id)}
-      className="grid scroll-mt-12 grid-cols-[4.25rem_1rem_minmax(0,1fr)] items-start gap-x-2 px-4 py-1"
+      // Off-screen rows skip layout and paint; `auto` remembers each row's real height.
+      className="grid scroll-mt-12 grid-cols-[4.25rem_1rem_minmax(0,1fr)] items-start gap-x-2 px-4 py-1 [contain-intrinsic-size:auto_28px] [content-visibility:auto]"
     >
       <time
         dateTime={event.createdAt}
@@ -329,7 +330,17 @@ function ToolCallRow({
   )
 }
 
-function EventRow({ event, worktreePath }: { event: RunEvent; worktreePath: string | null }) {
+/**
+ * Memoized: a live run appends events and the feed re-renders, but query
+ * results keep unchanged events by reference, so old rows skip re-parsing.
+ */
+const EventRow = memo(function EventRow({
+  event,
+  worktreePath,
+}: {
+  event: RunEvent
+  worktreePath: string | null
+}) {
   switch (event.type) {
     case 'text':
       return (
@@ -432,7 +443,7 @@ function EventRow({ event, worktreePath }: { event: RunEvent; worktreePath: stri
     }
   }
   return null
-}
+})
 
 function GroupHeader({
   group,

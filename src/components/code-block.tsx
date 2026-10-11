@@ -1,9 +1,10 @@
-import type { CSSProperties } from 'react'
+import { useRef, type CSSProperties } from 'react'
 import type { ThemedToken } from 'shiki/core'
 
 import { CopyButton } from '@/components/copy-button'
 import { LinkifiedText } from '@/components/linkified-text'
 import { useHighlightedTokens } from '@/hooks/use-highlighter'
+import { useSeen } from '@/hooks/use-seen'
 import { stripAnsi, type CodeLang } from '@/lib/code-language'
 import { cn } from '@/lib/utils'
 
@@ -21,6 +22,10 @@ function tokenStyle(token: ThemedToken): CSSProperties {
     textDecoration: fontStyle & UNDERLINE ? 'underline' : undefined,
   }
 }
+
+/** What a one-line `CodeLine` highlights and what its tooltip shows. */
+const LINE_CHARS = 300
+const TITLE_CHARS = 1_000
 
 /** Unified-diff line → its row tint. */
 function diffLineClass(line: string): string | undefined {
@@ -104,7 +109,10 @@ export function CodeBlock({
   )
 }
 
-/** One line of code inline (a shell command in a tool row), highlighted when ready. */
+/**
+ * One line of code inline (a shell command in a tool row), highlighted once
+ * it nears the screen: a long log doesn't tokenize hundreds of rows on open.
+ */
 export function CodeLine({
   code,
   lang,
@@ -114,11 +122,19 @@ export function CodeLine({
   lang: CodeLang
   className?: string
 }) {
-  const tokens = useHighlightedTokens(code, lang)
+  // One truncated line shows a few hundred characters at most: highlighting a
+  // whole heredoc (`cat > file <<EOF …`) cost hundreds of spans per row.
+  const shown = code.length > LINE_CHARS ? code.slice(0, LINE_CHARS) : code
+  const ref = useRef<HTMLSpanElement>(null)
+  const tokens = useHighlightedTokens(shown, useSeen(ref) ? lang : null)
   const first = tokens?.[0]
   return (
-    <span className={cn('text-(--shiki-foreground)', className)} title={code}>
-      {first === undefined || tokens?.length !== 1 ? code : <Tokens tokens={first} />}
+    <span
+      ref={ref}
+      className={cn('text-(--shiki-foreground)', className)}
+      title={code.length > TITLE_CHARS ? `${code.slice(0, TITLE_CHARS)}…` : code}
+    >
+      {first === undefined || tokens?.length !== 1 ? shown : <Tokens tokens={first} />}
     </span>
   )
 }
