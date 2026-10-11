@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { settingsQueries } from '@/features/settings/api/settings-queries'
 import { KnowledgeLibrary } from '@/features/knowledge/components/knowledge-library'
 import { NotificationKindIcon } from '@/features/notifications/components/notification-kind-icon'
-import { ClaudeAccessSection } from '@/features/settings/components/claude-access-section'
+import { ClaudeAccountsSection } from '@/features/claude-accounts/components/claude-accounts-section'
 import { NotificationKindsSection } from '@/features/settings/components/notification-kinds-section'
 import { REPOS_ROOT_FIELD_ID, SettingsForm } from '@/features/settings/components/settings-form'
 import { systemQueries } from '@/features/system/api/system-queries'
@@ -111,7 +111,7 @@ function SettingsPage() {
             </div>
           ) : (
             <>
-              <ClaudeAccessSection settings={settings.data} />
+              <ClaudeAccountsSection system={system.data} />
               <KnowledgeLibrary />
               <NotificationKindsSection settings={settings.data} icon={kindIcon} />
               <SettingsForm
