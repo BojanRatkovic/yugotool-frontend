@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { detectLanguage, normalizeLang, splitFences, stripAnsi } from '@/lib/code-language'
+import { detectLanguage, normalizeLang, stripAnsi } from '@/lib/code-language'
 
 describe('normalizeLang', () => {
   it('maps fence tags and aliases to bundled languages', () => {
@@ -47,35 +47,5 @@ describe('detectLanguage', () => {
 describe('stripAnsi', () => {
   it('removes colour codes', () => {
     expect(stripAnsi('\u001B[33m\u001B[1m[vite]\u001B[22m\u001B[39m up')).toBe('[vite] up')
-  })
-})
-
-describe('splitFences', () => {
-  it('splits prose around a fenced block with its language', () => {
-    const text = 'Looking at it.\n\n```json\n{"a": 1}\n```\n\nDone.'
-    expect(splitFences(text)).toEqual([
-      { kind: 'text', text: 'Looking at it.' },
-      { kind: 'code', lang: 'json', code: '{"a": 1}' },
-      { kind: 'text', text: 'Done.' },
-    ])
-  })
-
-  it('detects the language of an untagged fence', () => {
-    expect(splitFences('```\n$ ls\n```')).toEqual([
-      { kind: 'code', lang: 'shellscript', code: '$ ls' },
-    ])
-  })
-
-  it('runs an unclosed fence to the end', () => {
-    expect(splitFences('Plan:\n```ts\nconst a = 1')).toEqual([
-      { kind: 'text', text: 'Plan:' },
-      { kind: 'code', lang: 'typescript', code: 'const a = 1' },
-    ])
-  })
-
-  it('returns prose untouched when there is no fence', () => {
-    expect(splitFences('Use `pnpm test`.')).toEqual([
-      { kind: 'text', text: 'Use `pnpm test`.' },
-    ])
   })
 })

@@ -27,6 +27,7 @@ import { CodeBlock, CodeLine } from '@/components/code-block'
 import { Cost } from '@/components/cost'
 import { ImageThumb } from '@/components/image-lightbox'
 import { LinkifiedText } from '@/components/linkified-text'
+import { Markdown } from '@/components/markdown'
 import { Meter } from '@/components/meter'
 import { modelLabel } from '@/components/model-select'
 import { runsSessions, StationIcon } from '@/components/station-icon'
@@ -51,7 +52,7 @@ import {
 import { parseDiffStat } from '@/features/runs/utils/diff-stat'
 import { qaFileUrl } from '@/features/runs/utils/qa'
 import { CI_STATION, REPO_HOOKS_STATION } from '@/features/runs/utils/station-states'
-import { detectLanguage, splitFences } from '@/lib/code-language'
+import { detectLanguage } from '@/lib/code-language'
 import type { ImageEvent, Run, RunEvent, Station } from '@/lib/contracts'
 import {
   durationBetween,
@@ -75,54 +76,21 @@ const TOOL_ICON: Record<string, LucideIcon> = {
   StructuredOutput: Braces,
 }
 
-/** `inline code` as mono; everything else stays text. */
-function InlineProse({ text }: { text: string }) {
-  return text.split(/(`[^`\n]+`)/g).map((part, index) =>
-    part.startsWith('`') && part.endsWith('`') && part.length > 2 ? (
-      <code key={index} className="rounded-sm bg-muted px-1 font-mono text-[0.75rem]">
-        {part.slice(1, -1)}
-      </code>
-    ) : (
-      <LinkifiedText key={index} text={part.replaceAll('**', '')} />
-    ),
-  )
-}
-
-const PROSE_CLASS =
-  'max-w-[72ch] text-[0.8125rem] leading-relaxed whitespace-pre-wrap text-foreground/90'
-
-/** Assistant text as prose; fenced ``` blocks become highlighted code blocks. */
+/** Assistant text as markdown; long messages fold behind "Show more". */
 function Prose({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false)
   const long = text.length > 700 || text.split('\n').length > 12
-  const parts = splitFences(text)
-  const hasCode = parts.some((part) => part.kind === 'code')
   return (
-    <div className="flex flex-col items-start gap-1">
-      {hasCode ? (
-        <div
-          className={cn(
-            'flex w-full flex-col gap-2',
-            long &&
-              !expanded &&
-              'max-h-48 overflow-clip [mask-image:linear-gradient(to_bottom,#000_65%,transparent)]',
-          )}
-        >
-          {parts.map((part, index) =>
-            part.kind === 'text' ? (
-              <div key={index} className={PROSE_CLASS}>
-                <InlineProse text={part.text} />
-              </div>
-            ) : (
-              <CodeBlock key={index} code={part.code} lang={part.lang} className="max-h-80" />
-            ),
-          )}
-        </div>
-      ) : (
-        <div className={cn(PROSE_CLASS, long && !expanded && 'line-clamp-6')}>
-          <InlineProse text={text} />
-        </div>
-      )}
+    <div className="flex w-full min-w-0 flex-col items-start gap-1">
+      <Markdown
+        text={text}
+        className={cn(
+          'w-full',
+          long &&
+            !expanded &&
+            'max-h-56 overflow-clip [mask-image:linear-gradient(to_bottom,#000_65%,transparent)]',
+        )}
+      />
       {long ? (
         <button
           type="button"
