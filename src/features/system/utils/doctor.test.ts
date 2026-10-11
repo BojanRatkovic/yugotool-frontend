@@ -20,6 +20,7 @@ function check(patch: Partial<DoctorCheck>): DoctorCheck {
     fix: null,
     fixCommand: null,
     group: 'machine',
+    accountId: null,
     ...patch,
   }
 }

@@ -137,7 +137,10 @@ function DoctorChecks({ report, busy }: { report: DoctorReport; busy: boolean })
         <ul id={listId} className="divide-y border-t">
           {doctorRows(report).map((row) =>
             row.kind === 'check' ? (
-              <CheckRow key={row.check.key} check={row.check} />
+              <CheckRow
+                key={`${row.check.key}-${row.check.accountId ?? ''}`}
+                check={row.check}
+              />
             ) : (
               <ServicesRow key="services" checks={row.checks} />
             ),
