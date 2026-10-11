@@ -31,6 +31,7 @@
     "@tanstack/react-query-persist-client": "^5.104.1",
     "@tanstack/react-router": "^1.170.41",
     "@tanstack/react-router-devtools": "^1.167.2",
+    "@tanstack/react-virtual": "^3.14.13",
     "@xyflow/react": "^12.12.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

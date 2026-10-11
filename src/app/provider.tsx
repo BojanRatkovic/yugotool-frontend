@@ -59,9 +59,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
           maxAge: CACHE_MAX_AGE,
           buster: CACHE_BUSTER,
           // Pull requests come live from GitHub and may hold private bodies: never on disk.
+          // Run diffs are uncapped (megabytes) and cheap to reread from the worktree.
           dehydrateOptions: {
             shouldDehydrateQuery: (query) =>
-              query.queryKey[0] !== 'pull-requests' && defaultShouldDehydrateQuery(query),
+              query.queryKey[0] !== 'pull-requests' &&
+              !(query.queryKey[0] === 'runs' && query.queryKey[1] === 'diff') &&
+              defaultShouldDehydrateQuery(query),
           },
         }}
       >
