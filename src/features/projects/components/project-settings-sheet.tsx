@@ -216,7 +216,7 @@ export function ProjectSettingsSheet({
 }
 
 /** "Preview ready / failing / Not tested" from the last test result. */
-export function PreviewStatusChip({
+function PreviewStatusChip({
   last,
   configured,
   testable = true,

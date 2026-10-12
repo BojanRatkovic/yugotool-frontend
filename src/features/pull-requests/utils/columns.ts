@@ -32,7 +32,7 @@ export interface PrColumnDef {
   empty: string
 }
 
-export const MINE_COLUMNS: readonly PrColumnDef[] = [
+const MINE_COLUMNS: readonly PrColumnDef[] = [
   {
     key: 'draft',
     title: 'Draft',
@@ -70,7 +70,7 @@ export const MINE_COLUMNS: readonly PrColumnDef[] = [
   },
 ]
 
-export const ASSIGNED_COLUMNS: readonly PrColumnDef[] = [
+const ASSIGNED_COLUMNS: readonly PrColumnDef[] = [
   {
     key: 'to_review',
     title: 'To review',
@@ -108,7 +108,7 @@ export const ASSIGNED_COLUMNS: readonly PrColumnDef[] = [
   },
 ]
 
-export function columnsFor(scope: PrScope): readonly PrColumnDef[] {
+function columnsFor(scope: PrScope): readonly PrColumnDef[] {
   return scope === 'mine' ? MINE_COLUMNS : ASSIGNED_COLUMNS
 }
 

@@ -583,7 +583,7 @@ function RetiredShiftNotice({
 }
 
 /** Shown on QA nodes and in the QA editor when the project can't be previewed. */
-export function PreviewMissingNotice({ onSetupPreview }: { onSetupPreview?: () => void }) {
+function PreviewMissingNotice({ onSetupPreview }: { onSetupPreview?: () => void }) {
   return (
     <div
       role="note"

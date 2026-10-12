@@ -20,9 +20,14 @@ contract is `yugotool-backend/packages/contracts`; `src/lib/contracts.ts` mirror
 ```bash
 pnpm install
 pnpm dev          # Vite on :4800, proxies /api -> yugotool-api on :4810 (prefix stripped)
-pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build   # quality gate — run before every commit
+pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build && pnpm fallow:audit   # quality gate — run before every commit
 pnpm format       # oxfmt write
+pnpm fallow       # full fallow report (dead code, dupes, health, boundaries)
 ```
+
+`pnpm fallow:audit` gates only what the change introduces. `.fallowrc.json` enforces
+the bulletproof boundaries below (features never import each other) and ignores
+generated code (`src/components/ui`, `src/lib/contracts.ts`, `routeTree.gen.ts`).
 
 ## Rules that override defaults
 

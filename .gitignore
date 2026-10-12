@@ -27,3 +27,6 @@ coverage/
 # Playwright
 /test-results/
 /playwright-report/
+
+# fallow cache
+.fallow/

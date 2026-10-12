@@ -55,7 +55,7 @@ export const runQueries = {
 }
 
 /** The latest run — the one the board reflects. */
-export function latestRun(runs: Run[]): Run | undefined {
+function latestRun(runs: Run[]): Run | undefined {
   return runs.toSorted((a, b) => b.startedAt.localeCompare(a.startedAt))[0]
 }
 

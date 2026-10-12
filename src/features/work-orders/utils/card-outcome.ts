@@ -4,7 +4,7 @@ import { REPO_HOOKS_STATION_KEY, type Station, type WorkOrder } from '@/lib/cont
 const STOPPED_WORD = { failed: 'Failed', cancelled: 'Cancelled', rejected: 'Rejected' } as const
 
 /** `review_gate` → `Review gate`: a readable name for a station key the line no longer has. */
-export function stationKeyLabel(key: string): string | null {
+function stationKeyLabel(key: string): string | null {
   const words = key.split('_').filter((word) => word !== '')
   if (words.length === 0) return null
   const text = words.join(' ')

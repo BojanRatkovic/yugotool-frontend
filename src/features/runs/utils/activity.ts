@@ -59,7 +59,7 @@ const SCREEN = /"name"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,\s*"path"\s*:\s*"((?:[^"\\]|
  * → `Planned 2 screens: About page (/about.html), Home (/)`. Tolerates the
  * worker's truncation (screens are read with a regex); null when it isn't a plan.
  */
-export function planSummary(json: string): string | null {
+function planSummary(json: string): string | null {
   if (!/^\s*\{\s*"screens"\s*:/.test(json)) return null
   const screens = [...json.matchAll(SCREEN)].map(
     ([, name = '', path = '']) => `${name.replaceAll('\\"', '"')} (${path})`,
@@ -89,7 +89,7 @@ export function parseToolCall(message: string, worktreePath: string | null): Too
 }
 
 /** `/…/.yugotool/artifacts/<runId>/qa/1/a.png` → `qa/1/a.png`. */
-export function stripArtifactRoot(text: string): string {
+function stripArtifactRoot(text: string): string {
   return text.replaceAll(/\S*\/\.yugotool\/artifacts\/[0-9a-f-]{36}\//g, '')
 }
 

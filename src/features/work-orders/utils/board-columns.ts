@@ -5,7 +5,7 @@ export const BACKLOG = '__backlog'
 export const DONE = '__done'
 
 /** Board column for a work order: backlog, its current station, or done. */
-export function columnFor(workOrder: WorkOrder, stationKeys: ReadonlySet<string>): string {
+function columnFor(workOrder: WorkOrder, stationKeys: ReadonlySet<string>): string {
   if (workOrder.status === 'done') return DONE
   if (workOrder.stationKey !== null && stationKeys.has(workOrder.stationKey)) {
     return workOrder.stationKey

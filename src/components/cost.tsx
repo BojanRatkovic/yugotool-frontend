@@ -3,7 +3,7 @@ import type { AuthSource } from '@/lib/contracts'
 import { formatUsd } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-export const ESTIMATE_HINT = 'API-equivalent estimate. Billed to your Max plan, not per token.'
+const ESTIMATE_HINT = 'API-equivalent estimate. Billed to your Max plan, not per token.'
 
 /**
  * `$0.18` in mono. On a subscription the number is an API-equivalent estimate,

@@ -21,13 +21,13 @@ const LABEL: Record<CiState, string> = {
 }
 
 /** Where a click goes: the first failing check, else the PR's checks tab. */
-export function ciLink(ci: CiStatus, prUrl: string): string {
+function ciLink(ci: CiStatus, prUrl: string): string {
   const failing = ci.checks.find((c) => c.bucket === 'fail' || c.bucket === 'cancel')
   return failing?.link ?? `${prUrl}/checks`
 }
 
 /** "CI failed · 1 failed · 3 passed · checked 4 min ago · newer commit on the PR". */
-export function ciTitle(ci: CiStatus, now = Date.now()): string {
+function ciTitle(ci: CiStatus, now = Date.now()): string {
   const newer =
     ci.deliveredSha !== null && ci.headSha !== null && ci.headSha !== ci.deliveredSha
       ? ` · on ${ci.headSha.slice(0, 7)}, newer than YugoTool's push`

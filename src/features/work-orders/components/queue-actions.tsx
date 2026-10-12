@@ -27,7 +27,7 @@ const RERUNNABLE: ReadonlySet<WorkOrder['status']> = new Set([
   'cancelled',
 ])
 
-export function canRunAgain(status: WorkOrder['status']): boolean {
+function canRunAgain(status: WorkOrder['status']): boolean {
   return RERUNNABLE.has(status)
 }
 
@@ -37,7 +37,7 @@ const QUEUED_TOAST: Record<QueueMode, string> = {
 }
 
 /** Start / queue / dequeue for one work order, with toasts. Shared by the header and the card menu. */
-export function useQueueActions(workOrder: Pick<WorkOrder, 'id'>) {
+function useQueueActions(workOrder: Pick<WorkOrder, 'id'>) {
   const start = useStartWorkOrder()
   const enqueue = useEnqueueWorkOrder()
   const dequeue = useDequeueWorkOrder()

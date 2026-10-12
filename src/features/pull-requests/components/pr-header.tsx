@@ -33,7 +33,7 @@ const STATE: Record<PrState, { label: string; tone: Tone; Icon: LucideIcon }> = 
   closed: { label: 'Closed', tone: 'cancelled', Icon: GitPullRequestClosed },
 }
 
-export function prState(pr: Pick<PullRequestDetail, 'state' | 'isDraft'>): PrState {
+function prState(pr: Pick<PullRequestDetail, 'state' | 'isDraft'>): PrState {
   return pr.state === 'open' && pr.isDraft ? 'draft' : pr.state
 }
 
