@@ -36,7 +36,7 @@ import { productiveQueries } from '@/features/integrations/api/productive-querie
 import { ProductiveImportDialog } from '@/features/integrations/components/productive-import-dialog'
 import { ProductiveMark } from '@/components/productive-mark'
 import { WorkOrderBoard } from '@/features/work-orders/components/work-order-board'
-import { isTypingTarget } from '@/lib/shortcuts'
+import { isTypingTarget, moveCardFocus } from '@/lib/shortcuts'
 
 const searchSchema = z.object({
   view: z.enum(['board', 'line', 'review']).default('board').catch('board'),
@@ -72,17 +72,6 @@ export const Route = createFileRoute('/projects/$projectId/')({
   },
   component: ProjectPage,
 })
-
-/** J/K walk the board's cards in reading order; Enter opens (native button). */
-function moveCardFocus(step: 1 | -1) {
-  const cards = [...document.querySelectorAll<HTMLElement>('[data-wo-card]')]
-  if (cards.length === 0) return
-  const index = cards.findIndex((card) => card === document.activeElement)
-  const next = index === -1 ? (step === 1 ? 0 : cards.length - 1) : index + step
-  const card = cards[Math.max(0, Math.min(cards.length - 1, next))]
-  card?.focus()
-  card?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-}
 
 function ProjectPage() {
   const { projectId } = Route.useParams()
@@ -143,7 +132,7 @@ function ProjectPage() {
         (event.key === 'j' || event.key === 'k')
       ) {
         event.preventDefault()
-        moveCardFocus(event.key === 'j' ? 1 : -1)
+        moveCardFocus('[data-wo-card]', event.key === 'j' ? 1 : -1)
       } else if (event.key === 'Escape' && full) {
         event.preventDefault()
         openWorkOrder(undefined)

@@ -10,7 +10,7 @@ import { PrBoard } from '@/features/pull-requests/components/pr-board'
 import { PrBoardHeader } from '@/features/pull-requests/components/pr-board-header'
 import { PrPanel, type PrPanelState } from '@/features/pull-requests/components/pr-panel'
 import { prScopeSchema } from '@/lib/contracts'
-import { isTypingTarget } from '@/lib/shortcuts'
+import { isTypingTarget, moveCardFocus } from '@/lib/shortcuts'
 
 const searchSchema = z.object({
   /** Open pull request. The URL is the source of truth for the panel. */
@@ -48,17 +48,6 @@ export const Route = createFileRoute('/projects/$projectId/pulls/$scope')({
   component: PullRequestsPage,
 })
 
-/** J/K walk the board's cards in reading order; Enter opens (native button). */
-function moveCardFocus(step: 1 | -1) {
-  const cards = [...document.querySelectorAll<HTMLElement>('[data-pr-card]')]
-  if (cards.length === 0) return
-  const index = cards.findIndex((card) => card === document.activeElement)
-  const next = index === -1 ? (step === 1 ? 0 : cards.length - 1) : index + step
-  const card = cards[Math.max(0, Math.min(cards.length - 1, next))]
-  card?.focus()
-  card?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-}
-
 function PullRequestsPage() {
   const { projectId, scope: rawScope } = Route.useParams()
   const scope = prScopeSchema.catch('mine').parse(rawScope)
@@ -88,7 +77,7 @@ function PullRequestsPage() {
       if (event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return
       if (pr === undefined && (event.key === 'j' || event.key === 'k')) {
         event.preventDefault()
-        moveCardFocus(event.key === 'j' ? 1 : -1)
+        moveCardFocus('[data-pr-card]', event.key === 'j' ? 1 : -1)
       } else if (event.key === 'Escape' && full) {
         event.preventDefault()
         openPr(undefined)
