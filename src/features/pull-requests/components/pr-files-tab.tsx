@@ -15,6 +15,12 @@ import {
 import { PrFileTree } from '@/features/pull-requests/components/pr-file-tree'
 import type { PrPanelState } from '@/features/pull-requests/components/pr-panel'
 import { placePr } from '@/features/pull-requests/utils/columns'
+import {
+  cycleThread,
+  nextUnviewed,
+  parseLineKey,
+  stepFile,
+} from '@/features/pull-requests/utils/file-nav'
 import { visibleFiles, type FileTreeNode } from '@/features/pull-requests/utils/file-tree'
 import { ApiError, errorMessage } from '@/lib/api-client'
 import type { PullRequestDetail } from '@/lib/contracts'
@@ -154,16 +160,23 @@ export function PrFilesTab({
     })
   }, [state.thread, state.file, pr.reviewThreads, files, onChange, parsed])
 
+  /** The first added or removed line of the open file, as a focused-line key. */
+  const firstChangedLine = () => {
+    const first = parsedByPath
+      .get(selectedPath ?? '')
+      ?.lines.find((l) => l.kind === 'add' || l.kind === 'del')
+    const anchor = first === undefined ? null : lineAnchor(first)
+    return anchor === null ? null : `${anchor.side}${anchor.line}`
+  }
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey || isPanelTypingTarget(event.target))
         return
-      const index = selectedPath === undefined ? -1 : order.indexOf(selectedPath)
       switch (event.key) {
         case 'j':
         case 'k': {
-          const next =
-            order[Math.max(0, Math.min(order.length - 1, index + (event.key === 'j' ? 1 : -1)))]
+          const next = stepFile(order, selectedPath, event.key === 'j' ? 1 : -1)
           if (next !== undefined) selectFile(next)
           break
         }
@@ -171,45 +184,22 @@ export function PrFilesTab({
           if (selected === undefined) return
           setViewed(selected.path, !selected.viewed)
           if (!selected.viewed) {
-            const rest = [...order.slice(index + 1), ...order.slice(0, index)]
-            const nextUnviewed = rest.find(
-              (p) => files.find((f) => f.path === p)?.viewed === false,
-            )
-            if (nextUnviewed !== undefined) selectFile(nextUnviewed)
+            const next = nextUnviewed(order, selectedPath, files)
+            if (next !== undefined) selectFile(next)
           }
           break
         }
         case 'n':
         case 'p': {
-          const ids = fileThreads
-            .filter((t) => t.line !== null)
-            .toSorted((a, b) => (a.line ?? 0) - (b.line ?? 0))
-            .map((t) => t.id)
-          if (ids.length === 0) return
-          const at = state.thread === undefined ? -1 : ids.indexOf(state.thread)
-          const next =
-            event.key === 'n'
-              ? ids[(at + 1) % ids.length]
-              : ids[(at - 1 + ids.length) % ids.length]
+          const next = cycleThread(fileThreads, state.thread, event.key === 'n' ? 1 : -1)
+          if (next === undefined) return
           onChange({ thread: next })
           break
         }
         case 'c': {
-          const line =
-            focusedLine ??
-            (() => {
-              const first = parsedByPath
-                .get(selectedPath ?? '')
-                ?.lines.find((l) => l.kind === 'add' || l.kind === 'del')
-              const anchor = first === undefined ? null : lineAnchor(first)
-              return anchor === null ? null : `${anchor.side}${anchor.line}`
-            })()
-          const match = line === null ? null : /^(LEFT|RIGHT)(\d+)$/.exec(line)
-          if (match === null) return
-          setCommentTarget({
-            side: match[1] === 'LEFT' ? 'LEFT' : 'RIGHT',
-            line: Number(match[2]),
-          })
+          const target = parseLineKey(focusedLine ?? firstChangedLine() ?? '')
+          if (target === null) return
+          setCommentTarget(target)
           break
         }
         default:
