@@ -149,59 +149,100 @@ function doneReason(pr: PullRequestSummary, now: number): string {
 const threadsWaiting = (n: number) =>
   `${n} thread${n === 1 ? '' : 's'} wait${n === 1 ? 's' : ''} on you`
 
-function placeMine(pr: PullRequestSummary, now: number): PrPlacement {
-  if (pr.state !== 'open') return { column: 'done', reason: doneReason(pr, now), tone: 'muted' }
-  const ciFailed = pr.ci === 'failure'
-  const conflict = pr.mergeable === 'CONFLICTING'
-  const ciLine =
-    pr.failingChecks.length > 0
-      ? `CI failed: ${pr.failingChecks.slice(0, 3).join(', ')}`
-      : 'CI failed'
-
-  if (pr.isDraft) {
-    const cause = ciFailed ? ' · CI failing' : conflict ? ' · Merge conflict' : ''
-    return { column: 'draft', reason: `Draft${cause}`, tone: cause ? 'failed' : 'muted' }
-  }
-
+/** Why an open, non-draft PR of mine needs work, or null when nothing blocks it. */
+function needsWork(pr: PullRequestSummary): PrPlacement | null {
   const requestedChanges = withState(pr.reviewers, 'CHANGES_REQUESTED')
   if (pr.reviewDecision === 'CHANGES_REQUESTED' || requestedChanges.length > 0) {
     const by = requestedChanges.length > 0 ? ` by ${names(requestedChanges)}` : ''
     return { column: 'needs_work', reason: `Changes requested${by}`, tone: 'waiting' }
   }
-  if (ciFailed) return { column: 'needs_work', reason: ciLine, tone: 'failed' }
-  if (pr.threads.waitingOnMe > 0) {
-    return {
-      column: 'needs_work',
-      reason: threadsWaiting(pr.threads.waitingOnMe),
-      tone: 'waiting',
-    }
+  if (pr.ci === 'failure') {
+    const checks = pr.failingChecks.slice(0, 3).join(', ')
+    const reason = checks ? `CI failed: ${checks}` : 'CI failed'
+    return { column: 'needs_work', reason, tone: 'failed' }
   }
-  if (conflict) return { column: 'needs_work', reason: 'Merge conflict', tone: 'failed' }
+  if (pr.threads.waitingOnMe > 0) {
+    const reason = threadsWaiting(pr.threads.waitingOnMe)
+    return { column: 'needs_work', reason, tone: 'waiting' }
+  }
+  if (pr.mergeable === 'CONFLICTING') {
+    return { column: 'needs_work', reason: 'Merge conflict', tone: 'failed' }
+  }
+  return null
+}
+
+function draftPlacement(pr: PullRequestSummary): PrPlacement {
+  const cause =
+    pr.ci === 'failure'
+      ? ' · CI failing'
+      : pr.mergeable === 'CONFLICTING'
+        ? ' · Merge conflict'
+        : ''
+  return { column: 'draft', reason: `Draft${cause}`, tone: cause ? 'failed' : 'muted' }
+}
+
+function inReviewLead(pr: PullRequestSummary, approved: boolean): string {
+  const waitingOn = withState(pr.reviewers, 'REQUESTED')
+  if (waitingOn.length > 0) return `Waiting on ${names(waitingOn)}`
+  if (approved) return 'Approved'
+  return pr.reviewers.length === 0 ? 'No reviewer yet' : 'In review'
+}
+
+function placeMine(pr: PullRequestSummary, now: number): PrPlacement {
+  if (pr.state !== 'open') return { column: 'done', reason: doneReason(pr, now), tone: 'muted' }
+  if (pr.isDraft) return draftPlacement(pr)
+  const blocked = needsWork(pr)
+  if (blocked) return blocked
 
   const approvers = withState(pr.reviewers, 'APPROVED')
   const approved =
     pr.reviewDecision === 'APPROVED' || (pr.reviewDecision === null && approvers.length > 0)
   if (approved && (pr.ci === 'success' || pr.ci === 'none')) {
     const by = approvers.length > 0 ? `Approved by ${names(approvers)}` : 'Approved'
-    return {
-      column: 'ready',
-      reason: `${by} · ${pr.ci === 'none' ? 'no CI' : 'CI green'}`,
-      tone: 'muted',
-    }
+    const ci = pr.ci === 'none' ? 'no CI' : 'CI green'
+    return { column: 'ready', reason: `${by} · ${ci}`, tone: 'muted' }
   }
 
-  const waitingOn = withState(pr.reviewers, 'REQUESTED')
-  const parts = [
-    waitingOn.length > 0
-      ? `Waiting on ${names(waitingOn)}`
-      : approved
-        ? 'Approved'
-        : pr.reviewers.length === 0
-          ? 'No reviewer yet'
-          : 'In review',
-  ]
+  const parts = [inReviewLead(pr, approved)]
   if (pr.ci === 'pending') parts.push('CI running')
   return { column: 'in_review', reason: parts.join(' · '), tone: 'muted' }
+}
+
+/** A PR I haven't reviewed yet: why it is on my plate. */
+function toReviewReason(pr: PullRequestSummary, now: number): string {
+  const opened = ago(pr.createdAt, now)
+  if (pr.requestedFromMe) return `Requested · opened ${opened}`
+  if (pr.requestedFromMyTeam) return `Team request · opened ${opened}`
+  return pr.assignedToMe ? 'Assigned' : `Opened ${opened}`
+}
+
+type MyLastReview = NonNullable<PullRequestSummary['myLastReview']>
+
+/** Back on my plate after my review, or null. */
+function reReview(
+  last: MyLastReview,
+  requestedFromMe: boolean,
+  newCommits: boolean,
+): PrPlacement | null {
+  if (requestedFromMe) {
+    const since = newCommits ? ' · new commits since your review' : ''
+    return { column: 're_review', reason: `Re-requested${since}`, tone: 'waiting' }
+  }
+  if (last.state === 'CHANGES_REQUESTED' && newCommits) {
+    const reason = 'New commits since you requested changes'
+    return { column: 're_review', reason, tone: 'waiting' }
+  }
+  if (last.state === 'DISMISSED') {
+    return { column: 're_review', reason: 'Your review was dismissed', tone: 'waiting' }
+  }
+  return null
+}
+
+function approvedTail(pr: PullRequestSummary, newCommits: boolean): string {
+  if (newCommits) return 'new commits since'
+  if (pr.reviewDecision === 'APPROVED') return 'approved'
+  const more = withState(pr.reviewers, 'REQUESTED').length
+  return more > 0 ? `waiting on ${more} more` : 'waiting on others'
 }
 
 function placeAssigned(pr: PullRequestSummary, now: number): PrPlacement {
@@ -210,43 +251,15 @@ function placeAssigned(pr: PullRequestSummary, now: number): PrPlacement {
     return { column: 'done', reason: by, tone: 'muted' }
   }
   const last = pr.myLastReview
-  if (last === null) {
-    const reason = pr.requestedFromMe
-      ? `Requested · opened ${ago(pr.createdAt, now)}`
-      : pr.requestedFromMyTeam
-        ? `Team request · opened ${ago(pr.createdAt, now)}`
-        : pr.assignedToMe
-          ? 'Assigned'
-          : `Opened ${ago(pr.createdAt, now)}`
-    return { column: 'to_review', reason, tone: 'waiting' }
-  }
+  if (last === null)
+    return { column: 'to_review', reason: toReviewReason(pr, now), tone: 'waiting' }
 
   const newCommits = last.commitOid !== pr.headOid
-  if (pr.requestedFromMe) {
-    const since = newCommits ? ' · new commits since your review' : ''
-    return { column: 're_review', reason: `Re-requested${since}`, tone: 'waiting' }
-  }
-  if (last.state === 'CHANGES_REQUESTED' && newCommits) {
-    return {
-      column: 're_review',
-      reason: 'New commits since you requested changes',
-      tone: 'waiting',
-    }
-  }
-  if (last.state === 'DISMISSED') {
-    return { column: 're_review', reason: 'Your review was dismissed', tone: 'waiting' }
-  }
-
+  const back = reReview(last, pr.requestedFromMe, newCommits)
+  if (back) return back
   if (last.state === 'APPROVED') {
-    const more = withState(pr.reviewers, 'REQUESTED').length
-    const tail = newCommits
-      ? 'new commits since'
-      : pr.reviewDecision === 'APPROVED'
-        ? 'approved'
-        : more > 0
-          ? `waiting on ${more} more`
-          : 'waiting on others'
-    return { column: 'approved', reason: `You approved · ${tail}`, tone: 'muted' }
+    const reason = `You approved · ${approvedTail(pr, newCommits)}`
+    return { column: 'approved', reason, tone: 'muted' }
   }
 
   // CHANGES_REQUESTED without new commits, COMMENTED (with or without), a draft.
