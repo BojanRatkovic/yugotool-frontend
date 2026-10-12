@@ -41,7 +41,7 @@ import { requestChangesCopy } from '@/features/runs/utils/request-changes'
 import { RecheckCiButton } from '@/features/work-orders/components/ci-recheck'
 import { OpenPullRequestAction } from '@/features/work-orders/components/open-pull-request'
 import { RunAgainButton } from '@/features/work-orders/components/queue-actions'
-import type { DeliveryMode, Station } from '@/lib/contracts'
+import type { DeliveryMode, Run, Station } from '@/lib/contracts'
 import { errorMessage } from '@/lib/api-client'
 import { isTypingTarget } from '@/lib/shortcuts'
 import { cn } from '@/lib/utils'
@@ -218,76 +218,17 @@ export function WorkOrderPanel({
   }, [])
 
   if (workOrder === undefined) {
-    if (isLoading) return <PanelSkeleton />
-    return (
-      <div className="flex h-full flex-col items-start gap-2 p-6">
-        <p className="text-sm font-medium">Work order not found</p>
-        <p className="text-[0.8125rem] text-muted-foreground">
-          It may have been removed, or it hasn&rsquo;t synced yet.
-        </p>
-        <Button variant="outline" size="sm" onClick={onClose}>
-          Back to the board
-        </Button>
-      </div>
-    )
+    return isLoading ? <PanelSkeleton /> : <WorkOrderNotFound onClose={onClose} />
   }
 
-  const railLabel = railOpen ? 'Hide details' : 'Show details'
   const controls = (
-    <>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={railLabel}
-            aria-expanded={railOpen}
-            aria-controls={railId}
-            aria-keyshortcuts="]"
-            // Open is the resting state: don't wear the "menu open" fill ghost buttons get.
-            className="aria-expanded:bg-transparent aria-expanded:hover:bg-muted dark:aria-expanded:hover:bg-muted/50"
-            onClick={toggleDetailsRail}
-          >
-            {railOpen ? (
-              <PanelRightClose aria-hidden="true" />
-            ) : (
-              <PanelRightOpen aria-hidden="true" />
-            )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          {railLabel} <span className="font-mono">]</span>
-        </TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={state.full ? 'Show as panel' : 'Expand to full page'}
-            onClick={() => onChange({ full: !state.full })}
-          >
-            {state.full ? <Minimize2 aria-hidden="true" /> : <Maximize2 aria-hidden="true" />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{state.full ? 'Show as panel' : 'Expand to full page'}</TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Close work order"
-            onClick={onClose}
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          Close <span className="font-mono">Esc</span>
-        </TooltipContent>
-      </Tooltip>
-    </>
+    <PanelControls
+      railOpen={railOpen}
+      railId={railId}
+      full={state.full}
+      onToggleFull={() => onChange({ full: !state.full })}
+      onClose={onClose}
+    />
   )
 
   return (
@@ -376,59 +317,21 @@ export function WorkOrderPanel({
               focusOnMount
             />
           )}
-          <Tabs
-            value={tab}
-            onValueChange={(value) =>
-              onChange({ tab: TABS.find((t) => t === value) ?? 'activity' })
+          <PanelTabs
+            tab={tab}
+            onTab={(next) => onChange({ tab: next })}
+            findings={findings}
+            showShifts={showShifts}
+            showQa={showQa}
+            qaDiffs={qaDiffs}
+            stationFilter={
+              state.station === undefined || tab !== 'activity'
+                ? null
+                : (states.find(({ station }) => station.key === state.station)?.station.name ??
+                  state.station)
             }
-            className="gap-0"
-          >
-            <div className="flex h-10 items-center gap-3 border-b px-4">
-              <TabsList variant="line" className="h-10 gap-3 p-0">
-                <TabsTrigger value="activity" className="px-0 text-[0.8125rem]">
-                  Activity
-                </TabsTrigger>
-                <TabsTrigger value="diff" className="px-0 text-[0.8125rem]">
-                  Diff
-                </TabsTrigger>
-                <TabsTrigger value="findings" className="px-0 text-[0.8125rem]">
-                  Findings
-                  {findings === 0 ? null : (
-                    <span className="rounded-sm bg-muted px-1 font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
-                      {findings}
-                    </span>
-                  )}
-                </TabsTrigger>
-                {showShifts ? (
-                  <TabsTrigger value="shifts" className="px-0 text-[0.8125rem]">
-                    Shifts
-                  </TabsTrigger>
-                ) : null}
-                {showQa ? (
-                  <TabsTrigger value="qa" className="px-0 text-[0.8125rem]">
-                    QA
-                    {qaDiffs === null || qaDiffs === 0 ? null : (
-                      <span className="rounded-sm bg-muted px-1 font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
-                        {qaDiffs}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                ) : null}
-              </TabsList>
-              {state.station === undefined || tab !== 'activity' ? null : (
-                <button
-                  type="button"
-                  onClick={() => onChange({ station: undefined })}
-                  className="ml-auto inline-flex h-6 items-center gap-1 rounded-md bg-muted px-2 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  {states.find(({ station }) => station.key === state.station)?.station.name ??
-                    state.station}
-                  <X aria-hidden="true" className="size-3" />
-                  <span className="sr-only">Clear station filter</span>
-                </button>
-              )}
-            </div>
-          </Tabs>
+            onClearStation={() => onChange({ station: undefined })}
+          />
           <div
             className={cn(
               'relative min-h-0 flex-1',
@@ -439,47 +342,15 @@ export function WorkOrderPanel({
                 : 'scrollbar-thin overflow-y-auto',
             )}
           >
-            {runs.isPending ? (
-              <div className="flex flex-col gap-2 p-4" aria-busy="true">
-                {Array.from({ length: 8 }, (_, index) => (
-                  <Skeleton key={index} className="h-5 w-full" />
-                ))}
-              </div>
-            ) : run === undefined ? (
-              <div className="flex flex-col items-start gap-1 p-6">
-                <p className="text-sm font-medium">Not started</p>
-                <p className="text-[0.8125rem] text-muted-foreground">
-                  Start the work order to send it down the line. Activity, the diff and findings
-                  appear here as stations run.
-                </p>
-              </div>
-            ) : tab === 'diff' ? (
-              <RunDiff run={run} />
-            ) : tab === 'shifts' ? (
-              <ShiftsView
-                run={run}
-                stations={stations}
-                selectedShift={state.shift}
-                onSelectShift={(shift) => onChange({ shift })}
-              />
-            ) : tab === 'qa' ? (
-              <QaView
-                run={run}
-                attempt={state.qaAttempt}
-                checkId={state.qaCheck}
-                onSelect={(next) =>
-                  onChange({
-                    ...('attempt' in next ? { qaAttempt: next.attempt } : {}),
-                    ...('check' in next ? { qaCheck: next.check } : {}),
-                  })
-                }
-                onEditPreview={onEditPreview}
-              />
-            ) : tab === 'findings' ? (
-              <FindingsView run={run} stations={stations} />
-            ) : (
-              <ActivityFeed run={run} stations={stations} stationKey={state.station} />
-            )}
+            <TabBody
+              loading={runs.isPending}
+              run={run}
+              tab={tab}
+              stations={stations}
+              state={state}
+              onChange={onChange}
+              onEditPreview={onEditPreview}
+            />
           </div>
         </main>
 
@@ -536,4 +407,236 @@ export function WorkOrderPanel({
       </div>
     </div>
   )
+}
+
+function WorkOrderNotFound({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="flex h-full flex-col items-start gap-2 p-6">
+      <p className="text-sm font-medium">Work order not found</p>
+      <p className="text-[0.8125rem] text-muted-foreground">
+        It may have been removed, or it hasn&rsquo;t synced yet.
+      </p>
+      <Button variant="outline" size="sm" onClick={onClose}>
+        Back to the board
+      </Button>
+    </div>
+  )
+}
+
+/** Header buttons: details rail, full page, close. */
+function PanelControls({
+  railOpen,
+  railId,
+  full,
+  onToggleFull,
+  onClose,
+}: {
+  railOpen: boolean
+  railId: string
+  full: boolean
+  onToggleFull: () => void
+  onClose: () => void
+}) {
+  const railLabel = railOpen ? 'Hide details' : 'Show details'
+  return (
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={railLabel}
+            aria-expanded={railOpen}
+            aria-controls={railId}
+            aria-keyshortcuts="]"
+            // Open is the resting state: don't wear the "menu open" fill ghost buttons get.
+            className="aria-expanded:bg-transparent aria-expanded:hover:bg-muted dark:aria-expanded:hover:bg-muted/50"
+            onClick={toggleDetailsRail}
+          >
+            {railOpen ? (
+              <PanelRightClose aria-hidden="true" />
+            ) : (
+              <PanelRightOpen aria-hidden="true" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {railLabel} <span className="font-mono">]</span>
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={full ? 'Show as panel' : 'Expand to full page'}
+            onClick={onToggleFull}
+          >
+            {full ? <Minimize2 aria-hidden="true" /> : <Maximize2 aria-hidden="true" />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{full ? 'Show as panel' : 'Expand to full page'}</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Close work order"
+            onClick={onClose}
+          >
+            <X aria-hidden="true" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          Close <span className="font-mono">Esc</span>
+        </TooltipContent>
+      </Tooltip>
+    </>
+  )
+}
+
+const tabCount = (n: number) => (
+  <span className="rounded-sm bg-muted px-1 font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
+    {n}
+  </span>
+)
+
+/** Activity / Diff / Findings (+ Shifts, QA), and the station filter chip on Activity. */
+function PanelTabs({
+  tab,
+  onTab,
+  findings,
+  showShifts,
+  showQa,
+  qaDiffs,
+  stationFilter,
+  onClearStation,
+}: {
+  tab: PanelTab
+  onTab: (tab: PanelTab) => void
+  findings: number
+  showShifts: boolean
+  showQa: boolean
+  qaDiffs: number | null
+  /** The station Activity is filtered to, by name; null when unfiltered. */
+  stationFilter: string | null
+  onClearStation: () => void
+}) {
+  return (
+    <Tabs
+      value={tab}
+      onValueChange={(value) => onTab(TABS.find((t) => t === value) ?? 'activity')}
+      className="gap-0"
+    >
+      <div className="flex h-10 items-center gap-3 border-b px-4">
+        <TabsList variant="line" className="h-10 gap-3 p-0">
+          <TabsTrigger value="activity" className="px-0 text-[0.8125rem]">
+            Activity
+          </TabsTrigger>
+          <TabsTrigger value="diff" className="px-0 text-[0.8125rem]">
+            Diff
+          </TabsTrigger>
+          <TabsTrigger value="findings" className="px-0 text-[0.8125rem]">
+            Findings
+            {findings === 0 ? null : tabCount(findings)}
+          </TabsTrigger>
+          {showShifts ? (
+            <TabsTrigger value="shifts" className="px-0 text-[0.8125rem]">
+              Shifts
+            </TabsTrigger>
+          ) : null}
+          {showQa ? (
+            <TabsTrigger value="qa" className="px-0 text-[0.8125rem]">
+              QA
+              {qaDiffs === null || qaDiffs === 0 ? null : tabCount(qaDiffs)}
+            </TabsTrigger>
+          ) : null}
+        </TabsList>
+        {stationFilter === null ? null : (
+          <button
+            type="button"
+            onClick={onClearStation}
+            className="ml-auto inline-flex h-6 items-center gap-1 rounded-md bg-muted px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            {stationFilter}
+            <X aria-hidden="true" className="size-3" />
+            <span className="sr-only">Clear station filter</span>
+          </button>
+        )}
+      </div>
+    </Tabs>
+  )
+}
+
+/** The selected tab's content, or a skeleton / "Not started". */
+function TabBody({
+  loading,
+  run,
+  tab,
+  stations,
+  state,
+  onChange,
+  onEditPreview,
+}: {
+  loading: boolean
+  run: Run | undefined
+  tab: PanelTab
+  stations: Station[]
+  state: PanelState
+  onChange: (next: Partial<PanelState>) => void
+  onEditPreview: () => void
+}) {
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2 p-4" aria-busy="true">
+        {Array.from({ length: 8 }, (_, index) => (
+          <Skeleton key={index} className="h-5 w-full" />
+        ))}
+      </div>
+    )
+  }
+  if (run === undefined) {
+    return (
+      <div className="flex flex-col items-start gap-1 p-6">
+        <p className="text-sm font-medium">Not started</p>
+        <p className="text-[0.8125rem] text-muted-foreground">
+          Start the work order to send it down the line. Activity, the diff and findings appear
+          here as stations run.
+        </p>
+      </div>
+    )
+  }
+  switch (tab) {
+    case 'diff':
+      return <RunDiff run={run} />
+    case 'shifts':
+      return (
+        <ShiftsView
+          run={run}
+          stations={stations}
+          selectedShift={state.shift}
+          onSelectShift={(shift) => onChange({ shift })}
+        />
+      )
+    case 'qa':
+      return (
+        <QaView
+          run={run}
+          attempt={state.qaAttempt}
+          checkId={state.qaCheck}
+          onSelect={(next) =>
+            onChange({
+              ...('attempt' in next ? { qaAttempt: next.attempt } : {}),
+              ...('check' in next ? { qaCheck: next.check } : {}),
+            })
+          }
+          onEditPreview={onEditPreview}
+        />
+      )
+    case 'findings':
+      return <FindingsView run={run} stations={stations} />
+    default:
+      return <ActivityFeed run={run} stations={stations} stationKey={state.station} />
+  }
 }
