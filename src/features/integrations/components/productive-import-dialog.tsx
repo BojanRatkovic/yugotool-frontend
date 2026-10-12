@@ -159,98 +159,47 @@ function ImportBody({ projectId, onDone }: { projectId: string; onDone: () => vo
           <Skeleton className="h-9 w-full" />
         </div>
       ) : !connected ? (
-        <div className="flex flex-col items-start gap-3 p-4 text-[0.8125rem]">
-          <p className="text-muted-foreground">
-            Productive isn&rsquo;t connected yet. Add your API token first.
-          </p>
-          <Button asChild size="sm" variant="outline">
-            <Link to="/settings/integrations" onClick={onDone}>
-              Open Settings → Integrations
-            </Link>
-          </Button>
-        </div>
+        <NotConnected onDone={onDone} />
       ) : (
         <>
-          <div className="flex flex-col gap-2 border-b p-3 sm:flex-row sm:items-center">
-            <ProjectPicker
-              value={productiveProjectId}
-              onChange={(id) => {
-                setProductiveProjectId(id)
-                rememberProductiveProject(projectId, id)
-              }}
-            />
-            <InputGroup className="h-8 sm:flex-1">
-              <InputGroupAddon>
-                <Search aria-hidden="true" />
-              </InputGroupAddon>
-              <InputGroupInput
-                aria-label="Search tasks"
-                id={SEARCH_ID}
-                placeholder="Search titles"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </InputGroup>
-            <div className="flex items-center gap-2 sm:pl-1">
-              <Switch id="productive-mine" checked={mine} onCheckedChange={setMine} />
-              <Label htmlFor="productive-mine" className="text-[0.8125rem] font-normal">
-                Assigned to me
-              </Label>
-            </div>
-          </div>
+          <TaskFilters
+            productiveProjectId={productiveProjectId}
+            onProductiveProject={(id) => {
+              setProductiveProjectId(id)
+              rememberProductiveProject(projectId, id)
+            }}
+            query={query}
+            onQuery={setQuery}
+            mine={mine}
+            onMine={setMine}
+          />
 
-          <div className="flex items-center gap-3 border-b px-4 py-2 text-xs text-muted-foreground">
-            <input
-              type="checkbox"
-              aria-label="Select every task shown"
-              className="size-4 accent-foreground"
-              checked={allPicked}
-              disabled={pickable.length === 0}
-              onChange={() =>
-                setSelected(allPicked ? new Set() : new Set(pickable.map((task) => task.id)))
-              }
-            />
-            <span className="mr-auto">
-              {tasks.isPending
+          <SelectAllBar
+            allPicked={allPicked}
+            canPick={pickable.length > 0}
+            onToggleAll={() =>
+              setSelected(allPicked ? new Set() : new Set(pickable.map((task) => task.id)))
+            }
+            label={
+              tasks.isPending
                 ? 'Loading open tasks…'
-                : `${items.length}${tasks.hasNextPage ? '+' : ''} open task${items.length === 1 ? '' : 's'}`}
-            </span>
-            {tasks.isFetching && !tasks.isPending ? (
-              <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
-            ) : null}
-          </div>
+                : `${items.length}${tasks.hasNextPage ? '+' : ''} open task${items.length === 1 ? '' : 's'}`
+            }
+            refreshing={tasks.isFetching && !tasks.isPending}
+          />
 
           <div
             className="min-h-40 flex-1 scrollbar-thin overflow-y-auto"
             aria-busy={tasks.isPending}
           >
-            {tasks.isPending ? (
-              <div className="flex flex-col gap-2 p-4">
-                {[0, 1, 2, 3].map((row) => (
-                  <Skeleton key={row} className="h-12 w-full" />
-                ))}
-              </div>
-            ) : tasks.error !== null && items.length === 0 ? (
-              <p className="p-4 text-[0.8125rem] text-destructive">
-                Couldn&rsquo;t load tasks: {errorMessage(tasks.error)}
-              </p>
-            ) : items.length === 0 ? (
-              <p className="p-4 text-[0.8125rem] text-muted-foreground">
-                No open tasks match.
-                {mine ? ' Turn off "Assigned to me" to see everyone’s.' : null}
-              </p>
-            ) : (
-              <ul className="divide-y">
-                {items.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    checked={selected.has(task.id)}
-                    onToggle={() => toggle(task.id)}
-                  />
-                ))}
-              </ul>
-            )}
+            <TaskListBody
+              loading={tasks.isPending}
+              error={tasks.error}
+              items={items}
+              mine={mine}
+              selected={selected}
+              onToggle={toggle}
+            />
             {tasks.hasNextPage ? (
               <div className="flex justify-center p-3">
                 <Button
@@ -268,28 +217,185 @@ function ImportBody({ projectId, onDone }: { projectId: string; onDone: () => vo
         </>
       )}
 
-      <DialogFooter className="m-0 flex-row items-center gap-2 border-t p-3 sm:justify-end">
-        <span className="mr-auto text-xs text-muted-foreground" aria-live="polite">
-          {selected.size === 0 ? 'Nothing selected' : `${selected.size} selected`}
-        </span>
-        <Button type="button" variant="ghost" size="sm" onClick={onDone}>
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          disabled={selected.size === 0 || importTasks.isPending}
-          onClick={submit}
-        >
-          {importTasks.isPending ? (
-            <LoaderCircle aria-hidden="true" className="animate-spin" />
-          ) : (
-            <ListPlus aria-hidden="true" />
-          )}
-          {selected.size > 1 ? `Add ${selected.size} to backlog` : 'Add to backlog'}
-        </Button>
-      </DialogFooter>
+      <ImportFooter
+        count={selected.size}
+        pending={importTasks.isPending}
+        onCancel={onDone}
+        onSubmit={submit}
+      />
     </>
+  )
+}
+
+function SelectAllBar({
+  allPicked,
+  canPick,
+  onToggleAll,
+  label,
+  refreshing,
+}: {
+  allPicked: boolean
+  canPick: boolean
+  onToggleAll: () => void
+  label: string
+  refreshing: boolean
+}) {
+  return (
+    <div className="flex items-center gap-3 border-b px-4 py-2 text-xs text-muted-foreground">
+      <input
+        type="checkbox"
+        aria-label="Select every task shown"
+        className="size-4 accent-foreground"
+        checked={allPicked}
+        disabled={!canPick}
+        onChange={onToggleAll}
+      />
+      <span className="mr-auto">{label}</span>
+      {refreshing ? (
+        <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+      ) : null}
+    </div>
+  )
+}
+
+function ImportFooter({
+  count,
+  pending,
+  onCancel,
+  onSubmit,
+}: {
+  count: number
+  pending: boolean
+  onCancel: () => void
+  onSubmit: () => void
+}) {
+  return (
+    <DialogFooter className="m-0 flex-row items-center gap-2 border-t p-3 sm:justify-end">
+      <span className="mr-auto text-xs text-muted-foreground" aria-live="polite">
+        {count === 0 ? 'Nothing selected' : `${count} selected`}
+      </span>
+      <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
+        Cancel
+      </Button>
+      <Button type="button" size="sm" disabled={count === 0 || pending} onClick={onSubmit}>
+        {pending ? (
+          <LoaderCircle aria-hidden="true" className="animate-spin" />
+        ) : (
+          <ListPlus aria-hidden="true" />
+        )}
+        {count > 1 ? `Add ${count} to backlog` : 'Add to backlog'}
+      </Button>
+    </DialogFooter>
+  )
+}
+
+function NotConnected({ onDone }: { onDone: () => void }) {
+  return (
+    <div className="flex flex-col items-start gap-3 p-4 text-[0.8125rem]">
+      <p className="text-muted-foreground">
+        Productive isn&rsquo;t connected yet. Add your API token first.
+      </p>
+      <Button asChild size="sm" variant="outline">
+        <Link to="/settings/integrations" onClick={onDone}>
+          Open Settings → Integrations
+        </Link>
+      </Button>
+    </div>
+  )
+}
+
+/** Productive project, title search and "Assigned to me". */
+function TaskFilters({
+  productiveProjectId,
+  onProductiveProject,
+  query,
+  onQuery,
+  mine,
+  onMine,
+}: {
+  productiveProjectId: string | null
+  onProductiveProject: (id: string | null) => void
+  query: string
+  onQuery: (query: string) => void
+  mine: boolean
+  onMine: (mine: boolean) => void
+}) {
+  return (
+    <div className="flex flex-col gap-2 border-b p-3 sm:flex-row sm:items-center">
+      <ProjectPicker value={productiveProjectId} onChange={onProductiveProject} />
+      <InputGroup className="h-8 sm:flex-1">
+        <InputGroupAddon>
+          <Search aria-hidden="true" />
+        </InputGroupAddon>
+        <InputGroupInput
+          aria-label="Search tasks"
+          id={SEARCH_ID}
+          placeholder="Search titles"
+          value={query}
+          onChange={(event) => onQuery(event.target.value)}
+        />
+      </InputGroup>
+      <div className="flex items-center gap-2 sm:pl-1">
+        <Switch id="productive-mine" checked={mine} onCheckedChange={onMine} />
+        <Label htmlFor="productive-mine" className="text-[0.8125rem] font-normal">
+          Assigned to me
+        </Label>
+      </div>
+    </div>
+  )
+}
+
+/** The task rows, or a skeleton, the load error, or the empty note. */
+function TaskListBody({
+  loading,
+  error,
+  items,
+  mine,
+  selected,
+  onToggle,
+}: {
+  loading: boolean
+  error: Error | null
+  items: ProductiveTask[]
+  mine: boolean
+  selected: ReadonlySet<string>
+  onToggle: (id: string) => void
+}) {
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2 p-4">
+        {[0, 1, 2, 3].map((row) => (
+          <Skeleton key={row} className="h-12 w-full" />
+        ))}
+      </div>
+    )
+  }
+  if (error !== null && items.length === 0) {
+    return (
+      <p className="p-4 text-[0.8125rem] text-destructive">
+        Couldn&rsquo;t load tasks: {errorMessage(error)}
+      </p>
+    )
+  }
+  if (items.length === 0) {
+    return (
+      <p className="p-4 text-[0.8125rem] text-muted-foreground">
+        No open tasks match.
+        {mine ? ' Turn off "Assigned to me" to see everyone’s.' : null}
+      </p>
+    )
+  }
+  return (
+    <ul className="divide-y">
+      {items.map((task) => (
+        <TaskRow
+          key={task.id}
+          task={task}
+          checked={selected.has(task.id)}
+          onToggle={() => onToggle(task.id)}
+        />
+      ))}
+    </ul>
   )
 }
 
