@@ -71,13 +71,3 @@ export const TONE_BG: Record<Tone, string> = {
   cancelled: 'bg-status-cancelled',
   skipped: 'bg-status-skipped',
 }
-
-export const TONE_BORDER: Record<Tone, string> = {
-  queued: 'border-status-queued',
-  running: 'border-status-running',
-  passed: 'border-status-passed',
-  failed: 'border-status-failed',
-  waiting: 'border-status-waiting',
-  cancelled: 'border-status-cancelled',
-  skipped: 'border-status-skipped',
-}

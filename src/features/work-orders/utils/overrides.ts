@@ -11,7 +11,7 @@ export interface OverrideValues {
 }
 
 /** Smallest cap a work order accepts (one cent). */
-export const MIN_BUDGET_USD = 0.01
+const MIN_BUDGET_USD = 0.01
 
 export const budgetFieldSchema = z.string().refine((raw) => {
   const value = parseBudget(raw)

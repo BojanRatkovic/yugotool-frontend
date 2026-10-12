@@ -22,7 +22,7 @@ import { parsePatch } from '@/lib/diff'
 import { isPanelTypingTarget } from '@/features/pull-requests/utils/keys'
 
 /** Whether "Since your last review" applies, and whether it's on by default (Re-review). */
-export function sinceReview(pr: PullRequestDetail, viewer: string) {
+function sinceReview(pr: PullRequestDetail, viewer: string) {
   const last = pr.myLastReview
   const available = pr.author.login !== viewer && last !== null && last.commitOid !== pr.headOid
   return {

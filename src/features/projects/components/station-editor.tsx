@@ -147,6 +147,62 @@ export function StationEditor({
   )
 }
 
+type SessionKnobs = Pick<AgentStation, 'model' | 'effort' | 'maxBudgetUsd'>
+
+interface KnobProps {
+  station: SessionKnobs & { key: string }
+  issues: Issues
+  set: (patch: Partial<SessionKnobs>) => void
+}
+
+/** Model + effort: every station that runs a Claude session has the pair. */
+function ModelEffortFields({ station, issues, set }: KnobProps) {
+  const id = (field: string) => `station-${station.key}-${field}`
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <FormField id={id('model')} label="Model" errors={errorsFor(issues, 'model')}>
+        <ModelSelect
+          id={id('model')}
+          value={station.model}
+          onChange={(model) => (model === null ? null : set({ model }))}
+        />
+      </FormField>
+      <FormField id={id('effort')} label="Effort" errors={errorsFor(issues, 'effort')}>
+        <EffortSelect
+          id={id('effort')}
+          value={station.effort ?? null}
+          defaultLabel="Default"
+          // Undefined drops the key on save; the dirty check ignores it too.
+          onChange={(effort) => set({ effort: effort ?? undefined })}
+        />
+      </FormField>
+    </div>
+  )
+}
+
+function BudgetField({ station, issues, set, label }: KnobProps & { label: string }) {
+  const id = `station-${station.key}-maxBudgetUsd`
+  return (
+    <FormField id={id} label={label} errors={errorsFor(issues, 'maxBudgetUsd')}>
+      <Input
+        id={id}
+        type="number"
+        inputMode="decimal"
+        min={0.01}
+        step={0.01}
+        placeholder="No limit"
+        className="tabular"
+        value={station.maxBudgetUsd ?? ''}
+        onChange={(event) => {
+          const budget = parseBudget(event.target.value)
+          if (budget === undefined) return
+          set({ maxBudgetUsd: budget ?? undefined })
+        }}
+      />
+    </FormField>
+  )
+}
+
 type SessionPatch = Partial<
   Pick<AgentStation, 'role' | 'model' | 'effort' | 'maxBudgetUsd' | 'allowedTools' | 'prompt'>
 >
@@ -189,45 +245,8 @@ function SessionFields({
           />
         </FormField>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <FormField id={id('model')} label="Model" errors={errorsFor(issues, 'model')}>
-          <ModelSelect
-            id={id('model')}
-            value={station.model}
-            onChange={(model) => (model === null ? null : set({ model }))}
-          />
-        </FormField>
-        <FormField id={id('effort')} label="Effort" errors={errorsFor(issues, 'effort')}>
-          <EffortSelect
-            id={id('effort')}
-            value={station.effort ?? null}
-            defaultLabel="Default"
-            // Undefined drops the key on save; the dirty check ignores it too.
-            onChange={(effort) => set({ effort: effort ?? undefined })}
-          />
-        </FormField>
-      </div>
-      <FormField
-        id={id('maxBudgetUsd')}
-        label={budgetLabel}
-        errors={errorsFor(issues, 'maxBudgetUsd')}
-      >
-        <Input
-          id={id('maxBudgetUsd')}
-          type="number"
-          inputMode="decimal"
-          min={0.01}
-          step={0.01}
-          placeholder="No limit"
-          className="tabular"
-          value={station.maxBudgetUsd ?? ''}
-          onChange={(event) => {
-            const budget = parseBudget(event.target.value)
-            if (budget === undefined) return
-            set({ maxBudgetUsd: budget ?? undefined })
-          }}
-        />
-      </FormField>
+      <ModelEffortFields station={station} issues={issues} set={set} />
+      <BudgetField station={station} issues={issues} set={set} label={budgetLabel} />
       <fieldset className="flex flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-medium">Allowed tools</legend>
         <div className="flex flex-wrap gap-1.5">
@@ -583,7 +602,7 @@ function RetiredShiftNotice({
 }
 
 /** Shown on QA nodes and in the QA editor when the project can't be previewed. */
-export function PreviewMissingNotice({ onSetupPreview }: { onSetupPreview?: () => void }) {
+function PreviewMissingNotice({ onSetupPreview }: { onSetupPreview?: () => void }) {
   return (
     <div
       role="note"
@@ -663,23 +682,7 @@ function QaFields({
         with the screenshots.
       </p>
       {nameField}
-      <div className="grid grid-cols-2 gap-3">
-        <FormField id={id('model')} label="Model" errors={errorsFor(issues, 'model')}>
-          <ModelSelect
-            id={id('model')}
-            value={station.model}
-            onChange={(model) => (model === null ? null : set({ model }))}
-          />
-        </FormField>
-        <FormField id={id('effort')} label="Effort" errors={errorsFor(issues, 'effort')}>
-          <EffortSelect
-            id={id('effort')}
-            value={station.effort ?? null}
-            defaultLabel="Default"
-            onChange={(effort) => set({ effort: effort ?? undefined })}
-          />
-        </FormField>
-      </div>
+      <ModelEffortFields station={station} issues={issues} set={set} />
       <div className="grid grid-cols-2 gap-3">
         <fieldset className="flex flex-col gap-1.5">
           <legend className="mb-1.5 text-sm font-medium">Viewports</legend>
@@ -871,27 +874,7 @@ function QaFields({
             a desktop page.
           </p>
         </FormField>
-        <FormField
-          id={id('maxBudgetUsd')}
-          label="Max budget (USD)"
-          errors={errorsFor(issues, 'maxBudgetUsd')}
-        >
-          <Input
-            id={id('maxBudgetUsd')}
-            type="number"
-            inputMode="decimal"
-            min={0.01}
-            step={0.01}
-            placeholder="No limit"
-            className="tabular"
-            value={station.maxBudgetUsd ?? ''}
-            onChange={(event) => {
-              const budget = parseBudget(event.target.value)
-              if (budget === undefined) return
-              set({ maxBudgetUsd: budget ?? undefined })
-            }}
-          />
-        </FormField>
+        <BudgetField station={station} issues={issues} set={set} label="Max budget (USD)" />
       </div>
       <div className="flex items-center justify-between gap-3">
         <Label htmlFor={id('interactive')} className="flex flex-col items-start gap-0.5">

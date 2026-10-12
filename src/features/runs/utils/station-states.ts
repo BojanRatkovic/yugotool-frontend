@@ -41,7 +41,7 @@ const ran = (run: Run | undefined, key: string): boolean =>
  * The line's stations plus the steps the worker adds: "Repo hooks" before the
  * last gate when `run` ran the preflight, "CI" at the end when it watched CI.
  */
-export function runSteps(stations: Station[], run: Run | undefined): Station[] {
+function runSteps(stations: Station[], run: Run | undefined): Station[] {
   let steps = stations
   if (
     ran(run, REPO_HOOKS_STATION_KEY) &&

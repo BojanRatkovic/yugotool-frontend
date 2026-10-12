@@ -30,14 +30,7 @@ import type { PullRequestDetail } from '@/lib/contracts'
 import { isPanelTypingTarget } from '@/features/pull-requests/utils/keys'
 import { fromReview, type YugoToolState } from '@/features/pull-requests/utils/yugotool'
 
-export const PR_TABS = [
-  'overview',
-  'files',
-  'threads',
-  'checks',
-  'commits',
-  'yugotool',
-] as const
+const PR_TABS = ['overview', 'files', 'threads', 'checks', 'commits', 'yugotool'] as const
 export type PrTab = (typeof PR_TABS)[number]
 
 /** The panel's URL state (the route owns it). */

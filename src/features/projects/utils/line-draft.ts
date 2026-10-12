@@ -22,7 +22,7 @@ export type StationKind = Station['kind']
 /** Handoff threshold bounds (percent of the context window), as the API enforces them. */
 export const SHIFT_HANDOFF_MIN = 30
 export const SHIFT_HANDOFF_MAX = 80
-export const SHIFT_HANDOFF_DEFAULT = 50
+const SHIFT_HANDOFF_DEFAULT = 50
 /** The 40–60% band HumanLayer-style "intentional compaction" recommends. */
 export const SHIFT_HANDOFF_RECOMMENDED = [40, 60] as const
 

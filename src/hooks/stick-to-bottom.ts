@@ -1,7 +1,7 @@
 /** Pure follow-mode logic for live-appending lists; the hook wires it to the DOM. */
 
 /** How close to the bottom (px) still counts as "at the bottom". */
-export const NEAR_BOTTOM_PX = 48
+const NEAR_BOTTOM_PX = 48
 
 export function isNearBottom(
   {

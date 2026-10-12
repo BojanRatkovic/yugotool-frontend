@@ -23,7 +23,7 @@ export function qaCounts(checks: readonly QaCheck[]): QaCounts {
 }
 
 /** Worst first: what needs a look leads the list. */
-export const CHECK_STATUS_ORDER: readonly QaCheckStatus[] = [
+const CHECK_STATUS_ORDER: readonly QaCheckStatus[] = [
   'fail',
   'changed',
   'error',

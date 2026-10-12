@@ -34,7 +34,7 @@ function getSnapshot(): boolean {
   return open
 }
 
-export function setDetailsRailOpen(next: boolean): void {
+function setDetailsRailOpen(next: boolean): void {
   open = next
   writeDetailsRailOpen(next)
   notify()

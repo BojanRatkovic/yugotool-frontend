@@ -10,7 +10,7 @@ import type { AccountPlanUsage, UsageWindow } from '@/lib/contracts'
 import { formatDateTime } from '@/lib/format'
 
 /** "resets 01:00" within a day, "resets Sat" beyond. */
-export function resetLabel(iso: string, now = Date.now()): string {
+function resetLabel(iso: string, now = Date.now()): string {
   const date = new Date(iso)
   if (date.getTime() - now < 24 * 3_600_000) {
     return `resets ${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`

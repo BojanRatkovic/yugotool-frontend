@@ -1,5 +1,5 @@
 /** Languages the lazy highlighter bundles (`ansi` is Shiki's built-in terminal-colour mode). */
-export const CODE_LANGS = [
+const CODE_LANGS = [
   'diff',
   'json',
   'shellscript',
@@ -57,7 +57,7 @@ export function normalizeLang(tag: string): CodeLang | null {
 // oxlint-disable-next-line no-control-regex -- matching terminal escapes is the point
 const ANSI_ESCAPE = /\u001B\[[0-9;?]*[A-Za-z]/g
 
-export function hasAnsi(text: string): boolean {
+function hasAnsi(text: string): boolean {
   return text.includes('\u001B[')
 }
 

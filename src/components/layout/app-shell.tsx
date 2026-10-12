@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
-export function BrandMark({ className }: { className?: string }) {
+function BrandMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true" className={className}>
       {/* A milling cutter with a Y: tools, as Jugoalat made them. */}

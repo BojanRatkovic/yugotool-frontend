@@ -27,7 +27,7 @@ export function cycleIndex(index: number, step: 1 | -1, count: number): number {
  * it is a gallery: ←/→ and the side buttons move, the counter says where you
  * are. Closes on Esc, the close button, or a click on the backdrop.
  */
-export function ImageLightbox({
+function ImageLightbox({
   images,
   startIndex = 0,
   open,

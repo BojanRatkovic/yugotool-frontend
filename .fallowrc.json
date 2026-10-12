@@ -1,0 +1,51 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+  "minimumVersion": "3.33.1",
+  // Generated or mirrored code: shadcn primitives (added via the shadcn CLI, never
+  // hand-edited) and the copy of @yugotool/contracts. Keep them in the graph, but
+  // don't report their unused surface.
+  "ignoreExports": [{ "file": "src/lib/contracts.ts", "exports": ["*"] }],
+  "ignoreFindings": ["src/components/ui/**"],
+  // fallow itself runs from package.json scripts and CI.
+  "ignoreDependencies": ["fallow"],
+  // bulletproof-react: app -> features -> shared; features never import each other.
+  // Types named in an exported signature stay exported (knip parity).
+  "ignoreExportsUsedInFile": { "type": true, "interface": true },
+  "boundaries": {
+    "preset": "bulletproof",
+    "zones": [
+      {
+        "name": "shared",
+        "patterns": [
+          "src/components/**",
+          "src/hooks/**",
+          "src/lib/**",
+          "src/utils/**",
+          "src/config/**",
+          "src/types/**",
+          "src/testing/**"
+        ]
+      }
+    ]
+  },
+  "rules": {
+    "policy-violation": "off",
+    // React component-shape checks: advisory, never fail the gate.
+    "prop-drilling": "warn",
+    "thin-wrapper": "off",
+    "duplicate-prop-shape": "off",
+    "require-suppression-reason": "warn",
+    // CRAP needs real coverage; without it fallow estimates and flags most JSX
+    // components. Keep it visible, gate on cyclomatic/cognitive only.
+    "complexity-crap": "warn"
+  },
+  "health": {
+    "ignore": ["src/app/routeTree.gen.ts", "src/components/ui/**"]
+  },
+  "duplicates": {
+    "ignore": ["src/app/routeTree.gen.ts", "src/components/ui/**", "src/lib/contracts.ts"]
+  },
+  "audit": {
+    "gate": "new-only"
+  }
+}

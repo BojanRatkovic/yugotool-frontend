@@ -9,7 +9,7 @@ import { NotificationList } from '@/features/notifications/components/notificati
 import { formatBadgeCount } from '@/features/notifications/utils/notifications'
 
 /** "Notifications, 3 unread" — the count read out, never the capped badge. */
-export function bellLabel(unreadCount: number): string {
+function bellLabel(unreadCount: number): string {
   return unreadCount === 0 ? 'Notifications' : `Notifications, ${unreadCount} unread`
 }
 

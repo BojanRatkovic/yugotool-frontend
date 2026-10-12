@@ -107,7 +107,7 @@ export function linesToList(text: string): string[] {
     .filter((line) => line !== '')
 }
 
-export function listToLines(items: readonly string[]): string {
+function listToLines(items: readonly string[]): string {
   return items.join('\n')
 }
 
