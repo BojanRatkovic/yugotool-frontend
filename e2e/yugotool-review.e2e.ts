@@ -16,6 +16,7 @@ const ago = (hours: number) => new Date(NOW - hours * 3_600_000).toISOString()
 
 const project = {
   id: PROJECT,
+  kind: 'repo',
   name: 'acme-app',
   repoPath: '/repos/acme-app',
   baseBranch: 'main',
@@ -23,6 +24,9 @@ const project = {
   deliveryDefault: 'draft_pr',
   createdAt: ago(100),
   updatedAt: ago(100),
+  hubPath: null,
+  repos: [],
+  claudeAccountId: null,
 }
 
 const PR = prSummary({ number: 21, author: prActor('ana'), requestedFromMe: true })
