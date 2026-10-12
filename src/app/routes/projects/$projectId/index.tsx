@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { Plus, Settings } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
@@ -37,6 +37,8 @@ import { ProductiveImportDialog } from '@/features/integrations/components/produ
 import { ProductiveMark } from '@/components/productive-mark'
 import { WorkOrderBoard } from '@/features/work-orders/components/work-order-board'
 import { isTypingTarget, moveCardFocus } from '@/lib/shortcuts'
+import { panelSearchPatch, previewMissing } from '@/app/routes/-components/project-page'
+import type { Line, Project } from '@/lib/contracts'
 
 const searchSchema = z.object({
   view: z.enum(['board', 'line', 'review']).default('board').catch('board'),
@@ -164,20 +166,7 @@ function ProjectPage() {
         state={panelState}
         onChange={(next) =>
           void navigate({
-            search: (prev) => ({
-              ...prev,
-              ...('tab' in next
-                ? { woTab: next.tab === 'activity' ? undefined : next.tab }
-                : {}),
-              ...('station' in next ? { station: next.station } : {}),
-              ...('run' in next
-                ? { run: next.run, shift: undefined, qaAttempt: undefined, qaCheck: undefined }
-                : {}),
-              ...('qaAttempt' in next ? { qaAttempt: next.qaAttempt } : {}),
-              ...('qaCheck' in next ? { qaCheck: next.qaCheck } : {}),
-              ...('shift' in next ? { shift: next.shift } : {}),
-              ...('full' in next ? { woFull: next.full === true ? true : undefined } : {}),
-            }),
+            search: (prev) => ({ ...prev, ...panelSearchPatch(next) }),
           })
         }
         onClose={() => openWorkOrder(undefined)}
@@ -189,83 +178,21 @@ function ProjectPage() {
     <div className="flex h-svh min-w-0 flex-col">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
         <SidebarTrigger aria-label="Toggle sidebar" />
-        <div className="flex min-w-0 items-center gap-2">
-          {project !== undefined && repoName(project.repoPath) === project.name ? (
-            // The repo folder has the project's name: show it once, the path on hover.
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <h1
-                  // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- reveals the full path
-                  tabIndex={0}
-                  className="truncate text-sm font-semibold"
-                >
-                  {project.name}
-                </h1>
-              </TooltipTrigger>
-              <TooltipContent className="font-mono">{project.repoPath}</TooltipContent>
-            </Tooltip>
-          ) : (
-            <h1 className="truncate text-sm font-semibold">{project?.name ?? 'Project'}</h1>
-          )}
-          {project === undefined ? null : (
-            <>
-              {repoName(project.repoPath) === project.name ? null : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span
-                      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- reveals the full path
-                      tabIndex={0}
-                      className="truncate font-mono text-xs text-muted-foreground"
-                    >
-                      {repoName(project.repoPath)}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent className="font-mono">{project.repoPath}</TooltipContent>
-                </Tooltip>
-              )}
-              {project.kind === 'hub' ? (
-                <span className="inline-flex h-5 shrink-0 items-center rounded-sm bg-muted px-1.5 text-[0.6875rem] text-muted-foreground">
-                  hub · {project.repos.length} {project.repos.length === 1 ? 'repo' : 'repos'}
-                </span>
-              ) : (
-                <BranchChip branch={project.baseBranch} />
-              )}
-              <ProjectAccountChip accountId={project.claudeAccountId} />
-            </>
-          )}
-        </div>
-        <Tabs
+        <ProjectTitle project={project} />
+        <ViewTabs
           value={full ? '' : view}
-          onValueChange={(value) =>
+          hub={hub}
+          onChange={(value) =>
             void navigate({
               search: (prev) => ({
                 ...prev,
-                view: value === 'line' || value === 'review' ? value : 'board',
+                view: value,
                 woFull: undefined,
                 wo: full ? undefined : prev.wo,
               }),
             })
           }
-          className="ml-2"
-        >
-          <TabsList className="h-7">
-            <TabsTrigger value="board" className="px-2.5 text-xs">
-              Board
-            </TabsTrigger>
-            <TabsTrigger value="line" className="px-2.5 text-xs">
-              Line
-            </TabsTrigger>
-            {hub ? null : (
-              <TabsTrigger
-                value="review"
-                className="px-2.5 text-xs"
-                title="The line a YugoTool review of a pull request runs"
-              >
-                Review line
-              </TabsTrigger>
-            )}
-          </TabsList>
-        </Tabs>
+        />
         <div className="ml-auto flex items-center gap-3">
           <ProjectStats projectId={projectId} authSource={system.data?.authSource} />
           <Tooltip>
@@ -295,61 +222,18 @@ function ProjectPage() {
       <div className="min-h-0 flex-1">
         {full ? (
           panel
-        ) : line.isPending ? (
-          <div className="p-4">
-            <BoardSkeleton />
-          </div>
-        ) : line.error !== null && line.data === undefined ? (
-          <div className="p-4">
-            <LoadError what="the line" message={line.error.message} />
-          </div>
-        ) : view === 'board' ? (
-          <div className="relative h-full pt-3">
-            <WorkOrderBoard
-              projectId={projectId}
-              stations={stations}
-              onOpen={(id) => openWorkOrder(id)}
-              onCreate={() => setNew(true)}
-              hubRepos={hubRepos}
-            />
-            <OfferQaCallout projectId={projectId} variant="floating" />
-          </div>
-        ) : view === 'review' ? (
-          reviewLine.error !== null ? (
-            <div className="p-4">
-              <LoadError what="the review line" message={reviewLine.error.message} />
-            </div>
-          ) : reviewLine.data === undefined ? null : (
-            <div className="h-full p-4">
-              <LineEditor
-                key={reviewLine.data.updatedAt}
-                kind="review"
-                line={reviewLine.data}
-                previewMissing={
-                  project !== undefined &&
-                  (project.kind === 'hub'
-                    ? project.repos.every((repo) => repo.preview === null)
-                    : project.preview === null)
-                }
-                onSetupPreview={() => setSettings(true)}
-              />
-            </div>
-          )
-        ) : line.data === undefined ? null : (
-          <div className="h-full p-4">
-            <LineEditor
-              key={line.data.updatedAt}
-              line={line.data}
-              // Unknown until the project loads: don't flash a warning.
-              previewMissing={
-                project !== undefined &&
-                (project.kind === 'hub'
-                  ? project.repos.every((repo) => repo.preview === null)
-                  : project.preview === null)
-              }
-              onSetupPreview={() => setSettings(true)}
-            />
-          </div>
+        ) : (
+          <ProjectView
+            projectId={projectId}
+            view={view}
+            line={line}
+            reviewLine={reviewLine}
+            noPreview={previewMissing(project)}
+            hubRepos={hubRepos}
+            onOpen={(id) => openWorkOrder(id)}
+            onCreate={() => setNew(true)}
+            onSetupPreview={() => setSettings(true)}
+          />
         )}
       </div>
 
@@ -428,6 +312,179 @@ function ProjectPage() {
         projectId={projectId}
         open={search.import === 'productive'}
         onOpenChange={setImport}
+      />
+    </div>
+  )
+}
+
+/** The project's name, its repo folder when that differs, hub or base branch, and account. */
+function ProjectTitle({ project }: { project: Project | undefined }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      {project !== undefined && repoName(project.repoPath) === project.name ? (
+        // The repo folder has the project's name: show it once, the path on hover.
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <h1
+              // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- reveals the full path
+              tabIndex={0}
+              className="truncate text-sm font-semibold"
+            >
+              {project.name}
+            </h1>
+          </TooltipTrigger>
+          <TooltipContent className="font-mono">{project.repoPath}</TooltipContent>
+        </Tooltip>
+      ) : (
+        <h1 className="truncate text-sm font-semibold">{project?.name ?? 'Project'}</h1>
+      )}
+      {project === undefined ? null : (
+        <>
+          {repoName(project.repoPath) === project.name ? null : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- reveals the full path
+                  tabIndex={0}
+                  className="truncate font-mono text-xs text-muted-foreground"
+                >
+                  {repoName(project.repoPath)}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent className="font-mono">{project.repoPath}</TooltipContent>
+            </Tooltip>
+          )}
+          {project.kind === 'hub' ? (
+            <span className="inline-flex h-5 shrink-0 items-center rounded-sm bg-muted px-1.5 text-[0.6875rem] text-muted-foreground">
+              hub · {project.repos.length} {project.repos.length === 1 ? 'repo' : 'repos'}
+            </span>
+          ) : (
+            <BranchChip branch={project.baseBranch} />
+          )}
+          <ProjectAccountChip accountId={project.claudeAccountId} />
+        </>
+      )}
+    </div>
+  )
+}
+
+/** Board / Line / Review line. A hub has no review line (spec 0014). */
+function ViewTabs({
+  value,
+  hub,
+  onChange,
+}: {
+  value: string
+  hub: boolean
+  onChange: (view: 'board' | 'line' | 'review') => void
+}) {
+  return (
+    <Tabs
+      value={value}
+      onValueChange={(next) => onChange(next === 'line' || next === 'review' ? next : 'board')}
+      className="ml-2"
+    >
+      <TabsList className="h-7">
+        <TabsTrigger value="board" className="px-2.5 text-xs">
+          Board
+        </TabsTrigger>
+        <TabsTrigger value="line" className="px-2.5 text-xs">
+          Line
+        </TabsTrigger>
+        {hub ? null : (
+          <TabsTrigger
+            value="review"
+            className="px-2.5 text-xs"
+            title="The line a YugoTool review of a pull request runs"
+          >
+            Review line
+          </TabsTrigger>
+        )}
+      </TabsList>
+    </Tabs>
+  )
+}
+
+/** The board, the line or the review line, with their loading and error states. */
+function ProjectView({
+  projectId,
+  view,
+  line,
+  reviewLine,
+  noPreview,
+  hubRepos,
+  onOpen,
+  onCreate,
+  onSetupPreview,
+}: {
+  projectId: string
+  view: 'board' | 'line' | 'review'
+  line: UseQueryResult<Line>
+  reviewLine: UseQueryResult<Line>
+  noPreview: boolean
+  hubRepos: string[] | undefined
+  onOpen: (id: string) => void
+  onCreate: () => void
+  onSetupPreview: () => void
+}) {
+  if (line.isPending) {
+    return (
+      <div className="p-4">
+        <BoardSkeleton />
+      </div>
+    )
+  }
+  if (line.error !== null && line.data === undefined) {
+    return (
+      <div className="p-4">
+        <LoadError what="the line" message={line.error.message} />
+      </div>
+    )
+  }
+  if (view === 'board') {
+    return (
+      <div className="relative h-full pt-3">
+        <WorkOrderBoard
+          projectId={projectId}
+          stations={line.data?.stations ?? []}
+          onOpen={onOpen}
+          onCreate={onCreate}
+          hubRepos={hubRepos}
+        />
+        <OfferQaCallout projectId={projectId} variant="floating" />
+      </div>
+    )
+  }
+  if (view === 'review') {
+    if (reviewLine.error !== null) {
+      return (
+        <div className="p-4">
+          <LoadError what="the review line" message={reviewLine.error.message} />
+        </div>
+      )
+    }
+    if (reviewLine.data === undefined) return null
+    return (
+      <div className="h-full p-4">
+        <LineEditor
+          key={reviewLine.data.updatedAt}
+          kind="review"
+          line={reviewLine.data}
+          previewMissing={noPreview}
+          onSetupPreview={onSetupPreview}
+        />
+      </div>
+    )
+  }
+  if (line.data === undefined) return null
+  return (
+    <div className="h-full p-4">
+      <LineEditor
+        key={line.data.updatedAt}
+        line={line.data}
+        // Unknown until the project loads: don't flash a warning.
+        previewMissing={noPreview}
+        onSetupPreview={onSetupPreview}
       />
     </div>
   )
