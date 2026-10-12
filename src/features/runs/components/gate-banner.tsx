@@ -259,7 +259,8 @@ export function GateBanner({
               {commentError}
             </p>
           )}
-          <div className="flex items-center gap-2">
+          {/* Wraps in a narrow panel: Reject must never slide under the details rail. */}
+          <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center">
               <Button
                 size="sm"
