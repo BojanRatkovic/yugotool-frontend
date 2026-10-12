@@ -510,13 +510,17 @@ function PreviewSettings({
   const updateProject = useUpdateProject(project.id)
   const updateRepo = useUpdateHubRepo(project.id)
   const saving = repo === undefined ? updateProject.isPending : updateRepo.isPending
-  const save = (
-    preview: Preview | null,
-    callbacks: { onSuccess: () => void; onError: (error: Error) => void },
-  ) =>
-    repo === undefined
-      ? updateProject.mutate({ preview }, callbacks)
-      : updateRepo.mutate({ repo: repo.name, preview }, callbacks)
+  // A saved preview remounts this form (its key is the saved config), which drops
+  // mutate()'s callbacks: report through the promise, which outlives the remount.
+  const save = (preview: Preview | null, success: string, failure: string) =>
+    void (
+      repo === undefined
+        ? updateProject.mutateAsync({ preview })
+        : updateRepo.mutateAsync({ repo: repo.name, preview })
+    ).then(
+      () => toast.success(success),
+      (error: unknown) => toast.error(`${failure}: ${errorMessage(error)}`),
+    )
   const test = useTestPreview(project.id)
   const detect = useDetectPreview(project.id)
   const status = useQuery({ ...previewQueries.status(project.id), enabled: repo === undefined })
@@ -534,10 +538,7 @@ function PreviewSettings({
         return
       }
       setErrors({})
-      save(parsed.preview, {
-        onSuccess: () => toast.success('Preview saved.'),
-        onError: (error) => toast.error(`Couldn't save the preview: ${errorMessage(error)}`),
-      })
+      save(parsed.preview, 'Preview saved.', "Couldn't save the preview")
     },
   })
   const values = useStore(form.store, (state) => state.values)
@@ -560,11 +561,11 @@ function PreviewSettings({
   }
 
   function remove() {
-    save(null, {
-      onSuccess: () =>
-        toast.success('Preview removed. QA stations will fail until it is set up again.'),
-      onError: (error) => toast.error(`Couldn't remove the preview: ${errorMessage(error)}`),
-    })
+    save(
+      null,
+      'Preview removed. QA stations will fail until it is set up again.',
+      "Couldn't remove the preview",
+    )
   }
 
   /** Fills the form from the repo (unsaved). With nothing runnable found, the form stays as is. */
