@@ -14,6 +14,7 @@ import {
 } from '@/features/runs/components/diff-rows'
 import type { DiffLine } from '@/lib/diff'
 import type { DiffFile, Run, RunDiff as RunDiffData } from '@/lib/contracts'
+import { ApiError } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 
 const ROW: Record<DiffLine['kind'], string> = {
@@ -285,6 +286,15 @@ export function RunDiff({ run }: { run: Run }) {
           ))}
         </div>
       </div>
+    )
+  }
+  // A run that changed nothing has its branch deleted when it ends.
+  if (diff.error instanceof ApiError && diff.error.code === 'workspace_gone') {
+    return (
+      <p className="p-4 text-sm text-muted-foreground">
+        No diff to show: the run’s worktree and branch are gone. A run that changed nothing has
+        its branch removed when it ends.
+      </p>
     )
   }
   if (diff.error !== null) {
