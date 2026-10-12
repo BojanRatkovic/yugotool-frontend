@@ -166,3 +166,22 @@ export function stillOpenReply(row: PreviousRow): string {
   const lead = row.status === 'partly' ? 'Partly fixed' : 'Still open'
   return row.note.trim() === '' ? `${lead}.` : `${lead}: ${row.note.trim()}`
 }
+
+/**
+ * Findings to show as ghost comments on one file: on a line, not posted yet,
+ * not dismissed, and only from a review of the current head. Pure.
+ */
+export function ghostFindings(
+  review: YugoToolReview | null,
+  path: string | undefined,
+  dismissed: ReadonlySet<string>,
+): ReviewFinding[] {
+  if (review === null || review.stale) return []
+  return (review.verdict?.findings ?? []).filter(
+    (f) =>
+      f.file === path &&
+      f.line !== null &&
+      !review.pullRequest.posted.includes(f.id) &&
+      !dismissed.has(f.id),
+  )
+}

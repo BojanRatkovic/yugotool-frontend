@@ -23,9 +23,10 @@ import {
 } from '@/features/pull-requests/utils/file-nav'
 import { visibleFiles, type FileTreeNode } from '@/features/pull-requests/utils/file-tree'
 import { ApiError, errorMessage } from '@/lib/api-client'
-import type { PullRequestDetail } from '@/lib/contracts'
+import type { PrDiff, PullRequestDetail } from '@/lib/contracts'
 import { parsePatch } from '@/lib/diff'
 import { isPanelTypingTarget } from '@/features/pull-requests/utils/keys'
+import { ghostFindings } from '@/features/pull-requests/utils/yugotool'
 
 /** Whether "Since your last review" applies, and whether it's on by default (Re-review). */
 function sinceReview(pr: PullRequestDetail, viewer: string) {
@@ -110,15 +111,7 @@ export function PrFilesTab({
   // YugoTool findings not posted yet, on this file's lines; only for the head they were made on.
   const yugotool = useQuery(prQueries.yugotoolReview(projectId, pr.number, pr.headOid))
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set())
-  const review = yugotool.data?.review ?? null
-  const verdict = review !== null && !review.stale ? review.verdict : null
-  const ghosts = (verdict?.findings ?? []).filter(
-    (f) =>
-      f.file === selectedPath &&
-      f.line !== null &&
-      review?.pullRequest.posted.includes(f.id) !== true &&
-      !dismissed.has(f.id),
-  )
+  const ghosts = ghostFindings(yugotool.data?.review ?? null, selectedPath, dismissed)
 
   const [focusedLine, setFocusedLine] = useState<string | null>(null)
   const [commentTarget, setCommentTarget] = useState<CommentTarget | null>(null)
@@ -255,45 +248,73 @@ export function PrFilesTab({
             </a>
           </p>
         ) : null}
-        {diff.data === undefined && diff.error !== null ? (
-          <div className="p-4">
-            <LoadError what="the diff" message={diff.error.message} />
-          </div>
-        ) : diff.data === undefined ? (
-          <div className="flex flex-col gap-2 p-4" aria-busy="true">
-            {Array.from({ length: 10 }, (_, i) => (
-              <Skeleton key={i} className="h-4 w-full" />
-            ))}
-          </div>
-        ) : selected === undefined ? (
-          <p className="p-4 text-sm text-muted-foreground">
-            {useSince
-              ? 'Nothing changed in the PR’s files since your last review.'
-              : 'No files.'}
-          </p>
-        ) : (
-          <PrFileDiff
-            key={selected.path}
-            projectId={projectId}
-            pr={pr}
-            file={selected}
-            diff={
-              diff.data.truncated && !parsedByPath.has(selected.path)
-                ? null
-                : (parsedByPath.get(selected.path) ?? null)
-            }
-            threads={fileThreads}
-            ghosts={ghosts}
-            onDismissGhost={(id) => setDismissed(new Set([...dismissed, id]))}
-            focusedThread={state.thread}
-            focusedLine={focusedLine}
-            commentTarget={commentTarget}
-            onFocusLine={setFocusedLine}
-            onComment={setCommentTarget}
-            onViewed={(value) => setViewed(selected.path, value)}
-          />
-        )}
+        <DiffPaneBody
+          diff={diff}
+          emptyNote={
+            selected === undefined
+              ? useSince
+                ? 'Nothing changed in the PR’s files since your last review.'
+                : 'No files.'
+              : null
+          }
+        >
+          {(data) =>
+            selected === undefined ? null : (
+              <PrFileDiff
+                key={selected.path}
+                projectId={projectId}
+                pr={pr}
+                file={selected}
+                diff={
+                  data.truncated && !parsedByPath.has(selected.path)
+                    ? null
+                    : (parsedByPath.get(selected.path) ?? null)
+                }
+                threads={fileThreads}
+                ghosts={ghosts}
+                onDismissGhost={(id) => setDismissed(new Set([...dismissed, id]))}
+                focusedThread={state.thread}
+                focusedLine={focusedLine}
+                commentTarget={commentTarget}
+                onFocusLine={setFocusedLine}
+                onComment={setCommentTarget}
+                onViewed={(value) => setViewed(selected.path, value)}
+              />
+            )
+          }
+        </DiffPaneBody>
       </div>
     </div>
   )
+}
+
+/** The diff pane under its notices: load error, skeleton, an empty note, or the file. */
+function DiffPaneBody({
+  diff,
+  emptyNote,
+  children,
+}: {
+  diff: { data: PrDiff | undefined; error: Error | null }
+  emptyNote: string | null
+  children: (data: PrDiff) => React.ReactNode
+}) {
+  if (diff.data === undefined && diff.error !== null) {
+    return (
+      <div className="p-4">
+        <LoadError what="the diff" message={diff.error.message} />
+      </div>
+    )
+  }
+  if (diff.data === undefined) {
+    return (
+      <div className="flex flex-col gap-2 p-4" aria-busy="true">
+        {Array.from({ length: 10 }, (_, i) => (
+          <Skeleton key={i} className="h-4 w-full" />
+        ))}
+      </div>
+    )
+  }
+  if (emptyNote !== null)
+    return <p className="p-4 text-sm text-muted-foreground">{emptyNote}</p>
+  return children(diff.data)
 }

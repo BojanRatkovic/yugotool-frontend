@@ -5,6 +5,7 @@ import {
   findingPlace,
   findingsLabel,
   fromBrief,
+  ghostFindings,
   fixedReply,
   postPayload,
   previousCounts,
@@ -12,6 +13,7 @@ import {
   stillOpenReply,
   yugotoolState,
 } from '@/features/pull-requests/utils/yugotool'
+import type { YugoToolReview } from '@/lib/contracts'
 
 describe('yugotoolState', () => {
   it('counts the findings not posted yet', () => {
@@ -137,5 +139,59 @@ describe('re-review (spec 0010)', () => {
     expect(open && stillOpenReply(open)).toBe('Still open: src/a.ts:9 still reads items[0]')
     expect(partly && stillOpenReply(partly)).toBe('Partly fixed: one call left')
     expect(bare && stillOpenReply(bare)).toBe('Still open.')
+  })
+})
+
+function reviewWith(patch: { stale?: boolean; posted?: string[] } = {}): YugoToolReview {
+  return {
+    workOrderId: '9d1b0c5e-1111-4222-8333-444455556666',
+    runId: null,
+    status: 'succeeded',
+    costUsd: 0,
+    pullRequest: {
+      number: 1,
+      url: 'https://github.com/acme/app/pull/1',
+      headRefName: 'feat',
+      headOid: 'a'.repeat(40),
+      baseRefName: 'main',
+      baseOid: 'b'.repeat(40),
+      sinceOid: null,
+      openThreads: [],
+      posted: patch.posted ?? [],
+      postedThreads: {},
+      previousFindings: [],
+    },
+    stale: patch.stale ?? false,
+    verdict: {
+      recommendation: 'comment',
+      summary: '',
+      findings: [
+        finding('a', 'critical'),
+        { ...finding('b', 'minor'), line: null },
+        { ...finding('c', 'minor'), file: 'src/other.ts' },
+        finding('d', 'important'),
+      ],
+      previous: [],
+    },
+    error: null,
+    startedAt: '2026-01-01T00:00:00.000Z',
+    finishedAt: null,
+  }
+}
+
+describe('ghostFindings', () => {
+  it('keeps line findings of the file that are neither posted nor dismissed', () => {
+    expect(ghostFindings(reviewWith(), 'src/a.ts', new Set()).map((f) => f.id)).toEqual([
+      'a',
+      'd',
+    ])
+    expect(
+      ghostFindings(reviewWith({ posted: ['a'] }), 'src/a.ts', new Set(['d'])).map((f) => f.id),
+    ).toEqual([])
+  })
+
+  it('shows nothing for a stale review or none', () => {
+    expect(ghostFindings(reviewWith({ stale: true }), 'src/a.ts', new Set())).toEqual([])
+    expect(ghostFindings(null, 'src/a.ts', new Set())).toEqual([])
   })
 })
