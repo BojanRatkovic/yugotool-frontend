@@ -510,13 +510,17 @@ function PreviewSettings({
   const updateProject = useUpdateProject(project.id)
   const updateRepo = useUpdateHubRepo(project.id)
   const saving = repo === undefined ? updateProject.isPending : updateRepo.isPending
-  const save = (
-    preview: Preview | null,
-    callbacks: { onSuccess: () => void; onError: (error: Error) => void },
-  ) =>
-    repo === undefined
-      ? updateProject.mutate({ preview }, callbacks)
-      : updateRepo.mutate({ repo: repo.name, preview }, callbacks)
+  // A saved preview remounts this form (its key is the saved config), which drops
+  // mutate()'s callbacks: report through the promise, which outlives the remount.
+  const save = (preview: Preview | null, success: string, failure: string) =>
+    void (
+      repo === undefined
+        ? updateProject.mutateAsync({ preview })
+        : updateRepo.mutateAsync({ repo: repo.name, preview })
+    ).then(
+      () => toast.success(success),
+      (error: unknown) => toast.error(`${failure}: ${errorMessage(error)}`),
+    )
   const test = useTestPreview(project.id)
   const detect = useDetectPreview(project.id)
   const status = useQuery({ ...previewQueries.status(project.id), enabled: repo === undefined })
@@ -534,10 +538,7 @@ function PreviewSettings({
         return
       }
       setErrors({})
-      save(parsed.preview, {
-        onSuccess: () => toast.success('Preview saved.'),
-        onError: (error) => toast.error(`Couldn't save the preview: ${errorMessage(error)}`),
-      })
+      save(parsed.preview, 'Preview saved.', "Couldn't save the preview")
     },
   })
   const values = useStore(form.store, (state) => state.values)
@@ -560,11 +561,11 @@ function PreviewSettings({
   }
 
   function remove() {
-    save(null, {
-      onSuccess: () =>
-        toast.success('Preview removed. QA stations will fail until it is set up again.'),
-      onError: (error) => toast.error(`Couldn't remove the preview: ${errorMessage(error)}`),
-    })
+    save(
+      null,
+      'Preview removed. QA stations will fail until it is set up again.',
+      "Couldn't remove the preview",
+    )
   }
 
   /** Fills the form from the repo (unsaved). With nothing runnable found, the form stays as is. */
@@ -602,43 +603,20 @@ function PreviewSettings({
         }}
       >
         <section aria-labelledby="preview-heading" className="flex flex-col gap-4">
-          <div className="flex items-start gap-3">
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <h2 id="preview-heading" className="text-sm font-semibold">
-                {repo === undefined ? 'Preview' : `Preview · ${repo.name}`}
-              </h2>
-              <p className="text-[0.8125rem] text-muted-foreground">
-                {repo === undefined
-                  ? 'How to run the app locally. QA stations boot it twice — base branch and the work order’s branch — and compare screenshots.'
-                  : `How to run ${repo.name} locally. QA stations of work in ${repo.name} boot it twice — base branch and the work order’s branch — and compare screenshots.`}
-              </p>
-            </div>
-            <div className="ml-auto flex shrink-0 items-center gap-2">
-              {repo !== undefined ? (
+          <PreviewHeading
+            repoName={repo?.name}
+            chip={
+              repo !== undefined ? (
                 <PreviewStatusChip last={null} configured={configured} testable={false} />
               ) : status.isPending && configured ? (
                 <Skeleton className="h-5 w-24 rounded-full" />
               ) : (
                 <PreviewStatusChip last={last} configured={configured} />
-              )}
-              {repo === undefined ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={detect.isPending}
-                  onClick={runDetect}
-                >
-                  {detect.isPending ? (
-                    <LoaderCircle aria-hidden="true" className="animate-spin" />
-                  ) : (
-                    <ScanSearch aria-hidden="true" />
-                  )}
-                  {detect.isPending ? 'Detecting…' : 'Detect from repo'}
-                </Button>
-              ) : null}
-            </div>
-          </div>
+              )
+            }
+            detecting={detect.isPending}
+            onDetect={repo === undefined ? runDetect : undefined}
+          />
 
           <div aria-live="polite">
             {detect.data === undefined || detect.isPending ? null : (
@@ -864,70 +842,166 @@ function PreviewSettings({
             {repo.name}.
           </p>
         ) : (
-          <>
-            <PreviewSessionSettings
-              projectId={project.id}
-              configured={configured}
-              dirty={dirty}
-            />
-
-            <PreviewTest
-              configured={configured}
-              dirty={dirty}
-              pending={test.isPending}
-              startedAt={test.submittedAt}
-              timeoutSec={project.preview?.readyTimeoutSec ?? null}
-              last={last ?? null}
-              onTest={runTest}
-            />
-            {!test.isPending && last?.ok === true ? (
-              <OfferQaCallout projectId={project.id} variant="inline" />
-            ) : null}
-          </>
+          <PreviewTools
+            project={project}
+            configured={configured}
+            dirty={dirty}
+            test={test}
+            last={last ?? null}
+            onTest={runTest}
+          />
         )}
       </form>
 
-      <SheetFooter className="flex-row items-center gap-2 border-t">
-        {configured ? (
+      <PreviewFooter
+        configured={configured}
+        dirty={dirty}
+        saving={saving}
+        onRemove={remove}
+        onDiscard={() => {
+          form.reset(initial)
+          setErrors({})
+        }}
+        onSave={() => void form.handleSubmit()}
+      />
+    </>
+  )
+}
+
+/** "Preview" (or "Preview · repo"), what it is for, its status chip and Detect. */
+function PreviewHeading({
+  repoName,
+  chip,
+  detecting,
+  onDetect,
+}: {
+  /** A hub repo's preview; undefined for the project's. */
+  repoName: string | undefined
+  chip: ReactNode
+  detecting: boolean
+  /** Detect from repo; undefined hides it (hub repos). */
+  onDetect: (() => void) | undefined
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <h2 id="preview-heading" className="text-sm font-semibold">
+          {repoName === undefined ? 'Preview' : `Preview · ${repoName}`}
+        </h2>
+        <p className="text-[0.8125rem] text-muted-foreground">
+          {repoName === undefined
+            ? 'How to run the app locally. QA stations boot it twice — base branch and the work order’s branch — and compare screenshots.'
+            : `How to run ${repoName} locally. QA stations of work in ${repoName} boot it twice — base branch and the work order’s branch — and compare screenshots.`}
+        </p>
+      </div>
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        {chip}
+        {onDetect === undefined ? null : (
           <Button
             type="button"
             variant="outline"
             size="sm"
-            disabled={saving}
-            onClick={remove}
-            className="border-status-failed/40 text-status-failed hover:bg-status-failed-soft hover:text-status-failed"
+            disabled={detecting}
+            onClick={onDetect}
           >
-            <Trash2 aria-hidden="true" />
-            Remove preview
+            {detecting ? (
+              <LoaderCircle aria-hidden="true" className="animate-spin" />
+            ) : (
+              <ScanSearch aria-hidden="true" />
+            )}
+            {detecting ? 'Detecting…' : 'Detect from repo'}
           </Button>
-        ) : null}
-        <span className="ml-auto text-xs text-muted-foreground" aria-live="polite">
-          {saving ? 'Saving…' : dirty ? 'Unsaved changes' : configured ? 'Saved' : ''}
-        </span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={!dirty || saving}
-          onClick={() => {
-            form.reset(initial)
-            setErrors({})
-          }}
-        >
-          <Undo2 aria-hidden="true" />
-          Discard
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          disabled={!dirty || saving}
-          onClick={() => void form.handleSubmit()}
-        >
-          <Save aria-hidden="true" />
-          Save preview
-        </Button>
-      </SheetFooter>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** A repo project's signed-in session and preview test, and the QA offer once it works. */
+function PreviewTools({
+  project,
+  configured,
+  dirty,
+  test,
+  last,
+  onTest,
+}: {
+  project: Project
+  configured: boolean
+  dirty: boolean
+  test: { isPending: boolean; submittedAt: number }
+  last: PreviewTestResult | null
+  onTest: () => void
+}) {
+  return (
+    <>
+      <PreviewSessionSettings projectId={project.id} configured={configured} dirty={dirty} />
+      <PreviewTest
+        configured={configured}
+        dirty={dirty}
+        pending={test.isPending}
+        startedAt={test.submittedAt}
+        timeoutSec={project.preview?.readyTimeoutSec ?? null}
+        last={last}
+        onTest={onTest}
+      />
+      {!test.isPending && last?.ok === true ? (
+        <OfferQaCallout projectId={project.id} variant="inline" />
+      ) : null}
     </>
+  )
+}
+
+/** Remove, the save state, Discard and Save. */
+function PreviewFooter({
+  configured,
+  dirty,
+  saving,
+  onRemove,
+  onDiscard,
+  onSave,
+}: {
+  configured: boolean
+  dirty: boolean
+  saving: boolean
+  onRemove: () => void
+  onDiscard: () => void
+  onSave: () => void
+}) {
+  const state = saving ? 'Saving…' : dirty ? 'Unsaved changes' : configured ? 'Saved' : ''
+  return (
+    <SheetFooter className="flex-row items-center gap-2 border-t">
+      {configured ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={saving}
+          onClick={onRemove}
+          className="border-status-failed/40 text-status-failed hover:bg-status-failed-soft hover:text-status-failed"
+        >
+          <Trash2 aria-hidden="true" />
+          Remove preview
+        </Button>
+      ) : null}
+      <span className="ml-auto text-xs text-muted-foreground" aria-live="polite">
+        {state}
+      </span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        disabled={!dirty || saving}
+        onClick={onDiscard}
+      >
+        <Undo2 aria-hidden="true" />
+        Discard
+      </Button>
+      <Button type="button" size="sm" disabled={!dirty || saving} onClick={onSave}>
+        <Save aria-hidden="true" />
+        Save preview
+      </Button>
+    </SheetFooter>
   )
 }
 

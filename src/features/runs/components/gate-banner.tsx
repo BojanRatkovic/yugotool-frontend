@@ -36,6 +36,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useGateDecision } from '@/features/runs/api/run-queries'
 import { effectiveDelivery } from '@/features/runs/utils/delivery'
 import { splitRoute } from '@/features/runs/utils/hub-plan'
+import { gateRequest } from '@/features/runs/utils/gate-decision'
 import type { RequestChangesCopy } from '@/features/runs/utils/request-changes'
 import { errorMessage } from '@/lib/api-client'
 import type { DeliveryMode, GateDecision, ProjectSkill, SplitItem } from '@/lib/contracts'
@@ -48,6 +49,18 @@ const DONE_TOAST: Record<Decision, (stationName: string) => string> = {
   approve: (name) => `Approved ${name}.`,
   reject: (name) => `Rejected ${name}.`,
   request_changes: (name) => `Sent ${name} back to the builder.`,
+}
+
+/** "Approved Review." or, with a delivery, "Approved Review · opening a draft PR." */
+function decisionToast(
+  decision: Decision,
+  stationName: string,
+  delivery: DeliveryMode | undefined,
+): string {
+  const done = DONE_TOAST[decision](stationName)
+  return delivery === undefined
+    ? done
+    : `${done.slice(0, -1)} · ${DELIVERY_OPTIONS[delivery].outcome}.`
 }
 
 const KBD_CLASS = 'h-4 bg-primary-foreground/15 text-primary-foreground/80'
@@ -127,37 +140,31 @@ export function GateBanner({
 
   function submit(decision: Decision, mode: DeliveryMode | undefined = delivery) {
     if (decide.isPending) return
-    if (decision === 'request_changes' && requestChanges === null) return
-    if (decision === 'request_changes' && comment.trim() === '') {
+    const request = gateRequest({
+      decision,
+      comment,
+      delivery: mode,
+      canRequestChanges: requestChanges !== null,
+      repo: hub === undefined ? undefined : chosenRepo,
+    })
+    if (request.kind === 'none') return
+    if (request.kind === 'needs_comment') {
       setCommentError(
         `Say what should change — ${requestChanges?.target ?? 'the station'} resumes from your comment.`,
       )
       commentRef.current?.focus()
       return
     }
-    if (decision === 'approve' && hub !== undefined && chosenRepo === null) {
+    if (request.kind === 'needs_repo') {
       toast.error('Pick the repo this work goes in.')
       return
     }
-    const choice = decision === 'approve' ? mode : undefined
-    const repoChoice = decision === 'approve' && hub !== undefined ? chosenRepo : null
     decide.mutate(
-      {
-        stationKey,
-        decision,
-        comment,
-        ...(choice === undefined ? {} : { delivery: choice }),
-        ...(repoChoice === null ? {} : { repo: repoChoice }),
-      },
+      { stationKey, ...request.body },
       {
         onSuccess: () => {
           setComment('')
-          const done = DONE_TOAST[decision](stationName)
-          toast.success(
-            choice === undefined
-              ? done
-              : `${done.slice(0, -1)} · ${DELIVERY_OPTIONS[choice].outcome}.`,
-          )
+          toast.success(decisionToast(decision, stationName, request.delivery))
         },
         onError: (error) => toast.error(`Couldn't submit the decision: ${errorMessage(error)}`),
       },
@@ -201,32 +208,7 @@ export function GateBanner({
       <div className="flex items-start gap-3">
         <Clock aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-status-waiting" />
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-3">
-              <p className="min-w-0 flex-1 text-sm font-semibold">
-                <span className="text-status-waiting">Needs you</span>
-                <span className="text-muted-foreground"> · </span>
-                {stationName}
-              </p>
-              {qaReview === undefined ? null : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 shrink-0 bg-background"
-                  onClick={qaReview.onOpen}
-                >
-                  <ScanEye aria-hidden="true" />
-                  Review QA
-                  <span className="font-mono text-xs text-muted-foreground tabular-nums">
-                    ({qaReview.diffs === 1 ? '1 diff' : `${qaReview.diffs} diffs`})
-                  </span>
-                </Button>
-              )}
-            </div>
-            {prompt === null || prompt === '' ? null : (
-              <p className="text-[0.8125rem] text-muted-foreground">{prompt}</p>
-            )}
-          </div>
+          <GateTitle stationName={stationName} prompt={prompt} qaReview={qaReview} />
           {hub === undefined ? null : (
             <HubPlanBlock
               hub={hub}
@@ -259,82 +241,170 @@ export function GateBanner({
               {commentError}
             </p>
           )}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center">
-              <Button
-                size="sm"
-                disabled={decide.isPending}
-                onClick={() => submit('approve')}
-                className={delivery === undefined ? undefined : 'rounded-r-none border-r-0'}
-              >
-                <Check aria-hidden="true" />
-                {delivery === undefined ? 'Approve' : DELIVERY_OPTIONS[delivery].approveLabel}
-                <KbdGroup className="ml-1">
-                  <Kbd className={KBD_CLASS}>{IS_MAC ? '⌘' : 'Ctrl'}</Kbd>
-                  <Kbd className={KBD_CLASS}>↵</Kbd>
-                </KbdGroup>
-              </Button>
-              {delivery === undefined ? null : (
-                <DeliveryMenu
-                  projectDefault={projectDefault ?? delivery}
-                  prBlockedReason={prBlockedReason}
-                  disabled={decide.isPending}
-                  onPick={(mode) => submit('approve', mode)}
-                  onChangeDefault={onChangeDefault}
-                />
-              )}
-            </div>
-            {requestChanges === null ? null : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={decide.isPending}
-                    onClick={() => submit('request_changes')}
-                    aria-describedby={`${commentId}-rc-hint`}
-                    className="bg-background"
-                  >
-                    <MessageSquareReply aria-hidden="true" />
-                    Request changes
-                    <KbdGroup className="ml-1">
-                      <Kbd className="h-4">{IS_MAC ? '⌘' : 'Ctrl'}</Kbd>
-                      <Kbd className="h-4">⇧</Kbd>
-                      <Kbd className="h-4">↵</Kbd>
-                    </KbdGroup>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent id={`${commentId}-rc-hint`} className="max-w-72">
-                  {requestChanges.hint}
-                </TooltipContent>
-              </Tooltip>
-            )}
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={decide.isPending}
-              onClick={() => submit('reject')}
-              className="border-status-failed/40 text-status-failed hover:bg-status-failed-soft hover:text-status-failed"
-            >
-              <X aria-hidden="true" />
-              Reject
-            </Button>
-          </div>
+          <DecisionButtons
+            idPrefix={commentId}
+            delivery={delivery}
+            projectDefault={projectDefault}
+            prBlockedReason={prBlockedReason}
+            requestChanges={requestChanges}
+            pending={decide.isPending}
+            onDecide={submit}
+            onChangeDefault={onChangeDefault}
+          />
           {effective?.fellBack === true && projectDefault !== undefined ? (
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <CircleAlert
-                aria-hidden="true"
-                className="size-3.5 shrink-0 text-status-queued"
-              />
-              <span>
-                The project default is “{DELIVERY_OPTIONS[projectDefault].menuLabel}”, but PRs
-                aren&rsquo;t possible. {prBlockedReason} Approving commits locally.
-              </span>
-            </p>
+            <FallbackNote projectDefault={projectDefault} reason={prBlockedReason} />
           ) : null}
         </div>
       </div>
     </section>
+  )
+}
+
+/** "Needs you · Station", the gate's prompt, and the QA shortcut when there are results. */
+function GateTitle({
+  stationName,
+  prompt,
+  qaReview,
+}: {
+  stationName: string
+  prompt: string | null
+  qaReview: { diffs: number; onOpen: () => void } | undefined
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-3">
+        <p className="min-w-0 flex-1 text-sm font-semibold">
+          <span className="text-status-waiting">Needs you</span>
+          <span className="text-muted-foreground"> · </span>
+          {stationName}
+        </p>
+        {qaReview === undefined ? null : (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 shrink-0 bg-background"
+            onClick={qaReview.onOpen}
+          >
+            <ScanEye aria-hidden="true" />
+            Review QA
+            <span className="font-mono text-xs text-muted-foreground tabular-nums">
+              ({qaReview.diffs === 1 ? '1 diff' : `${qaReview.diffs} diffs`})
+            </span>
+          </Button>
+        )}
+      </div>
+      {prompt === null || prompt === '' ? null : (
+        <p className="text-[0.8125rem] text-muted-foreground">{prompt}</p>
+      )}
+    </div>
+  )
+}
+
+const modKey = IS_MAC ? '⌘' : 'Ctrl'
+
+/** Approve (a split button at the final gate), Request changes, Reject. */
+function DecisionButtons({
+  idPrefix,
+  delivery,
+  projectDefault,
+  prBlockedReason,
+  requestChanges,
+  pending,
+  onDecide,
+  onChangeDefault,
+}: {
+  idPrefix: string
+  /** The delivery Approve uses; undefined when this gate doesn't deliver. */
+  delivery: DeliveryMode | undefined
+  projectDefault: DeliveryMode | undefined
+  prBlockedReason: string | null
+  requestChanges: RequestChangesCopy | null
+  pending: boolean
+  onDecide: (decision: Decision, mode?: DeliveryMode) => void
+  onChangeDefault: (() => void) | undefined
+}) {
+  return (
+    // Wraps in a narrow panel: Reject must never slide under the details rail.
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center">
+        <Button
+          size="sm"
+          disabled={pending}
+          onClick={() => onDecide('approve')}
+          className={delivery === undefined ? undefined : 'rounded-r-none border-r-0'}
+        >
+          <Check aria-hidden="true" />
+          {delivery === undefined ? 'Approve' : DELIVERY_OPTIONS[delivery].approveLabel}
+          <KbdGroup className="ml-1">
+            <Kbd className={KBD_CLASS}>{modKey}</Kbd>
+            <Kbd className={KBD_CLASS}>↵</Kbd>
+          </KbdGroup>
+        </Button>
+        {delivery === undefined ? null : (
+          <DeliveryMenu
+            projectDefault={projectDefault ?? delivery}
+            prBlockedReason={prBlockedReason}
+            disabled={pending}
+            onPick={(mode) => onDecide('approve', mode)}
+            onChangeDefault={onChangeDefault}
+          />
+        )}
+      </div>
+      {requestChanges === null ? null : (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={pending}
+              onClick={() => onDecide('request_changes')}
+              aria-describedby={`${idPrefix}-rc-hint`}
+              className="bg-background"
+            >
+              <MessageSquareReply aria-hidden="true" />
+              Request changes
+              <KbdGroup className="ml-1">
+                <Kbd className="h-4">{modKey}</Kbd>
+                <Kbd className="h-4">⇧</Kbd>
+                <Kbd className="h-4">↵</Kbd>
+              </KbdGroup>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent id={`${idPrefix}-rc-hint`} className="max-w-72">
+            {requestChanges.hint}
+          </TooltipContent>
+        </Tooltip>
+      )}
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={pending}
+        onClick={() => onDecide('reject')}
+        className="border-status-failed/40 text-status-failed hover:bg-status-failed-soft hover:text-status-failed"
+      >
+        <X aria-hidden="true" />
+        Reject
+      </Button>
+    </div>
+  )
+}
+
+/** The project wants a PR, but PRs can't work here: approving commits locally. */
+function FallbackNote({
+  projectDefault,
+  reason,
+}: {
+  projectDefault: DeliveryMode
+  reason: string | null
+}) {
+  return (
+    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <CircleAlert aria-hidden="true" className="size-3.5 shrink-0 text-status-queued" />
+      <span>
+        The project default is “{DELIVERY_OPTIONS[projectDefault].menuLabel}”, but PRs
+        aren&rsquo;t possible. {reason} Approving commits locally.
+      </span>
+    </p>
   )
 }
 

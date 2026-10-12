@@ -70,12 +70,11 @@ export function LineEditor({
   const form = useForm({
     defaultValues: { stations: line.stations },
     onSubmit: ({ value }) => {
-      save.mutate(
-        { stations: value.stations },
-        {
-          onSuccess: () => toast.success('Line saved.'),
-          onError: (error) => toast.error(`Couldn't save the line: ${errorMessage(error)}`),
-        },
+      // A saved line remounts this editor (keyed by updatedAt), which drops mutate()'s
+      // callbacks: report through the promise, which outlives the remount.
+      save.mutateAsync({ stations: value.stations }).then(
+        () => toast.success('Line saved.'),
+        (error: unknown) => toast.error(`Couldn't save the line: ${errorMessage(error)}`),
       )
     },
   })
