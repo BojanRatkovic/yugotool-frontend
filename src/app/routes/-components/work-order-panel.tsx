@@ -1,7 +1,7 @@
 import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { Maximize2, Minimize2, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
-import { useEffect, useId, type ReactNode } from 'react'
+import { useEffect, useId, type ComponentProps, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -41,7 +41,7 @@ import { requestChangesCopy } from '@/features/runs/utils/request-changes'
 import { RecheckCiButton } from '@/features/work-orders/components/ci-recheck'
 import { OpenPullRequestAction } from '@/features/work-orders/components/open-pull-request'
 import { RunAgainButton } from '@/features/work-orders/components/queue-actions'
-import type { DeliveryMode, Run, Station } from '@/lib/contracts'
+import type { DeliveryMode, Project, Run, Station, WorkOrder } from '@/lib/contracts'
 import { errorMessage } from '@/lib/api-client'
 import { isTypingTarget } from '@/lib/shortcuts'
 import { cn } from '@/lib/utils'
@@ -144,7 +144,6 @@ export function WorkOrderPanel({
   const run = runs.data === undefined ? undefined : selectRun(runs.data, state.run)
   const states = stationStates(stations, run)
   const waiting = run?.stations.find((sr) => sr.status === 'awaiting_approval')
-  const waitingStation = stations.find((station) => station.key === waiting?.stationKey)
   const findings = findingCount(run)
   const showShifts = hasShiftStation(stations)
   const qaDiffs = run === undefined ? null : qaDiffCount(run.stations)
@@ -162,41 +161,8 @@ export function WorkOrderPanel({
     ...remoteQueries.detail(projectId, hubProject === undefined ? undefined : deliveryRepo),
     enabled: hubProject === undefined || deliveryRepo !== undefined,
   })
-  const workOrders = useWorkOrders(projectId)
   const skills = useQuery(skillQueries.list(projectId))
-  const splitWorkOrder = useSplitWorkOrder()
-  const research = latestResearch(run)
-  const hubPlan: HubPlanGate | undefined =
-    hubProject === undefined ||
-    run === undefined ||
-    run.repo !== null ||
-    workOrder === undefined
-      ? undefined
-      : {
-          repos: hubProject.repos.map((repo) => repo.name),
-          suggested: suggestedRepo(
-            workOrder.repo,
-            research,
-            hubProject.repos.map((repo) => repo.name),
-          ),
-          split: research?.split ?? null,
-          splitDone: workOrders.some((other) => other.followsId === workOrder.id),
-          splitting: splitWorkOrder.isPending,
-          onCreateSplit: () => {
-            const items = research?.split
-            if (items === undefined) return
-            splitWorkOrder.mutate(
-              { workOrderId: workOrder.id, items },
-              {
-                onSuccess: () =>
-                  toast.success(
-                    `Created ${items.length - 1} follow-up work ${items.length === 2 ? 'order' : 'orders'} in the backlog.`,
-                  ),
-                onError: (error) => toast.error(`Couldn't split: ${errorMessage(error)}`),
-              },
-            )
-          },
-        }
+  const hubPlan = useHubPlanGate(projectId, hubProject, run, workOrder)
   // Unknown (loading, or the check failed) never blocks: the server still says no if it can't.
   const prBlockedReason =
     remote.data?.prPossible === false
@@ -282,39 +248,18 @@ export function WorkOrderPanel({
               }
             />
           ) : null}
-          {run === undefined ||
-          waiting === undefined ||
-          !isLatestRun ? null : waitingStation !== undefined &&
-            worksInShifts(waitingStation) ? (
-            // A station working in shifts waits on a handoff review, not a gate decision.
-            <ShiftReviewBanner
-              key={waiting.id}
+          {run === undefined || waiting === undefined || !isLatestRun ? null : (
+            <WaitingBanner
               runId={run.id}
-              stationKey={waiting.stationKey}
-              stationName={waitingStation.name}
-            />
-          ) : (
-            <GateBanner
-              key={waiting.id}
-              runId={run.id}
-              stationKey={waiting.stationKey}
-              stationName={waitingStation?.name ?? waiting.stationKey}
-              prompt={waitingStation?.kind === 'gate' ? waitingStation.prompt : null}
-              // The last station's approval delivers the work: offer the delivery choice there.
-              delivery={isDeliveryGate(stations, waiting.stationKey) ? delivery : undefined}
+              waiting={waiting}
+              stations={stations}
+              delivery={delivery}
               prBlockedReason={prBlockedReason}
-              requestChanges={requestChangesCopy(stations, waiting.stationKey)}
-              onChangeDefault={onEditDelivery}
-              hub={hubPlan}
+              onEditDelivery={onEditDelivery}
+              hubPlan={hubPlan}
               skills={skills.data}
-              qaReview={
-                qaDiffs === null
-                  ? undefined
-                  : { diffs: qaDiffs, onOpen: () => onChange({ tab: 'qa' }) }
-              }
-              // Opening an order that waits on you (click or notification deep
-              // link) lands in the comment box; it never steals an active field.
-              focusOnMount
+              qaDiffs={qaDiffs}
+              onOpenQa={() => onChange({ tab: 'qa' })}
             />
           )}
           <PanelTabs
@@ -354,56 +299,24 @@ export function WorkOrderPanel({
           </div>
         </main>
 
-        <aside
+        <DetailsRail
           id={railId}
-          // Hidden, not unmounted: the toggle's aria-controls keeps a target.
-          hidden={!railOpen}
-          aria-label="Work order details"
-          className="relative min-h-0 scrollbar-thin overflow-y-auto border-l bg-card/30"
-        >
-          <RailSection
-            title="Details"
-            hint={
-              workOrder.status === 'running' || workOrder.status === 'awaiting_approval'
-                ? 'Locked while the order is on the line.'
-                : workOrder.status === 'done'
-                  ? 'What this work order ran with.'
-                  : 'Overrides for the next run.'
-            }
-          >
-            <WorkOrderDetails
-              projectId={projectId}
-              workOrder={workOrder}
-              // A hub run starts from its repo's base branch (spec 0014).
-              baseBranch={
-                hubProject === undefined
-                  ? baseBranch
-                  : hubProject.repos.find((repo) => repo.name === deliveryRepo)?.baseBranch
-              }
-              repo={hubProject === undefined ? undefined : (deliveryRepo ?? null)}
-              worktreePath={run?.worktreePath ?? null}
-            />
-            <div className="mt-2 empty:hidden">
-              <ProjectAccountChip accountId={project?.claudeAccountId ?? null} />
-            </div>
-          </RailSection>
-          {run === undefined ? null : (
-            <RailSection title="Cost & context">
-              <RunUsage run={run} states={states} maxBudgetUsd={workOrder.maxBudgetUsd} />
-            </RailSection>
-          )}
-          <RailSection title="Run history">
-            {runs.isPending ? (
-              <Skeleton className="h-10 w-full" />
-            ) : (
-              <RunHistory
-                runs={runs.data ?? []}
-                selectedId={run?.id}
-                onSelect={(runId) => onChange({ run: runId, station: undefined })}
-              />
-            )}
-          </RailSection>
-        </aside>
+          open={railOpen}
+          projectId={projectId}
+          workOrder={workOrder}
+          // A hub run starts from its repo's base branch (spec 0014).
+          baseBranch={
+            hubProject === undefined
+              ? baseBranch
+              : hubProject.repos.find((repo) => repo.name === deliveryRepo)?.baseBranch
+          }
+          repo={hubProject === undefined ? undefined : (deliveryRepo ?? null)}
+          accountId={project?.claudeAccountId ?? null}
+          run={run}
+          states={states}
+          runs={runs.isPending ? undefined : (runs.data ?? [])}
+          onSelectRun={(runId) => onChange({ run: runId, station: undefined })}
+        />
       </div>
     </div>
   )
@@ -639,4 +552,175 @@ function TabBody({
     default:
       return <ActivityFeed run={run} stations={stations} stationKey={state.station} />
   }
+}
+
+/** The hub plan gate's choices (spec 0014); undefined outside a hub run that has no repo yet. */
+function useHubPlanGate(
+  projectId: string,
+  hubProject: Project | undefined,
+  run: Run | undefined,
+  workOrder: WorkOrder | undefined,
+): HubPlanGate | undefined {
+  const workOrders = useWorkOrders(projectId)
+  const splitWorkOrder = useSplitWorkOrder()
+  if (
+    hubProject === undefined ||
+    run === undefined ||
+    run.repo !== null ||
+    workOrder === undefined
+  ) {
+    return undefined
+  }
+  const research = latestResearch(run)
+  const repos = hubProject.repos.map((repo) => repo.name)
+  return {
+    repos,
+    suggested: suggestedRepo(workOrder.repo, research, repos),
+    split: research?.split ?? null,
+    splitDone: workOrders.some((other) => other.followsId === workOrder.id),
+    splitting: splitWorkOrder.isPending,
+    onCreateSplit: () => {
+      const items = research?.split
+      if (items === undefined) return
+      splitWorkOrder.mutate(
+        { workOrderId: workOrder.id, items },
+        {
+          onSuccess: () =>
+            toast.success(
+              `Created ${items.length - 1} follow-up work ${items.length === 2 ? 'order' : 'orders'} in the backlog.`,
+            ),
+          onError: (error) => toast.error(`Couldn't split: ${errorMessage(error)}`),
+        },
+      )
+    },
+  }
+}
+
+/** A station waits on you: a shift handoff review, else the gate decision. */
+function WaitingBanner({
+  runId,
+  waiting,
+  stations,
+  delivery,
+  prBlockedReason,
+  onEditDelivery,
+  hubPlan,
+  skills,
+  qaDiffs,
+  onOpenQa,
+}: {
+  runId: string
+  waiting: Run['stations'][number]
+  stations: Station[]
+  delivery: DeliveryMode | undefined
+  prBlockedReason: string | null
+  onEditDelivery: () => void
+  hubPlan: HubPlanGate | undefined
+  skills: ComponentProps<typeof GateBanner>['skills']
+  qaDiffs: number | null
+  onOpenQa: () => void
+}) {
+  const waitingStation = stations.find((station) => station.key === waiting.stationKey)
+  if (waitingStation !== undefined && worksInShifts(waitingStation)) {
+    // A station working in shifts waits on a handoff review, not a gate decision.
+    return (
+      <ShiftReviewBanner
+        key={waiting.id}
+        runId={runId}
+        stationKey={waiting.stationKey}
+        stationName={waitingStation.name}
+      />
+    )
+  }
+  return (
+    <GateBanner
+      key={waiting.id}
+      runId={runId}
+      stationKey={waiting.stationKey}
+      stationName={waitingStation?.name ?? waiting.stationKey}
+      prompt={waitingStation?.kind === 'gate' ? waitingStation.prompt : null}
+      // The last station's approval delivers the work: offer the delivery choice there.
+      delivery={isDeliveryGate(stations, waiting.stationKey) ? delivery : undefined}
+      prBlockedReason={prBlockedReason}
+      requestChanges={requestChangesCopy(stations, waiting.stationKey)}
+      onChangeDefault={onEditDelivery}
+      hub={hubPlan}
+      skills={skills}
+      qaReview={qaDiffs === null ? undefined : { diffs: qaDiffs, onOpen: onOpenQa }}
+      // Opening an order that waits on you (click or notification deep
+      // link) lands in the comment box; it never steals an active field.
+      focusOnMount
+    />
+  )
+}
+
+/** What the Details section is about at this point of the order's life. */
+function detailsHint(status: WorkOrder['status']): string {
+  if (status === 'running' || status === 'awaiting_approval') {
+    return 'Locked while the order is on the line.'
+  }
+  return status === 'done' ? 'What this work order ran with.' : 'Overrides for the next run.'
+}
+
+/** The right rail: details and overrides, cost and context, run history. */
+function DetailsRail({
+  id,
+  open,
+  projectId,
+  workOrder,
+  baseBranch,
+  repo,
+  accountId,
+  run,
+  states,
+  runs,
+  onSelectRun,
+}: {
+  id: string
+  open: boolean
+  projectId: string
+  workOrder: WorkOrder
+  baseBranch: string | undefined
+  repo: string | null | undefined
+  accountId: string | null
+  run: Run | undefined
+  states: ReturnType<typeof stationStates>
+  /** Undefined while loading. */
+  runs: Run[] | undefined
+  onSelectRun: (runId: string) => void
+}) {
+  return (
+    <aside
+      id={id}
+      // Hidden, not unmounted: the toggle's aria-controls keeps a target.
+      hidden={!open}
+      aria-label="Work order details"
+      className="relative min-h-0 scrollbar-thin overflow-y-auto border-l bg-card/30"
+    >
+      <RailSection title="Details" hint={detailsHint(workOrder.status)}>
+        <WorkOrderDetails
+          projectId={projectId}
+          workOrder={workOrder}
+          baseBranch={baseBranch}
+          repo={repo}
+          worktreePath={run?.worktreePath ?? null}
+        />
+        <div className="mt-2 empty:hidden">
+          <ProjectAccountChip accountId={accountId} />
+        </div>
+      </RailSection>
+      {run === undefined ? null : (
+        <RailSection title="Cost & context">
+          <RunUsage run={run} states={states} maxBudgetUsd={workOrder.maxBudgetUsd} />
+        </RailSection>
+      )}
+      <RailSection title="Run history">
+        {runs === undefined ? (
+          <Skeleton className="h-10 w-full" />
+        ) : (
+          <RunHistory runs={runs} selectedId={run?.id} onSelect={onSelectRun} />
+        )}
+      </RailSection>
+    </aside>
+  )
 }
