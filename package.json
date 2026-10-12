@@ -14,6 +14,7 @@
     "format:check": "oxfmt --check",
     "fallow": "fallow",
     "fallow:audit": "fallow audit",
+    "fallow:baseline": "fallow health --save-baseline fallow-baselines/health.json --quiet || [ $? -eq 1 ]",
     "typecheck": "tsc -b",
     "test": "vitest run --passWithNoTests",
     "test:e2e": "playwright test"

@@ -25,7 +25,9 @@ pnpm format       # oxfmt write
 pnpm fallow       # full fallow report (dead code, dupes, health, boundaries)
 ```
 
-`pnpm fallow:audit` gates only what the change introduces. `.fallowrc.json` enforces
+`pnpm fallow:audit` gates only what the change introduces; existing complexity is accepted in
+`fallow-baselines/health.json` (a change fails when it makes a file worse). After paying debt down,
+re-save it with `pnpm fallow:baseline`. `.fallowrc.json` enforces
 the bulletproof boundaries below (features never import each other) and ignores
 generated code (`src/components/ui`, `src/lib/contracts.ts`, `routeTree.gen.ts`).
 
