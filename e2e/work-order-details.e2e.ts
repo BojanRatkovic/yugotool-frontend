@@ -16,6 +16,9 @@ const project = {
   deliveryDefault: 'draft_pr',
   createdAt: NOW,
   updatedAt: NOW,
+  hubPath: null,
+  repos: [],
+  claudeAccountId: null,
 }
 
 const workOrder: WorkOrder = {

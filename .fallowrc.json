@@ -40,12 +40,16 @@
     "complexity-crap": "warn"
   },
   "health": {
-    "ignore": ["src/app/routeTree.gen.ts", "src/components/ui/**"]
+    // e2e mock routers are long switch handlers by nature; not product code.
+    "ignore": ["src/app/routeTree.gen.ts", "src/components/ui/**", "e2e/**"]
   },
   "duplicates": {
     "ignore": ["src/app/routeTree.gen.ts", "src/components/ui/**", "src/lib/contracts.ts"]
   },
   "audit": {
-    "gate": "new-only"
+    "gate": "new-only",
+    // Accepted debt: a change fails only when it makes a file's complexity worse.
+    // Re-save after paying debt down: pnpm fallow:baseline
+    "healthBaseline": "fallow-baselines/health.json"
   }
 }

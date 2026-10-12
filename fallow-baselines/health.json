@@ -1,0 +1,649 @@
+{
+  "kind": "health",
+  "finding_counts": {
+    "src/app/routes/-components/command-palette.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/app/routes/-components/factory-scene.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/app/routes/-components/project-pr-nav.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/app/routes/-components/work-order-panel.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/app/routes/__root.tsx": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/app/routes/index.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/app/routes/projects/$projectId/index.tsx": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 3
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/app/routes/projects/$projectId/pulls/$scope.tsx": {
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/components/image-lightbox.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/review-text.tsx": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/components/skill-textarea.tsx": {
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/features/claude-accounts/components/add-claude-account-dialog.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/features/claude-accounts/components/claude-accounts-section.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/claude-accounts/components/claude-login-panel.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/features/integrations/components/productive-card.tsx": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/features/integrations/components/productive-connect-dialog.tsx": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/integrations/components/productive-import-dialog.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/features/integrations/utils/productive.ts": {
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "src/features/knowledge/components/knowledge-library.tsx": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/features/knowledge/components/knowledge-source-dialog.tsx": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/features/knowledge/components/project-knowledge-settings.tsx": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/notifications/components/notification-list.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/projects/components/branch-select.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/projects/components/create-project-dialog.tsx": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "src/features/projects/components/delete-project-dialog.tsx": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/features/projects/components/line-editor.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/features/projects/components/offer-qa-callout.tsx": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/features/projects/components/preview-session.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "src/features/projects/components/project-settings-sheet.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 6
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "src/features/projects/components/repo-picker.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/features/projects/components/routes-settings.tsx": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/projects/components/station-editor.tsx": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "src/features/projects/components/station-node.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 2
+      }
+    },
+    "src/features/projects/utils/line-draft.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/projects/utils/preview-form.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/github-html.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-author-actions.tsx": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-board-header.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-board.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-card.tsx": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-file-diff.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 4
+      }
+    },
+    "src/features/pull-requests/components/pr-file-tree.tsx": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-files-tab.tsx": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "src/features/pull-requests/components/pr-nav-items.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-overview-tab.tsx": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-panel.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-previous-findings.tsx": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/features/pull-requests/components/pr-readiness.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-review-dialog.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-tab-body.tsx": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-thread-actions.tsx": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-thread.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-threads-tab.tsx": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/pr-yugotool-tab.tsx": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/components/yugotool-review-button.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/utils/columns.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/pull-requests/utils/readiness.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/runs/components/activity-feed.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/runs/components/delivery-banner.tsx": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/runs/components/gate-banner.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/features/runs/components/pipeline-stepper.tsx": {
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/features/runs/components/qa-view.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "src/features/runs/components/run-outcome-banner.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/runs/components/shifts-view.tsx": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/runs/utils/activity.ts": {
+      "complexity_moderate": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/runs/utils/station-states.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/settings/components/general-settings-form.tsx": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/features/settings/components/notification-kinds-section.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/features/settings/components/settings-save-bar.tsx": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/features/settings/components/settings-section.tsx": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/features/system/components/auth-chip.tsx": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/features/system/components/doctor-section.tsx": {
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "src/features/system/components/plan-usage-card.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/features/work-orders/components/work-order-board.tsx": {
+      "crap_high": {
+        "count": 3
+      }
+    },
+    "src/features/work-orders/components/work-order-card.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/hooks/use-shift-wheel.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/lib/api-client.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    }
+  },
+  "runtime_coverage_findings": [],
+  "target_keys": [
+    "src/lib/query-keys.ts:high impact",
+    "src/features/pull-requests/components/pr-files-tab.tsx:complexity",
+    "src/hooks/use-now.ts:high impact",
+    "src/app/routes/-components/use-needs-you.ts:high impact",
+    "src/features/runs/utils/station-states.ts:high impact",
+    "src/features/work-orders/utils/pipeline.ts:high impact",
+    "src/features/runs/utils/qa.ts:high impact",
+    "src/lib/shortcuts.ts:high impact",
+    "src/features/pull-requests/components/pr-file-diff.tsx:complexity",
+    "src/features/system/utils/doctor.ts:high impact",
+    "src/lib/api-client.ts:high impact",
+    "src/features/pull-requests/utils/readiness.ts:untested risk",
+    "src/features/runs/utils/activity.ts:high impact",
+    "src/features/work-orders/utils/board-columns.ts:high impact",
+    "src/features/claude-accounts/utils/claude-accounts.ts:high impact",
+    "src/features/projects/components/line-editor.tsx:complexity",
+    "src/features/pull-requests/utils/threads.ts:high impact",
+    "src/features/integrations/utils/productive.ts:untested risk",
+    "src/features/projects/components/preview-session.tsx:complexity",
+    "src/app/routes/-components/work-order-panel.tsx:complexity",
+    "src/features/claude-accounts/components/add-claude-account-dialog.tsx:complexity",
+    "src/features/runs/components/gate-banner.tsx:complexity",
+    "src/features/projects/components/project-settings-sheet.tsx:complexity",
+    "src/features/integrations/components/productive-import-dialog.tsx:complexity",
+    "src/features/runs/components/qa-view.tsx:complexity"
+  ]
+}

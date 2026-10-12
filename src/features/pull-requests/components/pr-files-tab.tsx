@@ -15,11 +15,18 @@ import {
 import { PrFileTree } from '@/features/pull-requests/components/pr-file-tree'
 import type { PrPanelState } from '@/features/pull-requests/components/pr-panel'
 import { placePr } from '@/features/pull-requests/utils/columns'
+import {
+  cycleThread,
+  nextUnviewed,
+  parseLineKey,
+  stepFile,
+} from '@/features/pull-requests/utils/file-nav'
 import { visibleFiles, type FileTreeNode } from '@/features/pull-requests/utils/file-tree'
 import { ApiError, errorMessage } from '@/lib/api-client'
-import type { PullRequestDetail } from '@/lib/contracts'
+import type { PrDiff, PullRequestDetail } from '@/lib/contracts'
 import { parsePatch } from '@/lib/diff'
 import { isPanelTypingTarget } from '@/features/pull-requests/utils/keys'
+import { ghostFindings } from '@/features/pull-requests/utils/yugotool'
 
 /** Whether "Since your last review" applies, and whether it's on by default (Re-review). */
 function sinceReview(pr: PullRequestDetail, viewer: string) {
@@ -104,15 +111,7 @@ export function PrFilesTab({
   // YugoTool findings not posted yet, on this file's lines; only for the head they were made on.
   const yugotool = useQuery(prQueries.yugotoolReview(projectId, pr.number, pr.headOid))
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set())
-  const review = yugotool.data?.review ?? null
-  const verdict = review !== null && !review.stale ? review.verdict : null
-  const ghosts = (verdict?.findings ?? []).filter(
-    (f) =>
-      f.file === selectedPath &&
-      f.line !== null &&
-      review?.pullRequest.posted.includes(f.id) !== true &&
-      !dismissed.has(f.id),
-  )
+  const ghosts = ghostFindings(yugotool.data?.review ?? null, selectedPath, dismissed)
 
   const [focusedLine, setFocusedLine] = useState<string | null>(null)
   const [commentTarget, setCommentTarget] = useState<CommentTarget | null>(null)
@@ -154,16 +153,23 @@ export function PrFilesTab({
     })
   }, [state.thread, state.file, pr.reviewThreads, files, onChange, parsed])
 
+  /** The first added or removed line of the open file, as a focused-line key. */
+  const firstChangedLine = () => {
+    const first = parsedByPath
+      .get(selectedPath ?? '')
+      ?.lines.find((l) => l.kind === 'add' || l.kind === 'del')
+    const anchor = first === undefined ? null : lineAnchor(first)
+    return anchor === null ? null : `${anchor.side}${anchor.line}`
+  }
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey || isPanelTypingTarget(event.target))
         return
-      const index = selectedPath === undefined ? -1 : order.indexOf(selectedPath)
       switch (event.key) {
         case 'j':
         case 'k': {
-          const next =
-            order[Math.max(0, Math.min(order.length - 1, index + (event.key === 'j' ? 1 : -1)))]
+          const next = stepFile(order, selectedPath, event.key === 'j' ? 1 : -1)
           if (next !== undefined) selectFile(next)
           break
         }
@@ -171,45 +177,22 @@ export function PrFilesTab({
           if (selected === undefined) return
           setViewed(selected.path, !selected.viewed)
           if (!selected.viewed) {
-            const rest = [...order.slice(index + 1), ...order.slice(0, index)]
-            const nextUnviewed = rest.find(
-              (p) => files.find((f) => f.path === p)?.viewed === false,
-            )
-            if (nextUnviewed !== undefined) selectFile(nextUnviewed)
+            const next = nextUnviewed(order, selectedPath, files)
+            if (next !== undefined) selectFile(next)
           }
           break
         }
         case 'n':
         case 'p': {
-          const ids = fileThreads
-            .filter((t) => t.line !== null)
-            .toSorted((a, b) => (a.line ?? 0) - (b.line ?? 0))
-            .map((t) => t.id)
-          if (ids.length === 0) return
-          const at = state.thread === undefined ? -1 : ids.indexOf(state.thread)
-          const next =
-            event.key === 'n'
-              ? ids[(at + 1) % ids.length]
-              : ids[(at - 1 + ids.length) % ids.length]
+          const next = cycleThread(fileThreads, state.thread, event.key === 'n' ? 1 : -1)
+          if (next === undefined) return
           onChange({ thread: next })
           break
         }
         case 'c': {
-          const line =
-            focusedLine ??
-            (() => {
-              const first = parsedByPath
-                .get(selectedPath ?? '')
-                ?.lines.find((l) => l.kind === 'add' || l.kind === 'del')
-              const anchor = first === undefined ? null : lineAnchor(first)
-              return anchor === null ? null : `${anchor.side}${anchor.line}`
-            })()
-          const match = line === null ? null : /^(LEFT|RIGHT)(\d+)$/.exec(line)
-          if (match === null) return
-          setCommentTarget({
-            side: match[1] === 'LEFT' ? 'LEFT' : 'RIGHT',
-            line: Number(match[2]),
-          })
+          const target = parseLineKey(focusedLine ?? firstChangedLine() ?? '')
+          if (target === null) return
+          setCommentTarget(target)
           break
         }
         default:
@@ -265,45 +248,73 @@ export function PrFilesTab({
             </a>
           </p>
         ) : null}
-        {diff.data === undefined && diff.error !== null ? (
-          <div className="p-4">
-            <LoadError what="the diff" message={diff.error.message} />
-          </div>
-        ) : diff.data === undefined ? (
-          <div className="flex flex-col gap-2 p-4" aria-busy="true">
-            {Array.from({ length: 10 }, (_, i) => (
-              <Skeleton key={i} className="h-4 w-full" />
-            ))}
-          </div>
-        ) : selected === undefined ? (
-          <p className="p-4 text-sm text-muted-foreground">
-            {useSince
-              ? 'Nothing changed in the PR’s files since your last review.'
-              : 'No files.'}
-          </p>
-        ) : (
-          <PrFileDiff
-            key={selected.path}
-            projectId={projectId}
-            pr={pr}
-            file={selected}
-            diff={
-              diff.data.truncated && !parsedByPath.has(selected.path)
-                ? null
-                : (parsedByPath.get(selected.path) ?? null)
-            }
-            threads={fileThreads}
-            ghosts={ghosts}
-            onDismissGhost={(id) => setDismissed(new Set([...dismissed, id]))}
-            focusedThread={state.thread}
-            focusedLine={focusedLine}
-            commentTarget={commentTarget}
-            onFocusLine={setFocusedLine}
-            onComment={setCommentTarget}
-            onViewed={(value) => setViewed(selected.path, value)}
-          />
-        )}
+        <DiffPaneBody
+          diff={diff}
+          emptyNote={
+            selected === undefined
+              ? useSince
+                ? 'Nothing changed in the PR’s files since your last review.'
+                : 'No files.'
+              : null
+          }
+        >
+          {(data) =>
+            selected === undefined ? null : (
+              <PrFileDiff
+                key={selected.path}
+                projectId={projectId}
+                pr={pr}
+                file={selected}
+                diff={
+                  data.truncated && !parsedByPath.has(selected.path)
+                    ? null
+                    : (parsedByPath.get(selected.path) ?? null)
+                }
+                threads={fileThreads}
+                ghosts={ghosts}
+                onDismissGhost={(id) => setDismissed(new Set([...dismissed, id]))}
+                focusedThread={state.thread}
+                focusedLine={focusedLine}
+                commentTarget={commentTarget}
+                onFocusLine={setFocusedLine}
+                onComment={setCommentTarget}
+                onViewed={(value) => setViewed(selected.path, value)}
+              />
+            )
+          }
+        </DiffPaneBody>
       </div>
     </div>
   )
+}
+
+/** The diff pane under its notices: load error, skeleton, an empty note, or the file. */
+function DiffPaneBody({
+  diff,
+  emptyNote,
+  children,
+}: {
+  diff: { data: PrDiff | undefined; error: Error | null }
+  emptyNote: string | null
+  children: (data: PrDiff) => React.ReactNode
+}) {
+  if (diff.data === undefined && diff.error !== null) {
+    return (
+      <div className="p-4">
+        <LoadError what="the diff" message={diff.error.message} />
+      </div>
+    )
+  }
+  if (diff.data === undefined) {
+    return (
+      <div className="flex flex-col gap-2 p-4" aria-busy="true">
+        {Array.from({ length: 10 }, (_, i) => (
+          <Skeleton key={i} className="h-4 w-full" />
+        ))}
+      </div>
+    )
+  }
+  if (emptyNote !== null)
+    return <p className="p-4 text-sm text-muted-foreground">{emptyNote}</p>
+  return children(diff.data)
 }
