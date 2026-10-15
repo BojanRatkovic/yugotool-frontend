@@ -34,6 +34,11 @@ export const queryKeys = {
       : (['projects', projectId, 'remote', repo] as const),
   /** Skills a project's agents can load (spec 0015); read from disk, under the project root. */
   projectSkills: (projectId: string) => ['projects', projectId, 'skills'] as const,
+  /** GitHub Community Standards (spec 0020); live from GitHub, under the project root. */
+  communityStandards: (projectId: string, repo?: string) =>
+    repo === undefined
+      ? (['projects', projectId, 'community'] as const)
+      : (['projects', projectId, 'community', repo] as const),
   /** Route map of a project; under `projects` so SSE `projects` (discovery done) refreshes it. */
   projectRoutes: (projectId: string) => ['projects', projectId, 'routes'] as const,
   /** QA attempts and checks per run; SSE `qa` invalidates the root. */

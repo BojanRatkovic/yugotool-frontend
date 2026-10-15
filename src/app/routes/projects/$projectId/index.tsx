@@ -15,6 +15,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { CommunityView } from '@/features/community/components/community-view'
 import { lineQueries } from '@/features/projects/api/line-queries'
 import { LineEditor } from '@/features/projects/components/line-editor'
 import { OfferQaCallout } from '@/features/projects/components/offer-qa-callout'
@@ -41,7 +42,7 @@ import { panelSearchPatch, previewMissing } from '@/app/routes/-components/proje
 import type { Line, Project } from '@/lib/contracts'
 
 const searchSchema = z.object({
-  view: z.enum(['board', 'line', 'review']).default('board').catch('board'),
+  view: z.enum(['board', 'line', 'review', 'community']).default('board').catch('board'),
   /** Open work order. The URL is the source of truth for the panel. */
   wo: z.string().optional().catch(undefined),
   woTab: z.enum(['activity', 'diff', 'findings', 'shifts', 'qa']).optional().catch(undefined),
@@ -88,8 +89,9 @@ function ProjectPage() {
   const system = useQuery(systemQueries.info())
   const stations = line.data?.stations ?? []
   const hub = project?.kind === 'hub'
-  // A hub project (spec 0014) has no review line: PR review is per repo, later.
-  const view = hub && search.view === 'review' ? 'board' : search.view
+  // A hub project (spec 0014) has no review line or community tab: both are per repo.
+  const view =
+    hub && (search.view === 'review' || search.view === 'community') ? 'board' : search.view
   const { wo } = search
   const hubRepos = useMemo(
     () => (project?.kind === 'hub' ? project.repos.map((repo) => repo.name) : undefined),
@@ -368,7 +370,13 @@ function ProjectTitle({ project }: { project: Project | undefined }) {
   )
 }
 
-/** Board / Line / Review line. A hub has no review line (spec 0014). */
+/** Board / Line / Review line / Community. A hub has no review line or community tab (spec 0014). */
+type ProjectViewName = 'board' | 'line' | 'review' | 'community'
+
+function toViewName(next: string): ProjectViewName {
+  return next === 'line' || next === 'review' || next === 'community' ? next : 'board'
+}
+
 function ViewTabs({
   value,
   hub,
@@ -376,14 +384,10 @@ function ViewTabs({
 }: {
   value: string
   hub: boolean
-  onChange: (view: 'board' | 'line' | 'review') => void
+  onChange: (view: ProjectViewName) => void
 }) {
   return (
-    <Tabs
-      value={value}
-      onValueChange={(next) => onChange(next === 'line' || next === 'review' ? next : 'board')}
-      className="ml-2"
-    >
+    <Tabs value={value} onValueChange={(next) => onChange(toViewName(next))} className="ml-2">
       <TabsList className="h-7">
         <TabsTrigger value="board" className="px-2.5 text-xs">
           Board
@@ -398,6 +402,15 @@ function ViewTabs({
             title="The line a YugoTool review of a pull request runs"
           >
             Review line
+          </TabsTrigger>
+        )}
+        {hub ? null : (
+          <TabsTrigger
+            value="community"
+            className="px-2.5 text-xs"
+            title="How this repo compares to GitHub's community standards"
+          >
+            Community
           </TabsTrigger>
         )}
       </TabsList>
@@ -418,7 +431,7 @@ function ProjectView({
   onSetupPreview,
 }: {
   projectId: string
-  view: 'board' | 'line' | 'review'
+  view: ProjectViewName
   line: UseQueryResult<Line>
   reviewLine: UseQueryResult<Line>
   noPreview: boolean
@@ -427,6 +440,8 @@ function ProjectView({
   onCreate: () => void
   onSetupPreview: () => void
 }) {
+  // Community reads GitHub, not the line, so it doesn't wait on the line query.
+  if (view === 'community') return <CommunityView projectId={projectId} />
   if (line.isPending) {
     return (
       <div className="p-4">

@@ -482,6 +482,34 @@ export const projectRemoteSchema = z.object({
 })
 export type ProjectRemote = z.infer<typeof projectRemoteSchema>
 
+/** GitHub's "Community Standards" checklist for a repo (spec 0020). Reports only. */
+export const communityStandardKeySchema = z.enum([
+  'description',
+  'readme',
+  'code_of_conduct',
+  'contributing',
+  'license',
+  'security_policy',
+  'issue_template',
+  'pull_request_template',
+])
+export type CommunityStandardKey = z.infer<typeof communityStandardKeySchema>
+
+export const communityStandardItemSchema = z.object({
+  key: communityStandardKeySchema,
+  present: z.boolean(),
+  url: z.string(),
+})
+export type CommunityStandardItem = z.infer<typeof communityStandardItemSchema>
+
+export const communityStandardsSchema = z.object({
+  slug: z.string(),
+  healthPercentage: z.number().int().min(0).max(100),
+  items: z.array(communityStandardItemSchema),
+  updatedAt: z.string().nullable(),
+})
+export type CommunityStandards = z.infer<typeof communityStandardsSchema>
+
 /**
  * A signed-in browser session saved for the preview ("Sign in once"): cookies
  * and localStorage every browser on the preview starts with.
