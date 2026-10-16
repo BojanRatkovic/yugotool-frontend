@@ -1,7 +1,7 @@
 import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { Maximize2, Minimize2, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
-import { useEffect, useId, type ComponentProps, type ReactNode } from 'react'
+import { useEffect, useId, useState, type ComponentProps, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -13,6 +13,7 @@ import { useDeliveredToast } from '@/features/runs/components/delivery-banner'
 import { FindingsView, findingCount } from '@/features/runs/components/findings-view'
 import { GateBanner, type HubPlanGate } from '@/features/runs/components/gate-banner'
 import { latestResearch, suggestedRepo } from '@/features/runs/utils/hub-plan'
+import { gateReading } from '@/features/runs/utils/readable-output'
 import { ProjectAccountChip } from '@/features/claude-accounts/components/project-account'
 import { useProject } from '@/features/projects/components/project-nav'
 import { useSplitWorkOrder } from '@/features/work-orders/api/work-order-mutations'
@@ -36,6 +37,9 @@ import { isDetailsRailKey } from '@/features/work-orders/utils/details-rail'
 import { WorkOrderDetails } from '@/features/work-orders/components/work-order-details'
 import { WorkOrderHeader } from '@/features/work-orders/components/work-order-header'
 import { remoteQueries } from '@/features/projects/api/remote-queries'
+import { lineQueries } from '@/features/projects/api/line-queries'
+import { StationQuickEdit } from '@/features/projects/components/station-quick-edit'
+import { previewMissing } from '@/app/routes/-components/project-page'
 import { canOpenPullRequest, isDeliveryGate } from '@/features/runs/utils/delivery'
 import { requestChangesCopy } from '@/features/runs/utils/request-changes'
 import { RecheckCiButton } from '@/features/work-orders/components/ci-recheck'
@@ -124,6 +128,7 @@ export function WorkOrderPanel({
   onClose,
   onEditPreview,
   onEditDelivery,
+  onEditLine,
 }: {
   projectId: string
   workOrderId: string
@@ -138,6 +143,8 @@ export function WorkOrderPanel({
   onEditPreview: () => void
   /** Opens the project's delivery settings (gate menu: "Change project default…"). */
   onEditDelivery: () => void
+  /** Opens the whole line in the line view. */
+  onEditLine: () => void
 }) {
   const { workOrder, isLoading } = useWorkOrder(projectId, workOrderId)
   const runs = useQuery(runQueries.list(workOrderId))
@@ -171,6 +178,8 @@ export function WorkOrderPanel({
   const isLatestRun = run !== undefined && run.id === selectRun(runs.data ?? [], undefined)?.id
   const railOpen = useDetailsRailOpen()
   const railId = useId()
+  const line = useQuery(lineQueries.detail(projectId))
+  const [editingStation, setEditingStation] = useState<string | null>(null)
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -212,8 +221,20 @@ export function WorkOrderPanel({
             selectedKey={state.station}
             onSelect={(station) => onChange({ station, tab: 'activity' })}
             overrides={{ model: workOrder.modelOverride, effort: workOrder.effortOverride }}
+            onEditStation={line.data === undefined ? undefined : setEditingStation}
+            onEditLine={onEditLine}
           />
         </div>
+      )}
+      {line.data === undefined || editingStation === null ? null : (
+        <StationQuickEdit
+          key={`${line.data.updatedAt}-${editingStation}`}
+          line={line.data}
+          stationKey={editingStation}
+          onClose={() => setEditingStation(null)}
+          previewMissing={previewMissing(project)}
+          onSetupPreview={onEditPreview}
+        />
       )}
 
       <div
@@ -250,7 +271,7 @@ export function WorkOrderPanel({
           ) : null}
           {run === undefined || waiting === undefined || !isLatestRun ? null : (
             <WaitingBanner
-              runId={run.id}
+              run={run}
               waiting={waiting}
               stations={stations}
               delivery={delivery}
@@ -598,7 +619,7 @@ function useHubPlanGate(
 
 /** A station waits on you: a shift handoff review, else the gate decision. */
 function WaitingBanner({
-  runId,
+  run,
   waiting,
   stations,
   delivery,
@@ -609,7 +630,7 @@ function WaitingBanner({
   qaDiffs,
   onOpenQa,
 }: {
-  runId: string
+  run: Run
   waiting: Run['stations'][number]
   stations: Station[]
   delivery: DeliveryMode | undefined
@@ -626,7 +647,7 @@ function WaitingBanner({
     return (
       <ShiftReviewBanner
         key={waiting.id}
-        runId={runId}
+        runId={run.id}
         stationKey={waiting.stationKey}
         stationName={waitingStation.name}
       />
@@ -635,9 +656,10 @@ function WaitingBanner({
   return (
     <GateBanner
       key={waiting.id}
-      runId={runId}
+      runId={run.id}
       stationKey={waiting.stationKey}
       stationName={waitingStation?.name ?? waiting.stationKey}
+      reading={gateReading(stations, run.stations, waiting.stationKey)}
       prompt={waitingStation?.kind === 'gate' ? waitingStation.prompt : null}
       // The last station's approval delivers the work: offer the delivery choice there.
       delivery={isDeliveryGate(stations, waiting.stationKey) ? delivery : undefined}

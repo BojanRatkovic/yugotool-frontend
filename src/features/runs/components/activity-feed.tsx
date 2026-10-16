@@ -28,6 +28,7 @@ import { Cost } from '@/components/cost'
 import { ImageThumb } from '@/components/image-lightbox'
 import { LinkifiedText } from '@/components/linkified-text'
 import { Markdown } from '@/components/markdown'
+import { MarkdownReader, ReadButton } from '@/components/markdown-reader'
 import { Meter } from '@/components/meter'
 import { modelLabel } from '@/components/model-select'
 import { runsSessions, StationIcon } from '@/components/station-icon'
@@ -51,6 +52,7 @@ import {
 } from '@/features/runs/utils/activity'
 import { parseDiffStat } from '@/features/runs/utils/diff-stat'
 import { qaFileUrl } from '@/features/runs/utils/qa'
+import { readableOutput } from '@/features/runs/utils/readable-output'
 import { CI_STATION, REPO_HOOKS_STATION } from '@/features/runs/utils/station-states'
 import { detectLanguage } from '@/lib/code-language'
 import type { ImageEvent, Run, RunEvent, Station } from '@/lib/contracts'
@@ -79,6 +81,7 @@ const TOOL_ICON: Record<string, LucideIcon> = {
 /** Assistant text as markdown; long messages fold behind "Show more". */
 function Prose({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false)
+  const [reading, setReading] = useState(false)
   const long = text.length > 700 || text.split('\n').length > 12
   return (
     <div className="flex w-full min-w-0 flex-col items-start gap-1">
@@ -92,13 +95,28 @@ function Prose({ text }: { text: string }) {
         )}
       />
       {long ? (
-        <button
-          type="button"
-          onClick={() => setExpanded((value) => !value)}
-          className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-        >
-          {expanded ? 'Show less' : 'Show more'}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setExpanded((value) => !value)}
+            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            {expanded ? 'Show less' : 'Show more'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setReading(true)}
+            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Open in reader
+          </button>
+          <MarkdownReader
+            open={reading}
+            onOpenChange={setReading}
+            title="Agent message"
+            text={text}
+          />
+        </div>
       ) : null}
     </div>
   )
@@ -433,6 +451,8 @@ function GroupHeader({
         ? sr.numTurns
         : turnsFromResult(resultEvent?.message ?? '')
   const hasContext = sr !== null && sr.contextWindow !== null && sr.contextTokens > 0
+  const reading = sr === null ? null : readableOutput(station, sr)
+  const name = sr === null ? 'Workspace' : (station?.name ?? sr.stationKey)
   return (
     <div className="sticky top-0 z-[5] flex h-10 items-center gap-2 border-y bg-card/95 px-4 backdrop-blur-sm">
       <button
@@ -455,9 +475,7 @@ function GroupHeader({
             className="text-muted-foreground"
           />
         )}
-        <span className="truncate text-[0.8125rem] font-semibold">
-          {sr === null ? 'Workspace' : (station?.name ?? sr.stationKey)}
-        </span>
+        <span className="truncate text-[0.8125rem] font-semibold">{name}</span>
         {sr !== null && sr.attempt > 1 ? (
           <span className="text-xs text-muted-foreground">
             attempt {sr.attempt}
@@ -470,6 +488,14 @@ function GroupHeader({
           status={sr.status}
           label={sr.status === 'awaiting_approval' ? 'Waiting' : undefined}
           variant="plain"
+        />
+      )}
+      {reading === null ? null : (
+        <ReadButton
+          title={name}
+          description={sr !== null && sr.attempt > 1 ? `Attempt ${sr.attempt}` : undefined}
+          text={reading}
+          className="text-muted-foreground"
         />
       )}
       {sr === null ? null : (

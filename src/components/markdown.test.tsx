@@ -45,4 +45,10 @@ describe('Markdown', () => {
       '_blank',
     )
   })
+
+  it('renders top-level headings larger in the reader', () => {
+    render(<Markdown variant="reader" text={'# Plan\n\n## Steps\n\nBody'} />)
+    expect(screen.getByRole('heading', { name: 'Plan' })).toHaveClass('text-lg')
+    expect(screen.getByRole('heading', { name: 'Steps' })).toHaveClass('text-base')
+  })
 })

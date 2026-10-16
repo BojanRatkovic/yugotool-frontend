@@ -1,5 +1,5 @@
-import { Code2, Ellipsis, Square, Trash2 } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { Code2, Ellipsis, Pencil, Square, Trash2 } from 'lucide-react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import { StatusChip } from '@/components/status/status-chip'
@@ -15,6 +15,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +36,7 @@ import { SourceLink } from '@/components/source-link'
 import { QueueButtons, QueuedChip } from '@/features/work-orders/components/queue-actions'
 import { errorMessage } from '@/lib/api-client'
 import type { WorkOrder } from '@/lib/contracts'
+import { IS_MAC } from '@/lib/shortcuts'
 
 function TitleField({ projectId, workOrder }: { projectId: string; workOrder: WorkOrder }) {
   const [draft, setDraft] = useState(workOrder.title)
@@ -70,6 +72,106 @@ function TitleField({ projectId, workOrder }: { projectId: string; workOrder: Wo
       }}
       className="h-8 min-w-0 flex-1 truncate rounded-md border border-transparent bg-transparent px-1.5 text-base font-semibold outline-none hover:border-border focus-visible:border-input focus-visible:bg-background focus-visible:outline-none"
     />
+  )
+}
+
+const DESCRIPTION_MAX = 20_000
+
+/** The description: two lines at rest, a textarea on click. `⌘↵` saves, Esc cancels. */
+function DescriptionField({
+  projectId,
+  workOrder,
+}: {
+  projectId: string
+  workOrder: WorkOrder
+}) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const editing = draft !== null
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    if (editing) textareaRef.current?.focus()
+  }, [editing])
+
+  // Esc cancels the edit, not the panel sheet: Radix listens on document in the
+  // capture phase, so this has to run earlier, on window.
+  useEffect(() => {
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.target !== textareaRef.current) return
+      event.stopPropagation()
+      event.preventDefault()
+      setDraft(null)
+    }
+    if (editing) window.addEventListener('keydown', onEscape, { capture: true })
+    return () => window.removeEventListener('keydown', onEscape, { capture: true })
+  }, [editing])
+
+  function save(text: string) {
+    setDraft(null)
+    if (text === workOrder.description) return
+    const tx = workOrdersCollection(projectId).update(workOrder.id, (row) => {
+      row.description = text
+    })
+    tx.isPersisted.promise.catch((error: unknown) => {
+      setDraft(text)
+      toast.error(`Couldn't save the description: ${errorMessage(error)}`)
+    })
+  }
+
+  if (draft === null) {
+    const empty = workOrder.description.trim() === ''
+    return (
+      <button
+        type="button"
+        onClick={() => setDraft(workOrder.description)}
+        aria-label={empty ? 'Add a description' : 'Edit description'}
+        className="group/desc flex max-w-[80ch] items-start gap-1.5 rounded-md px-1.5 py-0.5 text-left text-[0.8125rem] text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+      >
+        <span className={empty ? 'italic opacity-70' : 'line-clamp-2 whitespace-pre-line'}>
+          {empty ? 'Add a description…' : workOrder.description}
+        </span>
+        <Pencil
+          aria-hidden="true"
+          className="mt-1 size-3 shrink-0 opacity-0 transition-opacity group-hover/desc:opacity-100 group-focus-visible/desc:opacity-100"
+        />
+      </button>
+    )
+  }
+
+  const tooLong = draft.length > DESCRIPTION_MAX
+  return (
+    <div className="flex max-w-[80ch] flex-col gap-1.5 px-1.5 pb-1">
+      <Textarea
+        ref={textareaRef}
+        aria-label="Description"
+        value={draft}
+        rows={Math.min(14, Math.max(4, draft.split('\n').length + 1))}
+        onChange={(event) => setDraft(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !tooLong) {
+            // The panel's ⌘↵ approves a gate; this one is the field's.
+            event.preventDefault()
+            event.stopPropagation()
+            save(draft)
+          }
+        }}
+        aria-invalid={tooLong ? true : undefined}
+        className="min-h-20 resize-y bg-background text-[0.8125rem] leading-relaxed"
+        placeholder="What should the line build? Markdown is fine."
+      />
+      <div className="flex items-center gap-2">
+        <Button size="xs" disabled={tooLong} onClick={() => save(draft)}>
+          Save
+        </Button>
+        <Button size="xs" variant="ghost" onClick={() => setDraft(null)}>
+          Cancel
+        </Button>
+        <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+          {tooLong
+            ? `${draft.length.toLocaleString()} / ${DESCRIPTION_MAX.toLocaleString()} characters`
+            : `${IS_MAC ? '⌘' : 'Ctrl'}↵ saves · Esc cancels`}
+        </span>
+      </div>
+    </div>
   )
 }
 
@@ -228,11 +330,7 @@ export function WorkOrderHeader({
           {controls}
         </div>
       </div>
-      {workOrder.description === '' ? null : (
-        <p className="line-clamp-2 max-w-[80ch] pl-[0.375rem] text-[0.8125rem] text-muted-foreground">
-          {workOrder.description}
-        </p>
-      )}
+      <DescriptionField projectId={projectId} workOrder={workOrder} />
     </header>
   )
 }

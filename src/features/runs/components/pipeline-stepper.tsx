@@ -1,3 +1,5 @@
+import { Pencil, Workflow } from 'lucide-react'
+
 import { Cost } from '@/components/cost'
 import { modelLabel } from '@/components/model-select'
 import { runsSessions, StationIcon } from '@/components/station-icon'
@@ -13,6 +15,8 @@ import {
   type Station,
   type StationRun,
 } from '@/lib/contracts'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { durationBetween, formatDuration } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -59,18 +63,23 @@ export function detailLine(
 /**
  * The line as connected steps. Every step has a fixed size (three fixed-height
  * lines, truncated, tabular numbers) so the panel never jumps as a run moves. Clicking a step filters the activity feed to
- * that station; clicking the selected one clears the filter.
+ * that station; clicking the selected one clears the filter. The pencil on a
+ * step edits that station of the line; the last button opens the whole line.
  */
 export function PipelineStepper({
   states,
   selectedKey,
   onSelect,
   overrides,
+  onEditStation,
+  onEditLine,
 }: {
   states: StationState[]
   selectedKey: string | undefined
   onSelect: (key: string | undefined) => void
   overrides?: RunOverrides
+  onEditStation?: (key: string) => void
+  onEditLine?: () => void
 }) {
   return (
     <ol
@@ -81,8 +90,16 @@ export function PipelineStepper({
         const selected = selectedKey === station.key
         const reached = stationRun !== undefined
         const detail = detailLine(station, stationRun, overrides)
+        // Repo hooks and CI are the worker's, not stations of the line.
+        const editable =
+          onEditStation !== undefined &&
+          station.key !== REPO_HOOKS_STATION_KEY &&
+          station.key !== CI_STATION_KEY
         return (
-          <li key={station.key} className="flex min-w-0 shrink-0 items-center">
+          <li
+            key={station.key}
+            className="group/step relative flex min-w-0 shrink-0 items-center"
+          >
             {index === 0 ? null : (
               <span
                 aria-hidden="true"
@@ -153,9 +170,43 @@ export function PipelineStepper({
                 {detail}
               </span>
             </button>
+            {editable ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label={`Edit ${station.name}`}
+                    onClick={() => onEditStation(station.key)}
+                    className="absolute right-1.5 bottom-1.5 border bg-background text-foreground opacity-0 shadow-xs group-hover/step:opacity-100 focus-visible:opacity-100"
+                  >
+                    <Pencil aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit station · model, prompt, skills</TooltipContent>
+              </Tooltip>
+            ) : null}
           </li>
         )
       })}
+      {onEditLine === undefined ? null : (
+        <li className="flex shrink-0 items-center pl-3">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label="Edit the line"
+                onClick={onEditLine}
+                className="h-[4.75rem] w-9 border-dashed text-muted-foreground"
+              >
+                <Workflow aria-hidden="true" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit the line · add, reorder or remove stations</TooltipContent>
+          </Tooltip>
+        </li>
+      )}
     </ol>
   )
 }
