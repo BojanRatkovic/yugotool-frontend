@@ -13,6 +13,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { ReadButton } from '@/components/markdown-reader'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -97,6 +98,7 @@ export function GateBanner({
   requestChanges,
   hub,
   skills,
+  reading,
 }: {
   runId: string
   stationKey: string
@@ -120,6 +122,8 @@ export function GateBanner({
   hub?: HubPlanGate
   /** The project's skills: `/` in the comment offers them (spec 0015). */
   skills?: readonly ProjectSkill[]
+  /** What this gate approves (the plan, the summary), opened in the reader. */
+  reading?: { stationName: string; text: string } | null
 }) {
   // A PR default that can't work falls back to a local commit, and says so below the buttons.
   const effective =
@@ -208,7 +212,12 @@ export function GateBanner({
       <div className="flex items-start gap-3">
         <Clock aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-status-waiting" />
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <GateTitle stationName={stationName} prompt={prompt} qaReview={qaReview} />
+          <GateTitle
+            stationName={stationName}
+            prompt={prompt}
+            qaReview={qaReview}
+            reading={reading ?? null}
+          />
           {hub === undefined ? null : (
             <HubPlanBlock
               hub={hub}
@@ -265,10 +274,12 @@ function GateTitle({
   stationName,
   prompt,
   qaReview,
+  reading,
 }: {
   stationName: string
   prompt: string | null
   qaReview: { diffs: number; onOpen: () => void } | undefined
+  reading: { stationName: string; text: string } | null
 }) {
   return (
     <div className="flex flex-col gap-0.5">
@@ -278,6 +289,17 @@ function GateTitle({
           <span className="text-muted-foreground"> · </span>
           {stationName}
         </p>
+        {reading === null ? null : (
+          <ReadButton
+            label={`Read ${reading.stationName}`}
+            title={`${reading.stationName} · for ${stationName}`}
+            description="The answer this gate asks you to approve"
+            text={reading.text}
+            size="sm"
+            variant="outline"
+            className="h-7 bg-background"
+          />
+        )}
         {qaReview === undefined ? null : (
           <Button
             size="sm"

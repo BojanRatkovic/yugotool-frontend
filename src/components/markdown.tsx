@@ -116,6 +116,20 @@ const COMPONENTS: Components = {
   ),
 }
 
+/** Long-form reading: real heading sizes and a separator under the top level. */
+const READER_COMPONENTS: Components = {
+  ...COMPONENTS,
+  h1: ({ children }) => (
+    <h2 className={cn(MEASURE, 'border-b pt-3 pb-1.5 text-lg font-semibold')}>{children}</h2>
+  ),
+  h2: ({ children }) => (
+    <h3 className={cn(MEASURE, 'border-b pt-3 pb-1.5 text-base font-semibold')}>{children}</h3>
+  ),
+  h3: ({ children }) => (
+    <h4 className={cn(MEASURE, 'pt-2 text-[0.9375rem] font-semibold')}>{children}</h4>
+  ),
+}
+
 const REMARK_PLUGINS = [remarkGfm]
 
 /**
@@ -125,18 +139,26 @@ const REMARK_PLUGINS = [remarkGfm]
 export const Markdown = memo(function Markdown({
   text,
   className,
+  variant = 'compact',
 }: {
   text: string
   className?: string
+  /** `reader`: larger type and headings, for reading a whole plan or report. */
+  variant?: 'compact' | 'reader'
 }) {
+  const reader = variant === 'reader'
   return (
     <div
       className={cn(
-        'flex min-w-0 flex-col gap-2.5 text-[0.8125rem] leading-relaxed text-foreground/90',
+        'flex min-w-0 flex-col text-foreground/90',
+        reader ? 'gap-3.5 text-sm leading-7' : 'gap-2.5 text-[0.8125rem] leading-relaxed',
         className,
       )}
     >
-      <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={COMPONENTS}>
+      <ReactMarkdown
+        remarkPlugins={REMARK_PLUGINS}
+        components={reader ? READER_COMPONENTS : COMPONENTS}
+      >
         {text}
       </ReactMarkdown>
     </div>

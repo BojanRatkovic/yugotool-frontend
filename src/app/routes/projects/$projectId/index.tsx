@@ -165,6 +165,11 @@ function ProjectPage() {
         baseBranch={project?.baseBranch}
         delivery={project?.deliveryDefault}
         onEditDelivery={() => setSettings(true, 'delivery')}
+        onEditLine={() =>
+          void navigate({
+            search: (prev) => ({ ...prev, view: 'line', wo: undefined, woFull: undefined }),
+          })
+        }
         state={panelState}
         onChange={(next) =>
           void navigate({
