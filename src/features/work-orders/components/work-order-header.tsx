@@ -92,6 +92,19 @@ function DescriptionField({
     if (editing) textareaRef.current?.focus()
   }, [editing])
 
+  // Esc cancels the edit, not the panel sheet: Radix listens on document in the
+  // capture phase, so this has to run earlier, on window.
+  useEffect(() => {
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.target !== textareaRef.current) return
+      event.stopPropagation()
+      event.preventDefault()
+      setDraft(null)
+    }
+    if (editing) window.addEventListener('keydown', onEscape, { capture: true })
+    return () => window.removeEventListener('keydown', onEscape, { capture: true })
+  }, [editing])
+
   function save(text: string) {
     setDraft(null)
     if (text === workOrder.description) return
@@ -134,10 +147,6 @@ function DescriptionField({
         rows={Math.min(14, Math.max(4, draft.split('\n').length + 1))}
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') {
-            event.stopPropagation()
-            setDraft(null)
-          }
           if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !tooLong) {
             // The panel's ⌘↵ approves a gate; this one is the field's.
             event.preventDefault()

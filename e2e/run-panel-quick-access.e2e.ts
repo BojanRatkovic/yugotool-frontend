@@ -219,6 +219,12 @@ test('the description is edited in place and saved with ⌘↵', async ({ page }
   // ⌘↵ in the field saves; it never approves the gate.
   await expect(page.getByText('Approved Plan.')).toHaveCount(0)
   await expect(page.getByRole('textbox', { name: 'Description' })).toBeHidden()
+
+  // Esc cancels the edit and leaves the panel open.
+  await page.getByRole('button', { name: 'Edit description' }).click()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('textbox', { name: 'Description' })).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Edit description' })).toBeVisible()
 })
 
 test('a pipeline step edits its station of the line', async ({ page }) => {
